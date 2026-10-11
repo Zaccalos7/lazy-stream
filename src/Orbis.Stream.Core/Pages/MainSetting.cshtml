@@ -1,0 +1,27 @@
+@page "/orbis/mainSetting"
+@{
+    ViewData["Title"] = T["settings"];
+}
+@section Styles {
+    <link rel="stylesheet" href="/css/dashboard.css" />
+}
+<div class="page-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <a class="btn subtle icon-only" href="/orbis/mainMenu" title="@T["back"]" aria-label="@T["back"]"><i class="icon">&#xE72B;</i></a>
+        <div>
+            <h1>@T["settings"]</h1>
+            <p class="subtitle">@T["selectSectionMessage"]</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid">
+    <a class="tile" href="/orbis/mainVideoSetting">
+        <i class="icon">&#xE714;</i>
+        <div><h3>@T["videoAndAudio"]</h3><p>@T["additionalVideoOptionsDescription"]</p></div>
+    </a>
+    <a class="tile" href="/orbis/mainChannelSetting">
+        <i class="icon">&#xE93E;</i>
+        <div><h3>@T["channelSettings"]</h3><p>@T["channelSettingsDescription"]</p></div>
+    </a>
+</div>

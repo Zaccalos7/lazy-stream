@@ -1,0 +1,148 @@
+@model SceneComposerModel
+@{
+    // Lying down, then standing up for a live watched on a phone held upright (TikTok).
+    (int Width, int Height)[] sizes = [(1280, 720), (1920, 1080), (2560, 1440), (3840, 2160), (720, 1280), (1080, 1920)];
+    var layout = Model.Layout;
+}
+
+<div class="composer" data-composer data-mode="@(layout ? "layout" : "compose")"
+     data-scene="@Model.Scene"
+     data-w-screens="@T["sourcesScreens"]" data-w-cameras="@T["sourcesCameras"]"
+     data-w-microphones="@T["sourcesMicrophones"]" data-w-files="@T["sourcesFiles"]"
+     data-w-empty-used="@T["sourcesEmptyUsed"]" data-w-empty-available="@T["sourcesEmptyAvailable"]"
+     data-w-failed="@T["sourcesFailed"]" data-w-video-group="@T["sourcesVideoGroup"]" data-w-audio-group="@T["sourcesAudioGroup"]"
+     data-w-add="@T["addToCanvas"]" data-w-up="@T["bringForward"]" data-w-down="@T["sendBackward"]"
+     data-w-fill="@T["fillCanvas"]" data-w-remove="@T["removeSource"]" data-w-sound="@T["soundOn"]"
+     data-w-drop-into-slot="@T["dropIntoSlot"]" data-w-drop-into-tile="@T["dropIntoTile"]" data-w-drop-as-layer="@T["dropAsLayer"]"
+     data-w-audio-only="@T["audioOnly"]" data-w-new="@(T[layout ? "newLayout" : "blankLayout"])" data-w-unsaved="@T["unsavedChanges"]"
+     data-w-needs-picture="@T["sceneNeedsPicture"]" data-w-needs-name="@T["sceneNeedsName"]" data-w-needs-slot="@T["layoutNeedsSlot"]"
+     data-w-slot="@T["slot"]" data-w-slot-empty="@T["slotEmpty"]" data-w-slot-hint="@T["slotHint"]"
+     data-w-twice="@T["alreadyOnCanvas"]" data-w-camera-mic="@T["cameraMicrophone"]" data-w-no-mic="@T["noMicrophone"]" data-w-ok="@T["success"]" data-w-ko="@T["error"]" data-w-warning="@T["warning"]"
+     data-w-overlay-empty="@T["overlaysEmpty"]" data-w-overlay-failed="@T["overlaysFailed"]"
+     data-w-overlay-uploading="@T["overlayUploading"]" data-w-overlay-add="@T["overlayAdd"]" data-w-overlay-delete="@T["overlayDelete"]"
+     data-w-overlay-delete-confirm="@T["overlayDeleteConfirm"]" data-w-overlay-locked="@T["overlayLocked"]" data-w-drop-overlay="@T["dropOverlay"]"
+     data-w-overlay-invalid="@T["overlayInvalid"]" data-w-overlay-too-large="@T["overlayTooLarge"]">
+
+    <aside class="composer-sidebar" aria-label="@(T[layout ? "slots" : "sources"])">
+        @if (layout)
+        {
+            <div class="card composer-sources">
+                <div class="composer-head">
+                    <h3>@T["slots"]</h3>
+                </div>
+                <p class="caption">@T["slotsHint"]</p>
+                <button type="button" class="btn" data-composer-add-slot><i class="icon">&#xE710;</i>@T["addSlot"]</button>
+            </div>
+
+        }
+        else
+        {
+            <div class="card composer-sources" aria-label="@T["usedSources"]">
+                <div class="composer-head">
+                    <h3>@T["usedSources"]</h3>
+                </div>
+                <div class="composer-catalog" data-composer-used>
+                    <p class="caption composer-none">@T["sourcesEmptyUsed"]</p>
+                </div>
+            </div>
+
+            <div class="card composer-sources" aria-label="@T["availableSources"]">
+                <div class="composer-head">
+                    <h3>@T["availableSources"]</h3>
+                    <button type="button" class="btn subtle icon-only" data-composer-refresh title="@T["refreshSources"]" aria-label="@T["refreshSources"]"><i class="icon">&#xE72C;</i></button>
+                </div>
+                <div class="composer-catalog" data-composer-catalog data-state="loading">
+                    <div class="composer-loading"><span class="spinner"></span><span class="caption">@T["loading"]</span></div>
+                </div>
+                <label class="field dropzone composer-file">
+                    <span>@T["addVideoFile"]</span>
+                    <span class="composer-file-row">
+                        <input class="input" data-drop-path data-composer-path placeholder="C:\Video\intro.mp4" />
+                        <button type="button" class="btn" data-composer-add-path>@T["add"]</button>
+                    </span>
+                    <small><i class="icon">&#xE8B5;</i><span>@T["addVideoFileHint"]</span></small>
+                </label>
+            </div>
+        }
+
+        @* The pictures a scene is dressed with, on both pages: the layout keeps them for every live
+           started from it, the live wizard lays them over this live alone. They are uploaded rather
+           than named by a path: see OverlayLibrary for why. A file dropped on this card joins the
+           library; one dropped on the canvas joins the library and the canvas, where it was let go. *@
+        <div class="card composer-sources composer-overlays" data-composer-overlay-zone aria-label="@T["overlays"]">
+            <div class="composer-head">
+                <h3>@T["overlays"]</h3>
+            </div>
+            <p class="caption">@T["overlaysHint"]</p>
+            <div class="composer-overlay-grid" data-composer-overlays data-state="loading" data-max-bytes="@Orbis.Stream.Core.Services.OverlayLibrary.MaxBytes">
+                <div class="composer-loading"><span class="spinner"></span><span class="caption">@T["loading"]</span></div>
+            </div>
+            <input type="file" accept="@Orbis.Stream.Core.Services.OverlayLibrary.Accept" multiple hidden data-composer-overlay-file />
+            <button type="button" class="btn" data-composer-overlay-upload><i class="icon">&#xE898;</i>@T["uploadOverlay"]</button>
+        </div>
+    </aside>
+
+    <section class="composer-main">
+        <div class="card composer-bar">
+            
+            <label class="field">
+                <span class="caption">@T["layout"]</span>
+                <select class="input" data-composer-layouts>
+                    <option value="">@(T[layout ? "newLayout" : "noLayoutSelected"])</option>
+                </select>
+            </label>
+            <label class="field grow">
+                <span class="caption">@(T[layout ? "layoutName" : "sceneName"])</span>
+                <input class="input" data-composer-name maxlength="255" placeholder="@(T[layout ? "newLayout" : "newScene"])" />
+            </label>
+            <label class="field">
+                <span class="caption">@T["resolution"]</span>
+                <select class="input" data-composer-size>
+                    @foreach (var (width, height) in sizes)
+                    {
+                        <option value="@(width)x@(height)" selected="@(width == 1920)">@width × @height</option>
+                    }
+                </select>
+            </label>
+            <div class="composer-actions">
+                @if (layout)
+                {
+                    
+                    <span class="caption composer-dirty" data-composer-dirty hidden>@T["unsavedChanges"]</span>
+                    <button type="button" class="btn subtle icon-only danger" data-composer-delete hidden
+                            data-confirm-text="@T["deleteLayoutConfirm"]" title="@T["deleteLayout"]" aria-label="@T["deleteLayout"]"><i class="icon">&#xE74D;</i></button>
+                    <button type="button" class="btn accent" data-composer-save><i class="icon">&#xE74E;</i>@T["saveLayout"]</button>
+                }
+                else
+                {
+                    <button type="button" class="btn accent" data-composer-start><i class="icon">&#xE768;</i>@T["startSceneLive"]</button>
+                }
+            </div>
+        </div>
+
+        <div class="composer-stage-wrap">
+            @* The stage keeps the aspect of the output; tiles are placed in output pixels and drawn
+               as a percentage of it, so the layout is the same whatever size the window is. *@
+            <div class="composer-stage" data-composer-stage tabindex="0" style="aspect-ratio: 1920 / 1080;">
+                <div class="composer-guide x" data-guide="x" hidden></div>
+                <div class="composer-guide y" data-guide="y" hidden></div>
+                <div class="composer-blank" data-composer-blank>
+                    <i class="icon">@Html.Raw(layout ? "&#xE8B9;" : "&#xE7F4;")</i>
+                    <strong>@T["canvasEmpty"]</strong>
+                    <span class="caption">@(T[layout ? "layoutEmptyHint" : "canvasComposeHint"])</span>
+                </div>
+            </div>
+        </div>
+        <p class="caption preview-note"><i class="icon">&#xE946;</i>@T["composerKeys"]</p>
+    </section>
+
+    <aside class="card composer-layers" aria-label="@T["layers"]">
+        <div class="composer-head">
+            <h3>@T["layers"]</h3>
+        </div>
+        <p class="caption">@T["layersHint"]</p>
+        <ol class="composer-layer-list" data-composer-layers></ol>
+    </aside>
+</div>
+
+<script src="/js/composer.js" defer></script>
