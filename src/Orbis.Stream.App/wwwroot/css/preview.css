@@ -1,0 +1,276 @@
+/* Orbis Stream — the live preview page: the picture of what is going out, the live to look at and
+   the parameters it goes out with.
+   Loaded only by the page that owns them (see the "Styles" section of MainPreview.cshtml). */
+
+/* The indicator of the preview page: it is the only place where "a live is running" is stated
+   without opening the live management, so it pulses the way a recording does. */
+.btn.live-indicator {
+  color: var(--on-accent);
+  background: var(--critical);
+  border-color: transparent;
+  box-shadow: none;
+  text-decoration: none;
+}
+.btn.live-indicator:hover { filter: brightness(1.06); }
+.btn.live-indicator .icon { font-size: 14px; }
+.btn.live-indicator.is-live .icon { animation: pulse 1.6s ease-in-out infinite; }
+/* On the live button the mark sits on the red of the button, where the colour of the brand would be
+   unreadable: it takes the colour of the text it is on instead. */
+.btn.live-indicator .platform-mark { width: 18px; height: 18px; color: var(--on-accent); }
+.btn.live-indicator .platform-mark svg { width: 15px; height: 15px; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.preview {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+  align-items: start;
+}
+
+.preview-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.preview-stage video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  background: #000;
+  object-fit: contain;
+}
+
+.preview-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 16 / 9;
+  color: var(--text-2);
+  text-align: center;
+  border-radius: var(--radius-sm);
+  background: var(--tint);
+}
+/* The light picture of the live, over a cover that shows until its first frame lands. */
+.preview-screen { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
+.preview-screen .preview-cover { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+.preview-screen canvas, .preview-screen .preview-platform-player { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; border: none; }
+/* The cover is drawn with a flex layout and the player and the canvas are placed on the stage, so
+   none of them would answer to `hidden` on their own: it is said here once, for all three. */
+.preview-screen [hidden] { display: none; }
+/* A picture that stands up (a portrait live): the stage keeps its shape at the height of the
+   window instead of growing with the width of the column - at full width a 9:16 stage would be
+   twice as tall as the screen - and stands in the middle of the column. The width carries the
+   size, so the aspect ratio is never broken by a column narrower than the height allows. */
+.preview-screen.portrait {
+  align-self: center;
+  width: min(100%, calc(min(70vh, 720px) * 9 / 16));
+  aspect-ratio: 9 / 16;
+}
+/* The lives on air to pick from: one control, not a row of buttons across the page. */
+.live-picker label.field { width: min(420px, 100%); }
+.preview-cover .icon { font-size: 30px; color: var(--text-3); }
+.preview-cover p { margin: 0; font-size: 12px; }
+
+.preview-embed-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--text);
+  font-size: 13px;
+  z-index: 2;
+}
+.preview-embed-status .spinner { border-top-color: var(--accent); }
+.preview-embed-status[hidden] { display: none; }
+
+.preview-badge-live {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.preview-badge-live .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--critical);
+  box-shadow: 0 0 6px var(--critical);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.preview-bar { display: flex; align-items: center; gap: 10px; }
+.preview-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.preview-id strong { font-size: 13px; }
+.preview-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.preview-params { display: flex; flex-direction: column; }
+.preview-params .section:first-child { margin-top: 0; }
+
+.preview-facts {
+  display: grid;
+  gap: 10px 14px;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+.preview-facts > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.preview-facts strong { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.preview [data-source-off][hidden] { display: none; }
+
+.preview .field .toggle { align-items: center; gap: 8px; min-height: 34px; }
+
+/* The column of the picture: the stage, and under it the mix of what it sounds like. */
+.preview-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* The mixer. Every row takes its colour from the level the script writes on it (data-level) and
+   the position of the thumb from --p, 0 to 1 of the slider; --mark is where 100% sits on the
+   same scale. The thumb is 16px wide, so both are mapped onto the width the centre of the thumb
+   can travel, or the fill would run ahead of it at the right end and lag at the left. */
+.preview-mixer { display: flex; flex-direction: column; padding: 14px 16px; }
+.preview-mixer .section { margin-top: 0; }
+.preview-mixer > .caption { margin: 10px 0 0; }
+.mixer-rows { display: flex; flex-direction: column; gap: 4px; }
+
+.mixer-row {
+  --p: 0.5;
+  --mark: 0.5;
+  --level: var(--success);
+  --level-bg: var(--success-bg);
+  --thumb: 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 4px;
+  border-radius: var(--radius);
+  transition: background-color 0.15s;
+}
+.mixer-row:hover { background: var(--tint); }
+.mixer-row[data-level="high"] { --level: var(--caution); --level-bg: var(--caution-bg); }
+.mixer-row[data-level="hot"] { --level: var(--critical); --level-bg: var(--critical-bg); }
+.mixer-row[data-level="mute"] { --level: var(--text-3); --level-bg: var(--tint-strong); }
+
+.mixer-mute .icon { font-size: 16px; transition: color 0.15s; }
+.mixer-row .mixer-mute { color: var(--level); }
+.mixer-row[data-level="mute"] .mixer-mute { color: var(--critical); }
+
+.mixer-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mixer-name { font-size: 12px; color: var(--text-2); }
+.mixer-row[data-level="mute"] .mixer-name { text-decoration: line-through; color: var(--text-3); }
+
+.mixer-track { position: relative; display: block; height: 20px; }
+/* The tick of 100%, the sound of the source: the line between green and yellow. It sits under the
+   slider and stands out of the track above and below it, so the thumb passes over it. */
+.mixer-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--mark));
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--stroke-strong);
+  pointer-events: none;
+}
+
+.mixer-track input[type="range"] {
+  --fill: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p));
+  position: relative;
+  z-index: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.mixer-track input[type="range"]:focus-visible { outline: none; }
+
+.mixer-track input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--level) 0 var(--fill), var(--tint-strong) var(--fill) 100%);
+}
+.mixer-track input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--level) 0 var(--fill), var(--tint-strong) var(--fill) 100%);
+}
+
+.mixer-track input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--level);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-flyout);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.mixer-track input[type="range"]::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--level);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-flyout);
+}
+.mixer-track input[type="range"]:hover::-webkit-slider-thumb,
+.mixer-track input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
+.mixer-track input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--level-bg), var(--shadow-flyout); }
+.mixer-track input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--level-bg), var(--shadow-flyout); }
+
+/* The value is also the way back to 100%: a pill in the colour of the level. */
+.mixer-value {
+  min-width: 58px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--level-bg);
+  color: var(--level);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+.mixer-value:hover { border-color: var(--level); }
+.mixer-value:focus-visible { outline: none; box-shadow: var(--glow); }
+
+@media (max-width: 1100px) {
+  .preview { grid-template-columns: minmax(0, 1fr); }
+}
