@@ -1,22 +1,40 @@
-# OrbisStream · macOS
+# OrbisStream · macOS Apple Silicon
 
-App nativa **SwiftUI / Swift** per macOS 14 o successivo, Apple Silicon e Intel. FFmpeg resta il motore di composizione, codifica e pubblicazione. Il progetto principale è ora il pacchetto Swift alla radice; i sorgenti Windows in `src/` sono conservati come riferimento della migrazione.
+Applicazione Swift e SwiftUI per macOS 14+, esclusivamente arm64. FFmpeg compone e codifica le sorgenti; VideoToolbox utilizza l’accelerazione Apple. Sidebar, toolbar, SF Symbols, Portachiavi, pannelli file, AVFoundation e WebKit sono nativi.
 
-## Avvio sul Mac
+## Compilazione e installer
 
-Installa Xcode o i Command Line Tools e una distribuzione FFmpeg per macOS, per esempio:
+Esegui su un Mac Apple Silicon con Xcode o Command Line Tools e FFmpeg/FFprobe arm64:
 
 ```sh
-brew install ffmpeg
 ./scripts/build-macos.sh
-open dist/OrbisStream.app
 ```
 
-Apri `Package.swift` con Xcode per lavorare sui sorgenti. Lo script esegue i test, compila in Release e crea un bundle `.app` con firma locale e descrizioni dei permessi. L'architettura è quella del Mac che compila. FFmpeg/FFprobe sono cercati nel bundle (`Contents/Helpers`), nei percorsi Homebrew Intel/Apple Silicon e nel `PATH`; puoi specificarli nelle impostazioni. Non vengono distribuiti gli `.exe` o le DLL Windows.
+Lo script esegue i test, compila in Release, incorpora FFmpeg/FFprobe e le dipendenze dinamiche, conserva soltanto le sezioni arm64, firma i componenti e genera:
 
-Il bundle prodotto usa FFmpeg installato sul Mac. Per distribuire un'app autonoma occorre fornire binari FFmpeg/FFprobe macOS e le loro dipendenze, rispettare le relative licenze, firmare i componenti e notarizzare il bundle con Developer ID. Il build locale non realizza notarizzazione o un installer DMG.
+- `dist/OrbisStream.app`
+- `dist/OrbisStream-3.0.0-arm64.pkg`, che installa l’app in `/Applications`.
 
-## Funzioni migrate
+Il pacchetto richiede macOS 14 e arm64. Il Mac destinatario non deve installare FFmpeg separatamente. Il percorso predefinito dei binari per il build è `/opt/homebrew/bin`; puoi cambiarlo:
+
+```sh
+ORBIS_FFMPEG_DIR=/percorso/bin ./scripts/build-macos.sh
+```
+
+Usa una distribuzione FFmpeg con AVFoundation, VideoToolbox, AAC, FLV, RTMP e i filtri/encoder richiesti dai tuoi profili. Le dipendenze mancanti o senza arm64 interrompono il confezionamento. Licenza e configurazione FFmpeg sono incluse nelle risorse; `ORBIS_FFMPEG_LICENSE_DIR` permette di aggiungere licenze, avvisi e materiale sorgente della distribuzione scelta. Rispetta le condizioni delle librerie che distribuisci.
+
+La firma predefinita è locale. Per una distribuzione firmata e notarizzata:
+
+```sh
+ORBIS_APP_SIGN_IDENTITY='Developer ID Application: Nome (TEAMID)' \
+ORBIS_INSTALLER_SIGN_IDENTITY='Developer ID Installer: Nome (TEAMID)' \
+ORBIS_NOTARY_PROFILE='profilo-notarytool' \
+./scripts/build-macos.sh
+```
+
+Il profilo deve essere già configurato nel Portachiavi per `notarytool`. Lo script invia il pacchetto, attende la notarizzazione e allega il ticket. Apri `Package.swift` con Xcode per sviluppare.
+
+## Funzionalità
 
 - Canali multipli, chiavi nel Portachiavi, configurazione di cartelle, scene e profili.
 - Procedura di avvio con conto alla rovescia, start/stop e selezione della diretta osservata.
@@ -32,35 +50,20 @@ Il bundle prodotto usa FFmpeg installato sul Mac. Per distribuire un'app autonom
 - Storico con snapshot, riavvio, esportazione, cancellazione e pulizia periodica per canale.
 - Panoramica/attività con CPU, RAM, compressione, swap, rete, spazio e I/O disco, uptime, risparmio energetico e stato termico macOS.
 
-## Scelte Apple e differenze da Windows
+## Motore e dati
 
-La UI usa sidebar, toolbar, SF Symbols, form, pannelli file, finestre impostazioni e menu nativi, con tema chiaro/scuro di sistema. Non usa WPF, WebView2, ASP.NET o un server HTTP locale. I vecchi endpoint HTTP non sono mantenuti: le viste chiamano i servizi Swift.
+Il nucleo dello streaming è un relay FLV in Swift: un publisher FFmpeg mantiene la connessione RTMP, mentre i produttori vengono sostituiti durante cambi di file, scene, intermezzi e mixer. Il parser ricompone i tag ricevuti a blocchi, valida le dimensioni e riscrive i timestamp per mantenere una timeline continua. Il pacing segue l’uptime del Mac. Le transizioni possono avere una breve pausa di avvio del produttore.
 
-I dati sono in `~/Library/Application Support/OrbisStream/workspace.json`, scritti atomicamente. Overlay e media dei pulsanti sono copiati in Application Support; la playlist usa i file originali. Le chiavi non entrano in JSON, storico o export: trasferendo i dati su un altro Mac devi reinserirle nel Portachiavi. L’importazione JSON accetta il nuovo schema Swift. Il comando **Importa Windows…** legge in sola lettura il database SQLite `stream.db`, trasferisce canali/profili/scene/pulsanti/playlist/storico e salva separatamente le chiavi nel Portachiavi. Puoi rimappare una radice Windows nella cartella corrispondente sul Mac; camera, schermo e microfono devono essere riselezionati. I file assenti sono elencati prima dell’importazione. Gli ID sono rigenerati e i dati vengono aggiunti al progetto attuale.
+I dati usano un modello Swift e JSON scritto atomicamente in `~/Library/Application Support/OrbisStream`; le chiavi sono nel Portachiavi ed escluse dall’esportazione. I controlli dell’interfaccia chiamano direttamente i servizi Swift.
 
-Gli encoder NVENC/QSV/AMF e la cattura gdigrab/dshow sono sostituiti da VideoToolbox/AVFoundation. Il trasporto usa sempre il publisher FFmpeg: il selettore Windows tra RTMP implementato in .NET e FFmpeg non è applicabile. Il relay Swift dosa i pacchetti in tempo reale e mantiene la connessione durante le transizioni; non riproduce esattamente i buffer/preroll specifici del vecchio relay. Cambiando produttore può esserci una breve pausa, e cambiando formato la piattaforma può interrompere le proprie rendizioni.
+Le catture passano attraverso AVFoundation. Per l’audio dello schermo occorre un dispositivo audio virtuale selezionato come microfono. Camera, microfono e schermo richiedono i permessi macOS. La qualità Auto usa un benchmark sintetico; l’adattamento del bitrate osserva l’avanzamento del publisher. Il controllo pubblico YouTube resta best effort: consenso, errori HTTP o pagine non riconosciute producono lo stato “non verificata”.
 
-L'audio di sistema non è acquisito direttamente: AVFoundation cattura il video dello schermo; per l'audio usa un dispositivo virtuale selezionato come microfono. Non è un'implementazione ScreenCaptureKit. Il sistema richiede i permessi camera/microfono/schermo; lo script bundle include le descrizioni di utilizzo.
+## Statistiche Apple
 
-La qualità Auto esegue un benchmark sintetico di due secondi alla risoluzione/frequenza configurate e sceglie bilanciato o leggero. La scelta è memorizzata in cache per encoder/formato. VideoToolbox usa `prio_speed`; per YouTube/Facebook viene richiesto anche il bitrate costante Apple (`constant_bit_rate`, macOS 13+). L'adattamento osserva l'avanzamento del publisher rispetto al tempo reale, con riduzione dopo campioni lenti e recupero dopo stabilità; non misura direttamente la capacità della rete. L'avanzamento FFmpeg prova che il processo sta inviando, **non** che la piattaforma sia pubblicamente in onda: il controllo YouTube usa le pagine pubbliche e il JSON del player principale, con 90 secondi di tolleranza iniziale e campioni ogni 30 secondi. L’assenza viene segnalata dopo due riscontri; una diretta precedentemente rilevata viene fermata soltanto dopo due conferme esplicite di fine. Errori HTTP, consenso o markup non riconosciuto restano “non verificata”. È un controllo best effort che può richiedere manutenzione se YouTube cambia il formato delle pagine. La pagina piattaforma resta consultabile.
+`SystemMetrics.swift` richiama direttamente Mach, sysctl, getrusage, getifaddrs e IOKit da Swift. CPU, memoria attiva/wired/compressa, swap e risorse del processo sono campionati con contatori nativi; rete e I/O disco si ricavano dalle differenze tra campioni. Il primo campione mostra `—` dove serve un intervallo. ProcessInfo fornisce stato termico e risparmio energetico, Foundation la capacità del volume.
 
-La guida e l'interfaccia di questa versione sono in italiano; i bundle di traduzione e le immagini della guida Windows non sono convertiti. Non è quindi ancora una migrazione con parità integrale: questi punti sono esplicitamente elencati per la verifica prima del rilascio.
-
-## Statistiche macOS
-
-`AppleMetrics` legge CPU con `host_statistics`, memoria con `host_statistics64`, swap con `sysctlbyname`, memoria del processo con `task_info`, CPU del processo con `getrusage` e traffico delle interfacce fisiche `en*` con `getifaddrs`. Swift calcola le differenze tra campioni usando l'uptime; il primo campione mostra `—` dove serve un intervallo. La memoria visualizzata è active + wired + compressed − purgeable, non una copia esatta della formula di Monitoraggio Attività.
-
-CPU del Mac è 0–100%; CPU dell'app può superare 100% (un core). Le risorse dell'app non includono i processi FFmpeg. Il traffico riguarda l'intero Mac ed esclude loopback, tunnel e bridge; non è il bitrate della diretta. Per quest'ultimo si legge `-progress` dal publisher. Il disco indica capacità totale/disponibile e letture/scritture aggregate dei driver fisici attraverso IOKit (`IOBlockStorageDriver`), quando esposti dal sistema; non è il solo I/O della diretta. Il primo campione o un cambiamento dei dischi mostra `—`. Le temperature numeriche CPU/GPU e l'utilizzo GPU sono indisponibili tramite un'API pubblica uniforme: vengono sostituiti dallo stato termico e dal risparmio energetico, senza valori fittizi.
-
-Riferimenti: [FFmpeg AVFoundation](https://ffmpeg.org/ffmpeg-devices.html#avfoundation), [Apple statistiche disco](https://developer.apple.com/documentation/iokit/kioblockstoragedriverstatisticsbytesreadkey), [Apple host_statistics64](https://developer.apple.com/documentation/kernel/1502863-host_statistics64), [opzioni VideoToolbox di FFmpeg](https://ffmpeg.org/doxygen/8.1/videotoolboxenc_8c.html).
+La rete comprende le interfacce fisiche `en*` del Mac; il disco comprende i driver che espongono statistiche IOKit. CPU dell’app: 100% equivale a un core; i processi FFmpeg sono esclusi. Le temperature numeriche CPU/GPU e l’utilizzo GPU non vengono stimati.
 
 ## Verifica
 
-```sh
-swift test
-swift build -c release
-```
-
-I test coprono riconoscimento piattaforme, URL/chiavi, validazione, composizione/mix, comandi Apple, TikTok portrait, progress, parsing/rebase FLV, persistenza, ordinamento naturale e un output FFmpeg reale con anteprima quando FFmpeg è installato. La CI `.github/workflows/macos.yml` installa FFmpeg, esegue i test e crea il bundle su macOS.
-
-L'ambiente di sviluppo di questa migrazione è Linux: i test del motore possono girare in un toolchain Swift Linux, ma SwiftUI/AppKit, Mach, Portachiavi, permessi TCC e dispositivi devono essere compilati e provati sul Mac. La presenza della CI non equivale a un’esecuzione macOS già riuscita. Prima di considerare pronta la release, verifica sul Mac camera/microfono/schermo, alpha animato, più dirette, transizioni e invio a un ingest di prova.
+Il build esegue i test del relay, timestamp, URL, profili, mix, persistenza, controllo YouTube e output FFmpeg reale. Dopo il confezionamento verifica firme, architetture e avvio dei helper. I test e il build nativo richiedono macOS; questa revisione è stata preparata su Linux, quindi la compilazione SwiftUI e l’esecuzione dell’installer sul Mac restano da verificare. Camera, microfono, schermo e pubblicazione reale richiedono una prova sul Mac.
