@@ -234,6 +234,7 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                 }
                 Button("Apri registri") { NSWorkspace.shared.open(model.store.directory.appendingPathComponent("Logs")) }
             }
+            UpdateSettingsView()
             Section("Dati") {
                 Text(model.store.directory.path).textSelection(.enabled)
                 HStack { Button("Importa…") { model.importWorkspace() }; Button("Esporta…") { model.exportWorkspace() } }

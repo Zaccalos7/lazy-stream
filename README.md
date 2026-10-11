@@ -34,12 +34,16 @@ ORBIS_NOTARY_PROFILE='profilo-notarytool' \
 
 Il profilo deve essere già configurato nel Portachiavi per `notarytool`. Lo script invia il pacchetto, attende la notarizzazione e allega il ticket. Apri `Package.swift` con Xcode per sviluppare.
 
+## Censimento della migrazione
+
+[Elenco punto per punto](docs/MIGRAZIONE.md): 228 file originali, 62 route e 126 identificatori di controlli, con corrispondenze al codice Swift. [Inventario originale](docs/original-inventory.json) e [matrice delle funzioni](docs/parity.json) sono consultabili anche da strumenti. Le voci indicano codice presente; la parità operativa richiede ancora le prove su Mac.
+
 ## Funzionalità
 
 - Canali multipli, chiavi nel Portachiavi, configurazione di cartelle, scene e profili.
 - Procedura di avvio con conto alla rovescia, start/stop e selezione della diretta osservata.
-- Playlist ordinabili, abilitazione, ripresa da posizione, loop, salto al video successivo.
-- Scene e layout riutilizzabili, canvas con trascinamento, coordinate, dimensioni, ordine dei livelli e selezione delle sorgenti.
+- Playlist ordinabili, abilitazione, profilo per video, ripresa da posizione, loop, salto al video successivo.
+- Scene e layout riutilizzabili, canvas con trascinamento, ridimensionamento, allineamento, comandi da tastiera, drop dei file, anteprima video e acquisizione delle sorgenti.
 - File, schermi, fotocamere e microfoni attraverso **AVFoundation**, usando gli indici rilevati dallo stesso FFmpeg.
 - Overlay statici e animati, libreria locale, pulsanti scena, intermezzi, posizione, durata, scorciatoie macOS e ripresa del programma.
 - Mixer audio per sorgente, mute e volume 0–200%, audio stereo/silenzio quando necessario.
@@ -47,7 +51,8 @@ Il profilo deve essere già configurato nel Portachiavi per `notarytool`. Lo scr
 - **VideoToolbox H.264/HEVC** e alternativa software x264/x265. RTMP è limitato a FLV/H.264 con audio AAC/MP3; HEVC, Opus e altri contenitori sono conservati nei profili ma non vengono accettati per una diretta RTMP.
 - Relay FLV Swift con timestamp continui, un processo FFmpeg publisher persistente e produttori sostituibili per playlist, scene, intermezzi e modifiche del mixer.
 - Anteprima della composizione, avanzamento di FFmpeg, pagina pubblica della piattaforma in WebKit, registri con server mascherato, riconnessione e watchdog.
-- Storico con snapshot, riavvio, esportazione, cancellazione e pulizia periodica per canale.
+- Storico con snapshot, riavvio, esportazione, cancellazione, pulizia progressiva per canale e recupero delle sessioni interrotte.
+- Spot in coda, registri giornalieri, risorse in 21 lingue, verifica aggiornamenti da manifest macOS configurabile e tema di sistema/chiaro/scuro.
 - Panoramica/attività con CPU, RAM, compressione, swap, rete, spazio e I/O disco, uptime, risparmio energetico e stato termico macOS.
 
 ## Motore e dati
@@ -62,7 +67,7 @@ Le catture passano attraverso AVFoundation. Per l’audio dello schermo occorre 
 
 `SystemMetrics.swift` richiama direttamente Mach, sysctl, getrusage, getifaddrs e IOKit da Swift. CPU, memoria attiva/wired/compressa, swap e risorse del processo sono campionati con contatori nativi; rete e I/O disco si ricavano dalle differenze tra campioni. Il primo campione mostra `—` dove serve un intervallo. ProcessInfo fornisce stato termico e risparmio energetico, Foundation la capacità del volume.
 
-La rete comprende le interfacce fisiche `en*` del Mac; il disco comprende i driver che espongono statistiche IOKit. CPU dell’app: 100% equivale a un core; i processi FFmpeg sono esclusi. Le temperature numeriche CPU/GPU e l’utilizzo GPU non vengono stimati.
+La rete comprende le interfacce fisiche `en*` del Mac; il disco comprende i driver che espongono statistiche IOKit. CPU dell’app: 100% equivale a un core. La pagina attività campiona separatamente CPU, memoria e thread dei processi FFmpeg tramite proc_pidinfo. Le temperature numeriche CPU/GPU e l’utilizzo GPU non vengono stimati.
 
 ## Verifica
 
