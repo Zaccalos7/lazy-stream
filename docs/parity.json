@@ -1,0 +1,2845 @@
+[
+  {
+    "id": "M001",
+    "area": "Canali",
+    "function": "Elenco e ricerca",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M002",
+    "area": "Canali",
+    "function": "Creazione, modifica ed eliminazione",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M003",
+    "area": "Canali",
+    "function": "Nome e descrizione",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M004",
+    "area": "Canali",
+    "function": "Server RTMP/RTMPS e chiave",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M005",
+    "area": "Canali",
+    "function": "Nome pubblico o ID trasmissione",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M006",
+    "area": "Canali",
+    "function": "Abilitazione del canale",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M007",
+    "area": "Canali",
+    "function": "Cartella video",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M008",
+    "area": "Canali",
+    "function": "Scena e profilo associati",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M009",
+    "area": "Canali",
+    "function": "Regole di pulizia per canale",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M010",
+    "area": "Canali",
+    "function": "Normalizzazione host YouTube e query della chiave",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M011",
+    "area": "Canali",
+    "function": "Riconoscimento Twitch, YouTube, Kick, Facebook, TikTok e ingest personalizzato",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M012",
+    "area": "Canali",
+    "function": "Chiave TikTok richiesta per ogni diretta",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M013",
+    "area": "Canali",
+    "function": "Chiavi nel Portachiavi ed esclusione da export e storico",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M014",
+    "area": "Profili",
+    "function": "Elenco, ricerca, creazione e modifica",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M015",
+    "area": "Profili",
+    "function": "Duplicazione ed eliminazione con controllo dei riferimenti",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M016",
+    "area": "Profili",
+    "function": "Attivazione e profilo predefinito",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M017",
+    "area": "Profili",
+    "function": "Predefinito per piattaforma e preset di partenza",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M018",
+    "area": "Profili",
+    "function": "Codec video e lista dei codec effettivamente disponibili",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M019",
+    "area": "Profili",
+    "function": "Formato pixel e contenitore",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M020",
+    "area": "Profili",
+    "function": "Bitrate video",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M021",
+    "area": "Profili",
+    "function": "Codec e bitrate audio",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M022",
+    "area": "Profili",
+    "function": "GOP in secondi e keyframe periodici",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M023",
+    "area": "Profili",
+    "function": "Risoluzione e frequenza della sorgente tramite 0×0 e 0 fps",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M024",
+    "area": "Profili",
+    "function": "Qualità Auto, Leggero, Bilanciato e Alta",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M025",
+    "area": "Profili",
+    "function": "Preset e tune manuali",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M026",
+    "area": "Profili",
+    "function": "Bassa latenza",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M027",
+    "area": "Profili",
+    "function": "Interruttore bitrate adattivo",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M028",
+    "area": "Profili",
+    "function": "Opzioni FFmpeg aggiuntive",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M029",
+    "area": "Profili",
+    "function": "Validazione e opzioni riservate",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M030",
+    "area": "Profili",
+    "function": "Associazione del profilo a un singolo video",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M031",
+    "area": "Profili",
+    "function": "Modifica dei parametri durante la diretta",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/CodecCatalog.swift",
+      "Sources/OrbisCore/FFmpegCapabilities.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M032",
+    "area": "Avvio e playlist",
+    "function": "Procedura di avvio a passi",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M033",
+    "area": "Avvio e playlist",
+    "function": "Scelta di canale e profilo",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M034",
+    "area": "Avvio e playlist",
+    "function": "Scelta o composizione di una scena durante l’avvio",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M035",
+    "area": "Avvio e playlist",
+    "function": "Conto alla rovescia annullabile",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M036",
+    "area": "Avvio e playlist",
+    "function": "Importazione di file e cartelle",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M037",
+    "area": "Avvio e playlist",
+    "function": "Solo file video, cartelle e duplicati esclusi",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M038",
+    "area": "Avvio e playlist",
+    "function": "Ordinamento naturale dei nomi",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M039",
+    "area": "Avvio e playlist",
+    "function": "Riordino e rimozione dei video",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M040",
+    "area": "Avvio e playlist",
+    "function": "Abilitazione dei singoli video",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M041",
+    "area": "Avvio e playlist",
+    "function": "Posizione di ripresa",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M042",
+    "area": "Avvio e playlist",
+    "function": "Loop o termine della playlist",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M043",
+    "area": "Avvio e playlist",
+    "function": "Avvio di playlist e dirette concorrenti",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M044",
+    "area": "Avvio e playlist",
+    "function": "Blocco del doppio avvio sullo stesso canale",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M045",
+    "area": "Avvio e playlist",
+    "function": "Salto al video successivo o a un video scelto",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M046",
+    "area": "Avvio e playlist",
+    "function": "Stop della singola diretta e stop generale",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M047",
+    "area": "Avvio e playlist",
+    "function": "Ripresa dopo errore e riconnessione",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M048",
+    "area": "Scene e layout",
+    "function": "Elenco, ricerca, salvataggio, duplicazione ed eliminazione",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M049",
+    "area": "Scene e layout",
+    "function": "Nome e descrizione della scena",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M050",
+    "area": "Scene e layout",
+    "function": "Layout riutilizzabili e slot senza sorgenti",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M051",
+    "area": "Scene e layout",
+    "function": "Decorazioni mantenute nei layout",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M052",
+    "area": "Scene e layout",
+    "function": "Applicazione di un layout a sorgenti esistenti",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M053",
+    "area": "Scene e layout",
+    "function": "File, schermo, fotocamera e microfono",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M054",
+    "area": "Scene e layout",
+    "function": "Catalogo e indici dispositivi FFmpeg/AVFoundation",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M055",
+    "area": "Scene e layout",
+    "function": "Permessi camera, microfono e schermo",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M056",
+    "area": "Scene e layout",
+    "function": "Controllo di dispositivi duplicati",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M057",
+    "area": "Scene e layout",
+    "function": "Canvas con anteprime locali",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M058",
+    "area": "Scene e layout",
+    "function": "Trascinamento dei riquadri",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M059",
+    "area": "Scene e layout",
+    "function": "Ridimensionamento con maniglia e campi numerici",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M060",
+    "area": "Scene e layout",
+    "function": "Aggancio a bordi e centri",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M061",
+    "area": "Scene e layout",
+    "function": "Spostamento da tastiera e cancellazione della selezione",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M062",
+    "area": "Scene e layout",
+    "function": "Trascinamento di file sul canvas",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M063",
+    "area": "Scene e layout",
+    "function": "Coordinate X/Y, larghezza e altezza",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M064",
+    "area": "Scene e layout",
+    "function": "Riordino dei livelli",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M065",
+    "area": "Scene e layout",
+    "function": "Risoluzioni canvas e cambio orientamento",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M066",
+    "area": "Scene e layout",
+    "function": "Risoluzione ricavata dal file sorgente",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M067",
+    "area": "Scene e layout",
+    "function": "Ridimensionamento proporzionale degli elementi",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M068",
+    "area": "Scene e layout",
+    "function": "Svuotamento del canvas",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M069",
+    "area": "Scene e layout",
+    "function": "Protezione della chiusura accidentale con modifiche non salvate",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M070",
+    "area": "Scene e layout",
+    "function": "Audio per sorgente e volume 0–200%",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M071",
+    "area": "Scene e layout",
+    "function": "Composizione scale/pad/overlay e pixel quadrati",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M072",
+    "area": "Scene e layout",
+    "function": "Durata della scena pari al file più lungo e ultimo frame mantenuto",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M073",
+    "area": "Scene e layout",
+    "function": "Mix stereo e audio riempito con silenzio fino al termine della scena",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/CanvasMediaPreview.swift",
+      "Sources/OrbisCore/SceneGeometry.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M074",
+    "area": "Media e overlay",
+    "function": "Libreria overlay e importazione",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M075",
+    "area": "Media e overlay",
+    "function": "PNG/JPEG/WebP e immagini statiche",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M076",
+    "area": "Media e overlay",
+    "function": "GIF/APNG animati",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M077",
+    "area": "Media e overlay",
+    "function": "WebM/MOV animati e trasparenza",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M078",
+    "area": "Media e overlay",
+    "function": "Decoder libvpx per alpha VP8/VP9",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M079",
+    "area": "Media e overlay",
+    "function": "Loop degli overlay",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M080",
+    "area": "Media e overlay",
+    "function": "Anteprima e fotogramma di una sorgente",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M081",
+    "area": "Media e overlay",
+    "function": "Anteprima delle fotocamere e degli schermi",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M082",
+    "area": "Media e overlay",
+    "function": "Riproduzione locale con AVPlayer",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M083",
+    "area": "Media e overlay",
+    "function": "Conversione dei formati non riproducibili",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M084",
+    "area": "Media e overlay",
+    "function": "Copie leggere per sorgenti oltre Full HD",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M085",
+    "area": "Media e overlay",
+    "function": "Confronto dei decoder CPU/VideoToolbox",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M086",
+    "area": "Media e overlay",
+    "function": "Tone mapping PQ/HLG con zscale",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M087",
+    "area": "Media e overlay",
+    "function": "Proxy usato solo quando copre la dimensione del riquadro",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M088",
+    "area": "Media e overlay",
+    "function": "Preparazione dei proxy in coda, un lavoro alla volta",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M089",
+    "area": "Media e overlay",
+    "function": "Cache identificata da percorso, dimensione e data del file",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M090",
+    "area": "Media e overlay",
+    "function": "Rimozione delle copie inutilizzate oltre 30 giorni",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M091",
+    "area": "Media e overlay",
+    "function": "Protezione dell’eliminazione di overlay ancora referenziati",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/MediaPreviewService.swift",
+      "Sources/OrbisMac/MediaOptimization.swift",
+      "Sources/OrbisCore/FFmpeg.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M092",
+    "area": "Pulsanti e spot",
+    "function": "Creazione, modifica, eliminazione e ordine del deck",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M093",
+    "area": "Pulsanti e spot",
+    "function": "Etichetta, media e scorciatoia",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M094",
+    "area": "Pulsanti e spot",
+    "function": "Scorciatoie macOS normalizzate e tasti riservati",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M095",
+    "area": "Pulsanti e spot",
+    "function": "Funzionamento delle scorciatoie fuori dai campi di testo",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M096",
+    "area": "Pulsanti e spot",
+    "function": "Intermezzo a schermo intero",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M097",
+    "area": "Pulsanti e spot",
+    "function": "Immagine mantenuta fino alla ripresa",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M098",
+    "area": "Pulsanti e spot",
+    "function": "Clip che torna automaticamente al programma",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M099",
+    "area": "Pulsanti e spot",
+    "function": "Spot da file e coda per singola diretta",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M100",
+    "area": "Pulsanti e spot",
+    "function": "Pulsante che interrompe lo spot e svuota la coda",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M101",
+    "area": "Pulsanti e spot",
+    "function": "Ripresa che elimina gli spot in attesa",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M102",
+    "area": "Pulsanti e spot",
+    "function": "Overlay nella scena e toggle dello stesso pulsante",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M103",
+    "area": "Pulsanti e spot",
+    "function": "Posizioni angoli, centro e personalizzata",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M104",
+    "area": "Pulsanti e spot",
+    "function": "Dimensioni e durata dell’overlay",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M105",
+    "area": "Pulsanti e spot",
+    "function": "Timer protetto da richieste successive",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M106",
+    "area": "Pulsanti e spot",
+    "function": "Ripresa dal cursore del programma e non dallo spot",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M107",
+    "area": "Pulsanti e spot",
+    "function": "Protezione dei media attivi o in coda",
+    "swift": [
+      "Sources/OrbisMac/SceneViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeckHotkey.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M108",
+    "area": "Regia e trasporto",
+    "function": "Elenco delle sessioni e selezione della diretta",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M109",
+    "area": "Regia e trasporto",
+    "function": "Filtri canale, piattaforma, ricerca e dirette attive",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M110",
+    "area": "Regia e trasporto",
+    "function": "Anteprima JPEG della composizione codificata",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M111",
+    "area": "Regia e trasporto",
+    "function": "Dimensioni dell’anteprima corrispondenti al segnale reale",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M112",
+    "area": "Regia e trasporto",
+    "function": "Pagina pubblica della piattaforma in WebKit e browser esterno",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M113",
+    "area": "Regia e trasporto",
+    "function": "Mixer per sorgente, mute e volume",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M114",
+    "area": "Regia e trasporto",
+    "function": "Cambio scena durante la diretta",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M115",
+    "area": "Regia e trasporto",
+    "function": "FPS, bitrate, velocità, byte e posizione",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M116",
+    "area": "Regia e trasporto",
+    "function": "Parser FLV incrementale con validazione dei tag",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M117",
+    "area": "Regia e trasporto",
+    "function": "Un solo header FLV e sequence header preservati",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M118",
+    "area": "Regia e trasporto",
+    "function": "Timeline continua tra produttori",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M119",
+    "area": "Regia e trasporto",
+    "function": "Tagli ribasati sull’ultimo tag scritto, esclusi i frame scartati",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M120",
+    "area": "Regia e trasporto",
+    "function": "Intervallo tra segmenti derivato dal frame rate",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M121",
+    "area": "Regia e trasporto",
+    "function": "Publisher FFmpeg persistente",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M122",
+    "area": "Regia e trasporto",
+    "function": "Buffer limitato per durata e memoria",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M123",
+    "area": "Regia e trasporto",
+    "function": "Backpressure e risveglio su interruzione o cancellazione",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M124",
+    "area": "Regia e trasporto",
+    "function": "Cuscino iniziale del relay",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M125",
+    "area": "Regia e trasporto",
+    "function": "Recupero del ritardo a 2× senza burst incontrollati",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M126",
+    "area": "Regia e trasporto",
+    "function": "Pacing nel sender e preroll per YouTube/Facebook/TikTok",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M127",
+    "area": "Regia e trasporto",
+    "function": "Margini, sample rate, CBR e timeout specifici per piattaforma",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M128",
+    "area": "Regia e trasporto",
+    "function": "Formato uniforme dove richiesto",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M129",
+    "area": "Regia e trasporto",
+    "function": "Orientamento verticale TikTok",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M130",
+    "area": "Regia e trasporto",
+    "function": "Bitrate adattivo basato su drift, backlog e throughput",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M131",
+    "area": "Regia e trasporto",
+    "function": "Distinzione tra rete lenta, encoder lento e rete ferma",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M132",
+    "area": "Regia e trasporto",
+    "function": "Riduzione con margine, gradini di recupero e attesa raddoppiata",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M133",
+    "area": "Regia e trasporto",
+    "function": "Qualità automatica alleggerita dopo 10 secondi senza margine",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M134",
+    "area": "Regia e trasporto",
+    "function": "Benchmark qualità con cache e soglia 2×",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M135",
+    "area": "Regia e trasporto",
+    "function": "Watchdog e riconnessioni con limite consecutivo",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M136",
+    "area": "Regia e trasporto",
+    "function": "Chiusura naturale del publisher con flush",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M137",
+    "area": "Regia e trasporto",
+    "function": "Stop forzato dei processi bloccati",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M138",
+    "area": "Regia e trasporto",
+    "function": "Cancellazione delle operazioni asincrone FFmpeg",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M139",
+    "area": "Regia e trasporto",
+    "function": "Controllo YouTube con tolleranza iniziale e conferme consecutive",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M140",
+    "area": "Regia e trasporto",
+    "function": "Stato YouTube non verificato per consenso/errori/pagine sconosciute",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M141",
+    "area": "Regia e trasporto",
+    "function": "Avviso YouTube chiudibile",
+    "swift": [
+      "Sources/OrbisMac/LiveViews.swift",
+      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisCore/DeliveryBuffer.swift",
+      "Sources/OrbisCore/FLVRelay.swift",
+      "Sources/OrbisCore/StreamingPolicy.swift",
+      "Sources/OrbisCore/EncoderTuner.swift",
+      "Sources/OrbisCore/YouTubeAir.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M142",
+    "area": "Storico e recupero",
+    "function": "Snapshot di canale, profilo, scena e playlist",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M143",
+    "area": "Storico e recupero",
+    "function": "Data iniziale, data finale ed errore",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M144",
+    "area": "Storico e recupero",
+    "function": "Ricerca per canale, scena o titolo del video",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M145",
+    "area": "Storico e recupero",
+    "function": "Filtri di canale e stato e ordinamento cronologico",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M146",
+    "area": "Storico e recupero",
+    "function": "Dettagli dei video di una diretta",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M147",
+    "area": "Storico e recupero",
+    "function": "Riavvio della diretta",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M148",
+    "area": "Storico e recupero",
+    "function": "Replay di un video dall’inizio o dalla posizione",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M149",
+    "area": "Storico e recupero",
+    "function": "Eliminazione di una riga video o di una diretta",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M150",
+    "area": "Storico e recupero",
+    "function": "Esportazione dello storico",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M151",
+    "area": "Storico e recupero",
+    "function": "Pulizia di tutto, prima di ieri o per mesi",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M152",
+    "area": "Storico e recupero",
+    "function": "Avanzamento della pulizia e conteggio dei video/dirette",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M153",
+    "area": "Storico e recupero",
+    "function": "Protezione delle sessioni attive durante la pulizia",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M154",
+    "area": "Storico e recupero",
+    "function": "Pulizia periodica per canale",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M155",
+    "area": "Storico e recupero",
+    "function": "Checkpoint delle sessioni ogni cinque secondi",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M156",
+    "area": "Storico e recupero",
+    "function": "Elenco delle sessioni interrotte",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M157",
+    "area": "Storico e recupero",
+    "function": "Sblocco e ripresa dopo chiusura inattesa",
+    "swift": [
+      "Sources/OrbisMac/ConfigurationViews.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisCore/HistoryCleanup.swift",
+      "Sources/OrbisCore/Models.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M158",
+    "area": "Statistiche Apple",
+    "function": "CPU del Mac",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M159",
+    "area": "Statistiche Apple",
+    "function": "RAM attiva/wired/compressa e capacità fisica",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M160",
+    "area": "Statistiche Apple",
+    "function": "Memoria compressa",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M161",
+    "area": "Statistiche Apple",
+    "function": "Swap usato e totale",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M162",
+    "area": "Statistiche Apple",
+    "function": "Capacità totale e disponibile del volume",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M163",
+    "area": "Statistiche Apple",
+    "function": "Rete sulle interfacce fisiche en*",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M164",
+    "area": "Statistiche Apple",
+    "function": "I/O aggregato dei driver disco",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M165",
+    "area": "Statistiche Apple",
+    "function": "CPU e memoria dell’app",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M166",
+    "area": "Statistiche Apple",
+    "function": "Processi FFmpeg con ruolo e PID",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M167",
+    "area": "Statistiche Apple",
+    "function": "CPU, memoria e thread dei processi FFmpeg",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M168",
+    "area": "Statistiche Apple",
+    "function": "Uptime",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M169",
+    "area": "Statistiche Apple",
+    "function": "Stato termico e risparmio energetico",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M170",
+    "area": "Statistiche Apple",
+    "function": "Primo campione e contatori non disponibili mostrati come assenti",
+    "swift": [
+      "Sources/OrbisCore/SystemMetrics.swift",
+      "Sources/OrbisCore/ProcessMetrics.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M171",
+    "area": "Applicazione e dati",
+    "function": "Sidebar, toolbar, menu e pannelli file nativi",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M172",
+    "area": "Applicazione e dati",
+    "function": "Tema di sistema, chiaro e scuro",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M173",
+    "area": "Applicazione e dati",
+    "function": "Sfondo personalizzato della panoramica",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M174",
+    "area": "Applicazione e dati",
+    "function": "Selezione della lingua e 21 risorse linguistiche",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M175",
+    "area": "Applicazione e dati",
+    "function": "Guida alle funzioni",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M176",
+    "area": "Applicazione e dati",
+    "function": "Informazioni e versione dell’app",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M177",
+    "area": "Applicazione e dati",
+    "function": "JSON atomico con permessi 0600",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M178",
+    "area": "Applicazione e dati",
+    "function": "Import/export della configurazione",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M179",
+    "area": "Applicazione e dati",
+    "function": "Lettura dei documenti senza i campi aggiunti in questa revisione",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M180",
+    "area": "Applicazione e dati",
+    "function": "Validazione degli ID duplicati e dei dati importati",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M181",
+    "area": "Applicazione e dati",
+    "function": "Copia di recupero per configurazione corrotta",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M182",
+    "area": "Applicazione e dati",
+    "function": "Media importati in Application Support",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M183",
+    "area": "Applicazione e dati",
+    "function": "Registri giornalieri persistenti",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M184",
+    "area": "Applicazione e dati",
+    "function": "Registri con coda limitata e conservazione di tre giorni",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M185",
+    "area": "Applicazione e dati",
+    "function": "Mascheramento di server, chiave e token",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M186",
+    "area": "Applicazione e dati",
+    "function": "Esportazione del registro della sessione",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M187",
+    "area": "Applicazione e dati",
+    "function": "Protezione del sonno durante la diretta",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M188",
+    "area": "Applicazione e dati",
+    "function": "Conferma di chiusura quando esistono dirette attive",
+    "swift": [
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift",
+      "Sources/OrbisMac/AppleServices.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisCore/SessionLog.swift",
+      "Sources/OrbisCore/FLVRelay.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M189",
+    "area": "Distribuzione",
+    "function": "Compilazione Swift release solo arm64",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M190",
+    "area": "Distribuzione",
+    "function": "Rifiuto di Linux, Intel e macOS antecedente a 14",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M191",
+    "area": "Distribuzione",
+    "function": "FFmpeg e FFprobe inclusi nell’app",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M192",
+    "area": "Distribuzione",
+    "function": "Dipendenze dinamiche ricorsive incluse e rilocate",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M193",
+    "area": "Distribuzione",
+    "function": "Eliminazione delle sezioni Intel dei binari universali",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M194",
+    "area": "Distribuzione",
+    "function": "Verifica di codec alpha e readrate_initial_burst",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M195",
+    "area": "Distribuzione",
+    "function": "Prova di codifica H.264 VideoToolbox",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M196",
+    "area": "Distribuzione",
+    "function": "Installer pkg per Applications con requisito arm64/macOS 14",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M197",
+    "area": "Distribuzione",
+    "function": "Firma dei componenti e del bundle",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M198",
+    "area": "Distribuzione",
+    "function": "Firma Developer ID Installer opzionale",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M199",
+    "area": "Distribuzione",
+    "function": "Notarizzazione e allegato del ticket opzionali",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M200",
+    "area": "Distribuzione",
+    "function": "Test Core e test del relay/sessione nativa prima del pacchetto",
+    "swift": [
+      "scripts/build-macos.sh",
+      "scripts/bundle-ffmpeg.swift",
+      "Package.swift",
+      "macOS/Info.plist"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M201",
+    "area": "Applicazione e dati",
+    "function": "Verifica aggiornamenti tramite manifest HTTPS di installer macOS arm64",
+    "swift": [
+      "Sources/OrbisMac/UpdateSettingsView.swift",
+      "Sources/OrbisMac/OrbisApp.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  }
+]
