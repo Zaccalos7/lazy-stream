@@ -17,9 +17,9 @@ import OrbisCore
         var profile = EncoderProfile(); profile.codec = "libx264"; profile.quality = .balanced
         profile.width = 320; profile.height = 180; profile.frameRate = 25; profile.adaptiveBitrate = false
         let output = folder.appendingPathComponent("captured.flv")
-        let finished = expectation(description: "Program and queued spots completed")
+        var completed = false
         let session = LiveSession(channel: channel, profile: profile, scene: nil, playlist: [PlaylistItem(path: program.path)], historyID: UUID(),
-            ffmpeg: ffmpeg, ffprobe: ffprobe, destination: output.path, directory: folder, loop: false) { _ in finished.fulfill() }
+            ffmpeg: ffmpeg, ffprobe: ffprobe, destination: output.path, directory: folder, loop: false) { _ in completed = true }
         defer { session.stop() }
         session.start()
         let deadline = Date().addingTimeInterval(12)
@@ -31,7 +31,9 @@ import OrbisCore
         XCTAssertEqual(session.queuedSpots.count, 1)
         try await Task.sleep(for: .milliseconds(500))
         XCTAssertEqual(session.processDetails.first { $0.role == "Publisher" }?.pid, publisher)
-        await fulfillment(of: [finished], timeout: 25)
+        let endDeadline = Date().addingTimeInterval(25)
+        while !completed && Date() < endDeadline { try await Task.sleep(for: .milliseconds(100)) }
+        XCTAssertTrue(completed, session.logs.joined(separator: "\n"))
         XCTAssertEqual(session.status, .stopped, session.logs.joined(separator: "\n"))
         XCTAssertNil(session.takeover); XCTAssertTrue(session.queuedSpots.isEmpty)
         let media = try await Probe.media(output.path, executable: ffprobe)
