@@ -2,116 +2,58 @@
   "sections": [
     {
       "id": "dashboard",
-      "title": "The dashboard",
-      "body": "The home of Orbis Stream: from here you reach live management, the preview, the layouts, the history and the settings.",
-      "steps": [
-        "Open a card to enter a section.",
-        "The same areas are always one click away in the sidebar on the left."
-      ],
-      "callout": "Open a card to enter that area."
+      "title": "Overview",
+      "body": "The sidebar opens channels, profiles, playlists, scenes, live control, history, recovery and activity. Search filters the current section."
     },
     {
       "id": "startLive",
-      "title": "Start a live",
-      "body": "Open Live and press Start live: Orbis asks which video/audio setting goes on air and on which channel, then opens the canvas to compose the scene.",
-      "steps": [
-        "The highlighted button opens the wizard for a new live.",
-        "Confirm at the end to go on air."
-      ],
-      "callout": "Press Start live to begin."
+      "title": "Start a broadcast",
+      "body": "Configure a channel and its key in Keychain. Start the wizard from the toolbar, then choose a profile, channel and scene or playlist. TikTok asks for a key on every start."
     },
     {
       "id": "wizard",
-      "title": "The start wizard",
-      "body": "Two steps: the first picks the video and audio setting, the second the channel to stream to. Next goes forward, Back returns.",
-      "steps": [
-        "Choose the setting of the live.",
-        "Choose the channel (for TikTok, type the key of the live too).",
-        "Compose / Next opens the canvas."
-      ],
-      "callout": "Next moves to the second step."
+      "title": "Compose before starting",
+      "body": "Open the scene composer from the wizard. Check resolution, sources and audio, save the scene and confirm the countdown."
     },
     {
       "id": "playlist",
-      "title": "Stream a folder (playlist)",
-      "body": "Instead of a single scene you can stream every video of a folder, one after another.",
-      "steps": [
-        "Press Start playlist.",
-        "Choose setting and channel, then the folder of videos.",
-        "Confirm to go on air."
-      ],
-      "callout": "Start playlist streams a whole folder in sequence."
+      "title": "Playlists",
+      "body": "Import videos from a file panel or folder. Reorder and enable items, choose a profile for each video and set resume positions. Live control supports skipping and looping."
     },
     {
       "id": "scene",
-      "title": "Compose the scene",
-      "body": "The canvas is where a live is assembled: drop your sources (screen, window, camera, audio) into the slots, then add overlays on top.",
-      "steps": [
-        "Add a source to a slot.",
-        "Add or drop overlays and arrange them.",
-        "Confirm to start the live."
-      ],
-      "callout": "The canvas: sources in the slots, overlays on top."
+      "title": "Scenes",
+      "body": "Add files, cameras, screens, microphones and overlays. Drag and resize on the canvas, use arrow keys or numeric fields, and enable alignment guides. Grant capture permissions on the Mac. System audio requires a virtual audio device."
     },
     {
       "id": "sceneDeck",
-      "title": "The scene deck",
-      "body": "The scene deck puts a video, a banner or an image on air in place of the live, the way a studio switches scene. Every button can carry a name and a keyboard shortcut.",
-      "steps": [
-        "Open the deck from a live row or the preview.",
-        "Press a button to take it on air; Resume live brings the live back."
-      ],
-      "callout": "The scene deck switches what is on air."
+      "title": "Buttons and spots",
+      "body": "Create buttons with a label, source, duration, position, display mode and shortcut. Queue spots, toggle overlays or interrupt the program fullscreen. The program resumes from the position actually sent."
     },
     {
       "id": "preview",
-      "title": "The preview",
-      "body": "The preview shows what a live is broadcasting right now, with the health of the stream, the bitrate and the frame rate.",
-      "steps": [
-        "Watch the live and its data.",
-        "Open the scene deck or stop the live from here."
-      ],
-      "callout": "The live on air, as it is being sent."
+      "title": "Live control",
+      "body": "Select a broadcast to observe. Preview, mixer, scene, playlist, spot queue, profile and log share one panel. Platform pages use WebKit; YouTube status may remain unverified."
     },
     {
       "id": "layouts",
       "title": "Layouts",
-      "body": "A layout is the skeleton of a live: the slots and the overlays, saved under a name to be reused. The wizard opens a layout as its slots.",
-      "steps": [
-        "Press New layout.",
-        "Draw the slots and the overlays, then save it."
-      ],
-      "callout": "New layout opens the canvas to draw a reusable scene."
+      "body": "Save a scene as a reusable layout and apply it in the composer. Existing sources fill the layout slots. Canvas dimensions and orientation can be changed."
     },
     {
       "id": "history",
-      "title": "Live history",
-      "body": "Every live you started is kept here with its platform, channel, folder and outcome.",
-      "steps": [
-        "Start the same live again, or open its details.",
-        "Play a spot, link a setting, or delete the row."
-      ],
-      "callout": "The lives you started, ready to start again."
+      "title": "History and recovery",
+      "body": "Filter broadcasts, view snapshots, restart from the beginning or saved position and delete historical videos. Cleanup reports progress and protects active broadcasts. Recovery unlocks or resumes interrupted sessions."
     },
     {
       "id": "taskManager",
-      "title": "Task manager",
-      "body": "How the PC is doing: CPU, RAM, disks, network, GPU, the temperatures and the FFmpeg processes of the live.",
-      "steps": [
-        "Watch the meters while a live runs.",
-        "Check that the machine keeps up with the stream."
-      ],
-      "callout": "Resources and FFmpeg activity, in real time."
+      "title": "Apple activity",
+      "body": "CPU, memory, compression, swap, network and disk use macOS counters. FFmpeg processes show PID, CPU, memory and threads. Thermal state and Low Power Mode replace unavailable numerical temperatures."
     },
     {
       "id": "settings",
       "title": "Settings",
-      "body": "Under Settings you find the video and audio settings, the channels, the theme, the language and this guide. The sidebar carries the theme, the language and About from anywhere.",
-      "steps": [
-        "Video & audio: create the settings and activate those allowed on air.",
-        "Channels: add the platforms and their stream keys."
-      ],
-      "callout": "Settings groups video/audio, channels and this guide."
+      "body": "Choose arm64 FFmpeg and FFprobe, refresh codecs, export or import data, change language, appearance and background, and open the log folder. Keychain secrets are excluded from exports."
     }
   ]
 }
