@@ -1,0 +1,17 @@
+<Project>
+
+  <PropertyGroup>
+    
+    <EnableWindowsTargeting Condition="'$(EnableWindowsTargeting)' == '' and !$([MSBuild]::IsOSPlatform('Windows'))">true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>false</InvariantGlobalization>
+
+    
+    <Version>2.1.2</Version>
+    <Product>Orbis Stream</Product>
+    
+    <Company>Marco Amleto Guarino</Company>
+  </PropertyGroup>
+
+</Project>

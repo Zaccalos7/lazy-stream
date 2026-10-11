@@ -1,14 +1,12 @@
 // swift-tools-version: 5.9
 import PackageDescription
-
-var products: [Product] = [.library(name: "OrbisCore", targets: ["OrbisCore"])]
-var targets: [Target] = [
-    .target(name: "AppleMetrics", publicHeadersPath: "include", linkerSettings: [.linkedFramework("IOKit", .when(platforms: [.macOS])), .linkedFramework("CoreFoundation", .when(platforms: [.macOS]))]),
-    .target(name: "OrbisCore", dependencies: [.target(name: "AppleMetrics", condition: .when(platforms: [.macOS]))]),
-    .testTarget(name: "OrbisCoreTests", dependencies: ["OrbisCore"])
-]
-#if os(macOS)
-products.append(.executable(name: "OrbisStream", targets: ["OrbisMac"]))
-targets.append(.executableTarget(name: "OrbisMac", dependencies: ["OrbisCore"]))
-#endif
-let package = Package(name: "OrbisStream", platforms: [.macOS(.v14)], products: products, targets: targets)
+let package = Package(
+    name: "OrbisStream", defaultLocalization: "it", platforms: [.macOS(.v14)],
+    products: [.executable(name: "OrbisStream", targets: ["OrbisMac"])],
+    targets: [
+        .target(name: "OrbisCore", linkerSettings: [.linkedFramework("IOKit")]),
+        .executableTarget(name: "OrbisMac", dependencies: ["OrbisCore"], resources: [.process("Resources")]),
+        .testTarget(name: "OrbisCoreTests", dependencies: ["OrbisCore"]),
+        .testTarget(name: "OrbisMacTests", dependencies: ["OrbisMac", "OrbisCore"])
+    ]
+)
