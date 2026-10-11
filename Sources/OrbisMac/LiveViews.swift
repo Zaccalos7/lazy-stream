@@ -16,8 +16,8 @@ import OrbisCore
     private func selectVisible() { model.selectedSession = visible.first?.id }
     @EnvironmentObject var model: AppModel
     var body: some View {
-        VStack {
-            HStack {
+        VStack(spacing: 0) {
+            HStack(spacing: 18) {
                 Picker("Canale", selection: $channelFilter) {
                     Text("Tutti i canali").tag(nil as UUID?)
                     ForEach(model.workspace.channels) { Text($0.name).tag(Optional($0.id)) }
@@ -27,11 +27,12 @@ import OrbisCore
                     ForEach(Platform.allCases, id: \.self) { Text($0.title).tag(Optional($0)) }
                 }
                 Toggle("Solo dirette attive", isOn: $liveOnly)
-            }.padding(.horizontal)
+            }.controlSize(.small).padding(.horizontal, 24).padding(.vertical, 14).background(.bar)
+            Divider()
             if !visible.isEmpty {
                 Picker("Diretta", selection: $model.selectedSession) {
                     ForEach(visible) { session in Text("\(session.channel.name) · \(session.status.rawValue)").tag(Optional(session.id)) }
-                }.padding().frame(maxWidth: 600)
+                }.labelsHidden().pickerStyle(.menu).padding(.vertical, 12).frame(maxWidth: 600)
             }
             if let session = visible.first(where: { $0.id == model.selectedSession }) ?? visible.first { LiveControlView(session: session).environmentObject(model).id(session.id) }
             else { ContentUnavailableView("Nessuna diretta", systemImage: "video", description: Text("Avvia una diretta per aprire anteprima, mixer e controlli.")) }
@@ -45,6 +46,7 @@ import OrbisCore
     @State private var draft: EncoderProfile
     @State private var showPlatform = false
     @State private var sceneID: UUID?
+    @AppStorage("liveInspectorVisible") private var inspectorVisible = true
     init(session: LiveSession) { self.session = session; _draft = State(initialValue: session.profile) }
     var body: some View {
         HSplitView {
@@ -146,14 +148,29 @@ import OrbisCore
                     DisclosureGroup("Registro FFmpeg") {
                         Text(session.logs.joined(separator: "\n")).font(.system(.caption, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }.padding(24)
+                }.frame(maxWidth: 1120).padding(28).frame(maxWidth: .infinity)
             }.frame(minWidth: 620)
-            VStack {
-                Text("Controlli della diretta").font(.headline).padding(.top)
+            if inspectorVisible {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Video e audio").font(.headline)
+                    Spacer()
+                    Button { inspectorVisible = false } label: { Image(systemName: "sidebar.right") }
+                        .buttonStyle(.borderless).accessibilityLabel("Nascondi controlli video e audio")
+                        .help("Nascondi controlli video e audio")
+                }.padding(20)
+                Divider()
                 Form { ProfileFields(profile: $draft, live: true) }.formStyle(.grouped)
                 Button("Applica alla diretta") { model.perform { try session.apply(draft) } }.buttonStyle(.borderedProminent).disabled(!session.isRunning).padding()
                 Text("L’applicazione riavvia il produttore FFmpeg mantenendo aperta la connessione RTMP. Può esserci una breve pausa del segnale.").font(.caption).foregroundStyle(.secondary).padding(.horizontal)
-            }.frame(width: 350)
+            }.frame(width: 330).background(StudioStyle.surface)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button { inspectorVisible.toggle() } label: { Label("Controlli video e audio", systemImage: "sidebar.right") }
+                    .help(inspectorVisible ? "Nascondi controlli video e audio" : "Mostra controlli video e audio")
+            }
         }
     }
     private func publicPage(_ channel: Channel) -> URL? {

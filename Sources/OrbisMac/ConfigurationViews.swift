@@ -7,8 +7,12 @@ import OrbisCore
     var body: some View {
         List {
             ForEach(model.workspace.channels.filter { model.search.isEmpty || $0.name.localizedCaseInsensitiveContains(model.search) }) { channel in
-                HStack {
-                    VStack(alignment: .leading) { Text(channel.name).font(.headline); Text("\(channel.platform.title) · \(channel.enabled ? "Abilitato" : "Disabilitato")").foregroundStyle(.secondary) }
+                HStack(spacing: 16) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 20, weight: .medium)).foregroundStyle(Color.accentColor)
+                        .frame(width: 44, height: 44)
+                        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 5) { Text(channel.name).font(.headline); Text("\(channel.platform.title) · \(channel.enabled ? "Abilitato" : "Disabilitato")").foregroundStyle(.secondary) }
                     Spacer(); Button("Avvia") { model.start(channel: channel) }.disabled(!channel.enabled)
                     Button("Modifica") { draft = channel }
                     Button("Elimina", role: .destructive) { model.removeChannel(channel.id) }
@@ -76,8 +80,11 @@ import OrbisCore
     var body: some View {
         List {
             ForEach(model.workspace.profiles.filter { model.search.isEmpty || $0.title.localizedCaseInsensitiveContains(model.search) }) { profile in
-                HStack {
-                    VStack(alignment: .leading) {
+                HStack(spacing: 16) {
+                    Image(systemName: "slider.horizontal.3").font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(.secondary).frame(width: 44, height: 44)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(profile.title).font(.headline)
                         Text("\(profile.codec) · \(profile.width)×\(profile.height) · \(profile.frameRate.formatted()) fps · \(Double(profile.videoBitrate) / 1_000_000, specifier: "%.1f") Mbit/s").foregroundStyle(.secondary)
                     }

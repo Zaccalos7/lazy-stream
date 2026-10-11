@@ -19,7 +19,9 @@ import OrbisCore
                 .frame(minWidth: 1100, minHeight: 720)
                 .onAppear { delegate.model = model; NSApp.setActivationPolicy(.regular); NSApp.activate(ignoringOtherApps: true) }
         }
-        .defaultSize(width: 1380, height: 900)
+        .defaultSize(width: 1320, height: 860)
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Informazioni su OrbisStream") { NSApp.orderFrontStandardAboutPanel(nil) }
@@ -67,18 +69,36 @@ enum Page: String, CaseIterable, Identifiable {
     @State private var wizard = false
     var body: some View {
         NavigationSplitView {
-            List(Page.allCases, selection: $page) { entry in Label { Text(LocalizedStringKey(entry.rawValue)) } icon: { Image(systemName: entry.symbol) }.tag(entry) }
-                .navigationTitle("OrbisStream")
-                .safeAreaInset(edge: .bottom) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("\(model.sessions.filter { $0.isRunning }.count) dirette attive", systemImage: "record.circle")
-                        Text("\(ProcessInfo.processInfo.hostName) · macOS").font(.caption).foregroundStyle(.secondary)
-                    }.padding().frame(maxWidth: .infinity, alignment: .leading)
+            List(selection: $page) {
+                Section("Studio") {
+                    sidebarRow(.dashboard); sidebarRow(.live); sidebarRow(.playlist)
                 }
+                Section("Libreria") {
+                    sidebarRow(.scenes); sidebarRow(.deck); sidebarRow(.overlays)
+                }
+                Section("Configurazione") {
+                    sidebarRow(.channels); sidebarRow(.profiles)
+                }
+                Section("Monitoraggio") {
+                    sidebarRow(.history); sidebarRow(.tasks); sidebarRow(.recovery)
+                }
+                Section { sidebarRow(.manual) }
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("OrbisStream")
+            .navigationSplitViewColumnWidth(min: 210, ideal: 228, max: 270)
+            .safeAreaInset(edge: .bottom) {
+                HStack(spacing: 10) {
+                    Circle().fill(model.sessions.contains(where: { $0.isRunning }) ? Color.red : Color.secondary.opacity(0.4)).frame(width: 7, height: 7)
+                    Text("\(model.sessions.filter { $0.isRunning }.count) dirette attive").font(.caption)
+                    Spacer()
+                    Image(systemName: "apple.logo").foregroundStyle(.tertiary).accessibilityHidden(true)
+                }.padding(18).background(.bar)
+            }
         } detail: {
             Group {
                 switch page ?? .dashboard {
-                case .dashboard: DashboardView()
+                case .dashboard: DashboardView(open: { page = $0 }, start: { wizard = true })
                 case .live: LiveView()
                 case .playlist: PlaylistView()
                 case .scenes: ScenesView()
@@ -92,17 +112,27 @@ enum Page: String, CaseIterable, Identifiable {
                 case .manual: ManualView()
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(StudioStyle.canvas)
             .navigationTitle((page ?? .dashboard).rawValue)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) { Button { wizard = true } label: { Label("Avvia diretta", systemImage: "dot.radiowaves.left.and.right") }.buttonStyle(.borderedProminent) }
+                ToolbarItem(placement: .primaryAction) { Button { wizard = true } label: { Label("Avvia diretta", systemImage: "dot.radiowaves.left.and.right") }.buttonStyle(.borderedProminent).controlSize(.regular).help("Avvia una scena o una playlist") }
             }
             .searchable(text: $model.search, prompt: "Cerca")
         }
+        .tint(.accentColor)
+        .groupBoxStyle(StudioGroupBoxStyle())
         .sheet(isPresented: $wizard) { StartWizard().environmentObject(model) }
         .alert("OrbisStream", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
     }
+    private func sidebarRow(_ entry: Page) -> some View {
+        Label { Text(LocalizedStringKey(entry.rawValue)) } icon: {
+            Image(systemName: entry.symbol).font(.system(size: 14, weight: .medium))
+        }.padding(.vertical, 3).tag(entry)
+    }
+
 }
 func bytes(_ value: UInt64) -> String { ByteCountFormatter.string(fromByteCount: Int64(clamping: value), countStyle: .memory) }
 func rate(_ value: Double?) -> String { value.map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .decimal) + "/s" } ?? "—" }
@@ -113,23 +143,44 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
     let value: String
     let symbol: String
     var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 14) {
-                Label(title, systemImage: symbol).font(.subheadline).foregroundStyle(.secondary)
-                Text(value).font(.system(.title2, design: .rounded)).monospacedDigit()
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(8)
-        }
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                Text(LocalizedStringKey(title)).font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+                Image(systemName: symbol).foregroundStyle(.tertiary)
+            }
+            Text(value).font(.system(size: 25, weight: .medium, design: .rounded))
+                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+        }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
+            .background(StudioStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(StudioStyle.stroke))
     }
 }
 @MainActor struct DashboardView: View {
+    let open: (Page) -> Void
+    let start: () -> Void
+    @State private var showResources = false
     @AppStorage("homeBackground") private var background = ""
     @EnvironmentObject private var model: AppModel
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("Il tuo studio, sul Mac.").font(.largeTitle.bold())
-                Text("FFmpeg · VideoToolbox · Regia nativa").foregroundStyle(.secondary)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 16) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Il tuo studio.").font(.system(size: 34, weight: .semibold))
+                        Text("Tutto pronto per la prossima diretta.").font(.title3).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(action: start) { Label("Avvia diretta", systemImage: "plus") }
+                        .buttonStyle(.borderedProminent).controlSize(.large)
+                }.padding(.vertical, 12)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 14)], spacing: 14) {
+                    StudioShortcut(title: "Canali", subtitle: "Le tue destinazioni", symbol: "antenna.radiowaves.left.and.right") { open(.channels) }
+                    StudioShortcut(title: "Scene", subtitle: "Componi il tuo spazio", symbol: "rectangle.3.group") { open(.scenes) }
+                    StudioShortcut(title: "Playlist", subtitle: "Prepara il programma", symbol: "list.bullet.rectangle") { open(.playlist) }
+                }
+                Text("Il Mac, in tempo reale").font(.headline).padding(.top, 8)
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 205), spacing: 14)], spacing: 14) {
                     MetricCard(title: "CPU del Mac", value: percent(model.metrics.cpuPercent), symbol: "cpu")
                     MetricCard(title: "Memoria", value: bytes(model.metrics.memoryUsed) + " / " + bytes(model.metrics.memoryTotal), symbol: "memorychip")
                     MetricCard(title: "Upload del Mac", value: rate(model.metrics.uploadBytesPerSecond), symbol: "arrow.up.circle")
@@ -139,7 +190,7 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                     if model.sessions.isEmpty { ContentUnavailableView("Pronto per trasmettere", systemImage: "video", description: Text("Configura un canale e scegli una playlist o una scena.")) }
                     else { ForEach(model.sessions.filter { model.search.isEmpty || $0.channel.name.localizedCaseInsensitiveContains(model.search) }) { SessionRow(session: $0) } }
                 }
-                GroupBox("Risorse Apple") {
+                DisclosureGroup("Dettagli del Mac", isExpanded: $showResources) {
                     Grid(alignment: .leading, horizontalSpacing: 40, verticalSpacing: 14) {
                         GridRow { Text("Sistema"); Text(ProcessInfo.processInfo.operatingSystemVersionString) }
                         GridRow { Text("CPU"); Text("\(ProcessInfo.processInfo.processorCount) core") }
@@ -153,7 +204,7 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                         GridRow { Text("Temperatura CPU/GPU e carico GPU"); Text("Non disponibili tramite API pubbliche uniformi").foregroundStyle(.secondary) }
                     }.frame(maxWidth: .infinity, alignment: .leading).padding()
                 }
-            }.padding(28)
+            }.frame(maxWidth: 1180).padding(32).frame(maxWidth: .infinity)
         }.background {
             if let image = NSImage(contentsOfFile: background) { Image(nsImage: image).resizable().scaledToFill().opacity(0.12).clipped() }
         }
@@ -167,7 +218,7 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
             VStack(alignment: .leading) { Text(session.channel.name).font(.headline); Text(session.sourceName).foregroundStyle(.secondary) }
             Spacer(); Text(session.status.rawValue); Text(clock(session.progress.seconds)).monospacedDigit()
             if session.isRunning { Button("Termina", role: .destructive) { session.stop() } }
-        }.padding(10)
+        }.padding(.vertical, 12).padding(.horizontal, 4)
     }
 }
 @MainActor struct TasksView: View {
