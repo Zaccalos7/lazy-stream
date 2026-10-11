@@ -2,6 +2,24 @@ import XCTest
 @testable import OrbisCore
 
 final class MigrationParityTests: XCTestCase {
+    func testCanvasResizeAndLayoutKeepSourcesAndMicrophones() {
+        var scene = Scene(); scene.width = 1920; scene.height = 1080
+        var video = SceneItem(); video.target = "program.mp4"; video.width = 960; video.height = 540; video.x = 960; video.y = 540
+        var microphone = SceneItem(); microphone.kind = .microphone; microphone.target = "0"
+        scene.items = [video, microphone]
+        let resized = SceneGeometry.resized(scene, width: 1280, height: 720)
+        XCTAssertEqual(resized.items[0].x, 640); XCTAssertEqual(resized.items[0].y, 360)
+        XCTAssertEqual(resized.items[0].width, 640); XCTAssertEqual(resized.items[0].height, 360)
+        XCTAssertEqual(resized.items[1], microphone)
+        var layout = Scene(); layout.items = [video, microphone]
+        let applied = SceneGeometry.applying(layout, to: scene)
+        XCTAssertEqual(applied.items.filter { $0.kind == .microphone }.count, 1)
+        XCTAssertEqual(applied.items.filter { $0.target == "program.mp4" }.count, 1)
+        var outside = video; outside.x = -40; outside.y = 10000; outside.width = 3001
+        let bounded = SceneGeometry.constrain(outside, width: 1920, height: 1080)
+        XCTAssertEqual(bounded.x, 0); XCTAssertEqual(bounded.width, 1920)
+        XCTAssertEqual(bounded.y + bounded.height, 1080)
+    }
     func testCanvasEndsAfterLongestVideoAndRepeatsShorterFrames() throws {
         var scene = Scene(); scene.width = 320; scene.height = 240
         var short = SceneItem(); short.target = "short.mp4"; short.width = 320; short.height = 240
@@ -87,4 +105,34 @@ final class MigrationParityTests: XCTestCase {
         let result = try rebaser.consume(header + tag(0))
         XCTAssertEqual(result.first?.timestamp, 1040)
     }
+    func testWebMOverlayUsesAlphaDecoderAndAudioIsPadded() throws {
+        var scene = Scene()
+        var video = SceneItem(); video.target = "/tmp/program.mp4"
+        var overlay = SceneItem(); overlay.kind = .overlay; overlay.target = "/tmp/alpha.webm"; overlay.audioEnabled = false
+        scene.items = [video, overlay]
+        var profile = EncoderProfile(); profile.codec = "libx264"; profile.preset = "ultrafast"
+        let plan = try FFmpegCommand.build(scene: scene, profile: profile, platform: .youtube,
+            media: [video.id: MediaInfo(duration: 10, hasAudio: true), overlay.id: MediaInfo(codecName: "vp9")], preview: nil)
+        XCTAssertTrue(plan.arguments.contains("libvpx-vp9"))
+        XCTAssertTrue(plan.arguments.contains("ultrafast"))
+        XCTAssertTrue(plan.arguments.contains(where: { $0.contains(",apad[") }))
+        XCTAssertTrue(MediaFiles.isPicture("banner.GIF")); XCTAssertTrue(MediaFiles.isPicture("banner.apng"))
+        XCTAssertFalse(MediaFiles.isStill("banner.gif"))
+    }
+    func testMacHotkeysNormalizeModifiersAndRejectReservedKeys() {
+        XCTAssertEqual(DeckHotkey("Shift+Command+b"), DeckHotkey("Cmd+Shift+KeyB"))
+        XCTAssertEqual(DeckHotkey("Alt+Digit1")?.canonical, "OPTION+1")
+        XCTAssertNotNil(DeckHotkey("F24")); XCTAssertNotNil(DeckHotkey("Shift+ArrowUp"))
+        XCTAssertNil(DeckHotkey("Cmd+Q")); XCTAssertNil(DeckHotkey("Escape")); XCTAssertNil(DeckHotkey("F25"))
+        XCTAssertNil(DeckHotkey("Cmd+Cmd+B")); XCTAssertNil(DeckHotkey("unknown+1"))
+    }
+    func testCodecInspectionSkipsLegends() {
+        let codecs = FFmpegCapabilities.codecNames(" V..... = Video\n V....D h264_videotoolbox Apple\n A..... aac AAC\n")
+        XCTAssertEqual(codecs, ["h264_videotoolbox", "aac"])
+    }
+    func testImportedDuplicateIdentifiersAreRejected() {
+        var workspace = Workspace(); let profile = EncoderProfile(); workspace.profiles = [profile, profile]
+        XCTAssertThrowsError(try workspace.validate())
+    }
+
 }
