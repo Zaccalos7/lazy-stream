@@ -6,20 +6,59 @@
     </div>
     <div class="actions">
       <button type="button" data-history-export>Esporta</button>
-      <button type="button" data-history-cleanup data-i18n="runCleanupNow">Pulisci storico</button>
     </div>
+  </div>
+
+  <form class="toolbar auto-cleanup" data-history-cleanup-settings>
+    <label
+      ><span data-i18n="autoCleanupEnabled">Pulizia automatica</span
+      ><input type="checkbox" name="enabled"
+    /></label>
+    <div class="toolbar" data-cleanup-fields>
+      <label
+        ><span data-i18n="autoCleanupIntervalMonths">Intervallo</span>
+        <select name="intervalMonths">
+          <option value="1">Ogni mese</option>
+          <option value="2">Ogni 2 mesi</option>
+          <option value="3">Ogni 3 mesi</option>
+          <option value="6">Ogni 6 mesi</option>
+          <option value="12">Ogni anno</option>
+        </select>
+      </label>
+      <label
+        ><span data-i18n="autoCleanupOlderThanMonths">Più vecchie di</span>
+        <select name="olderThanMonths">
+          <option value="0" data-i18n="olderThanYesterday">Ieri</option>
+          <option value="1" data-i18n="olderThan1Month">1 mese</option>
+          <option value="3" data-i18n="olderThan3Months">3 mesi</option>
+          <option value="6" data-i18n="olderThan6Months">6 mesi</option>
+          <option value="12" data-i18n="olderThan1Year">1 anno</option>
+          <option value="24" data-i18n="olderThan2Years">2 anni</option>
+          <option value="-1" data-i18n="olderThanNow">Tutto lo storico terminato</option>
+        </select>
+      </label>
+    </div>
+    <button type="submit" data-i18n="save">Salva</button>
+    <button type="button" data-history-cleanup data-i18n="runCleanupNow">Pulisci storico</button>
+  </form>
+  <div class="card cleanup-progress" data-cleanup-progress role="status" hidden>
+    <p data-cleanup-message></p>
+    <progress data-cleanup-bar max="1" value="0"></progress>
   </div>
 
   <div class="toolbar history-filters" data-history-filters>
     <label>
       <span data-i18n="channel">Canale</span>
-      <select name="channelName"><option value="">–</option></select>
+      <select name="channelName">
+        <option value="">–</option>
+      </select>
     </label>
     <label>
       <span data-i18n="liveStatus">Stato live</span>
       <select name="liveStatus">
         <option value="">–</option>
         <option value="LIVE">LIVE</option>
+        <option value="OFFLINE">OFFLINE</option>
         <option value="STARTING">STARTING</option>
         <option value="ENDED">ENDED</option>
         <option value="ERROR">ERROR</option>
