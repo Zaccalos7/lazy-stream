@@ -1,5 +1,7 @@
 # OrbisStream · macOS Apple Silicon
 
+È disponibile anche il [port Linux in C++20](linux/README.md), nella cartella `linux/`, con [censimento e confronto punto per punto del progetto Windows](linux/docs/MIGRAZIONE.md).
+
 Applicazione Swift e SwiftUI per macOS 14+, esclusivamente arm64. FFmpeg compone e codifica le sorgenti; VideoToolbox utilizza l’accelerazione Apple. Sidebar, toolbar, SF Symbols, Portachiavi, pannelli file, AVFoundation e WebKit sono nativi.
 
 Il layout usa una toolbar unificata e una sidebar divisa tra studio, libreria, configurazione e monitoraggio. La panoramica offre accessi rapidi e schede adattive; superfici, testo e accento seguono i colori di sistema. Nella regia il pannello video/audio è richiudibile dalla toolbar e conserva la preferenza. I dettagli del Mac sono espandibili, con tutte le statistiche ancora accessibili.
