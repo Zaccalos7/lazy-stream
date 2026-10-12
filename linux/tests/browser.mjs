@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
@@ -30,6 +30,16 @@ try {
   const token = out.match(/token=([a-f0-9]{64})/)?.[1];
   if (!token) throw Error('No app token');
   const url = `http://127.0.0.1:${port}/?token=${token}`;
+  const api = async (path, method = 'GET', body) => {
+    const response = await fetch(`http://127.0.0.1:${port}/api/${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!response.ok) throw Error(result.message || response.statusText);
+    return result;
+  };
   chrome = spawn(
     'google-chrome',
     [
@@ -244,6 +254,7 @@ try {
   await sleep(100);
   if (!(await evaluate(`document.querySelectorAll('#modal .tile').length===1`)))
     throw Error('Canvas slot creation');
+  await evaluate(`(()=>{for (const [key,value] of [['width',640],['height',360]]) {const field=document.querySelector('#modal .inspector [name='+key+']');field.value=value;field.dispatchEvent(new Event('input'));}})()`);
   const box = await evaluate(
     `(()=>{const b=document.querySelector('#modal .tile').getBoundingClientRect();return {x:b.x+30,y:b.y+30};})()`,
   );
@@ -271,8 +282,130 @@ try {
     throw Error('Canvas dragging');
   await evaluate(`document.querySelector('#modal-footer .primary').click()`);
   await sleep(300);
-  if (!(await evaluate(`document.querySelector('#content').textContent.includes('Nuovo layout')`)))
+  if (!(await evaluate(`!document.querySelector('#modal').open && document.querySelector('[data-layout-list] article')?.textContent.includes('Nuovo layout')`)))
     throw Error('Layout persistence UI');
+  // Fixture reali nel database temporaneo: pagine e filtri devono funzionare anche per canali eliminati.
+  for (let index = 0; index < 25; index++)
+    await api('history', 'POST', {
+      channelId: 999,
+      channelName: 'Canale storico',
+      platform: 'Twitch',
+      status: 'ENDED',
+      startedAt: `2020-01-${String(index + 1).padStart(2, '0')}T12:00:00Z`,
+      request: { scene: { name: `Programma ${index}` }, files: [`/video/clip${index}.mp4`] },
+    });
+  await api('history', 'POST', {
+    channelName: 'Altro canale',
+    platform: 'YouTube',
+    status: 'ERROR',
+    startedAt: '2020-02-01T12:00:00Z',
+    request: { scene: { name: 'Altro programma' } },
+  });
+  await evaluate(
+    `document.querySelectorAll('#navigation button')[1].click();document.querySelector('[data-go=history]').click();refresh()`,
+  );
+  if (
+    !(await evaluate(
+      `document.querySelector('[data-windows-source="Pages/MainLiveHistory.cshtml"]')!==null && document.querySelectorAll('[data-history-rows] tr').length===20`,
+    ))
+  )
+    throw Error('Windows history template and page size: ' + await evaluate(`JSON.stringify({path:location.pathname,rows:document.querySelectorAll('[data-history-rows] tr').length,notice:document.querySelector('#notice').textContent,source:document.querySelector('[data-windows-source]')?.dataset.windowsSource})`) + '; ' + errors.join(', '));
+  await evaluate(
+    `(()=>{const field=document.querySelector('[name=channelName]');field.value='Canale storico';field.dispatchEvent(new Event('change'));})()`,
+  );
+  await evaluate(
+    `(()=>{const field=document.querySelector('[name=liveStatus]');field.value='ENDED';field.dispatchEvent(new Event('change'));})()`,
+  );
+  await evaluate(
+    `[...document.querySelectorAll('[data-history-pager] button')].find(b=>b.textContent==='2').click()`,
+  );
+  await sleep(100);
+  if (
+    !(await evaluate(
+      `new URLSearchParams(location.search).get('p')==='1' && document.querySelectorAll('[data-history-rows] tr').length===5 && [...document.querySelectorAll('[data-history-rows] tr')].every(row=>row.cells[2].textContent==='Canale storico' && row.cells[3].textContent==='Twitch')`,
+    ))
+  )
+    throw Error('History paging preserves channel/status and historical metadata');
+  await evaluate(
+    `(()=>{const field=document.querySelector('[name=titleSearch]');field.focus();field.value='Programma 2';field.dispatchEvent(new Event('input'));})()`,
+  );
+  await sleep(150);
+  await evaluate(`refresh()`);
+  if (
+    !(await evaluate(
+      `document.activeElement.name==='titleSearch' && document.activeElement.value==='Programma 2'`,
+    ))
+  )
+    throw Error('History draft lost on polling');
+  await sleep(350);
+  if (
+    !(await evaluate(
+      `!new URLSearchParams(location.search).has('p') && new URLSearchParams(location.search).get('titleSearch')==='Programma 2' && document.querySelectorAll('[data-history-rows] tr').length===6 && document.activeElement.name==='titleSearch'`,
+    ))
+  )
+    throw Error('History title debounce, page reset and focus');
+  await send('Page.reload');
+  for (
+    let i = 0;
+    i < 60 && !(await evaluate(`document.querySelector('[data-history-rows]')!==null`));
+    i++
+  )
+    await sleep(100);
+  if (
+    !(await evaluate(
+      `document.querySelectorAll('[data-history-rows] tr').length===6 && document.querySelector('[name=titleSearch]').value==='Programma 2'`,
+    ))
+  )
+    throw Error('History filters lost on reload');
+  await evaluate(`document.querySelector('[data-history-clear]').click()`);
+  await evaluate(
+    `(()=>{const form=document.querySelector('[data-history-cleanup-settings]');form.elements.enabled.checked=true;form.elements.enabled.dispatchEvent(new Event('change'));form.elements.intervalMonths.value='3';form.elements.olderThanMonths.value='0';form.requestSubmit();})()`,
+  );
+  await sleep(200);
+  const cleanupChannel = (await api('channels'))[0];
+  if (
+    !cleanupChannel.autoCleanupEnabled ||
+    cleanupChannel.autoCleanupIntervalMonths !== 3 ||
+    cleanupChannel.autoCleanupOlderThanMonths !== 0 ||
+    cleanupChannel.streamKey !== 'test-key'
+  )
+    throw Error('History cleanup settings UI');
+  await evaluate(
+    `(()=>{const form=document.querySelector('[data-history-cleanup-settings]');form.elements.enabled.checked=false;form.elements.enabled.dispatchEvent(new Event('change'));form.requestSubmit();})()`,
+  );
+  await sleep(200);
+  if ((await api(`channels/${cleanupChannel.id}`)).autoCleanupEnabled)
+    throw Error('History cleanup toggle off not persisted');
+  await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: temp });
+  await evaluate(`document.querySelector('[data-history-export]').click()`);
+  let exported;
+  for (let i = 0; i < 60; i++) {
+    if ((await readdir(temp)).includes('orbis-linux.json')) {
+      exported = JSON.parse(await readFile(join(temp, 'orbis-linux.json'), 'utf8'));
+      break;
+    }
+    await sleep(100);
+  }
+  if (exported?.history?.length !== 26 || exported?.channels?.some((channel) => channel.streamKey))
+    throw Error('Authenticated export download or secrets stripping');
+  await evaluate(
+    `window.confirm=()=>true;document.querySelector('[data-history-cleanup]').click()`,
+  );
+  for (let i = 0; i < 60 && (await api('history')).length; i++) await sleep(50);
+  await evaluate(`document.activeElement.blur();refresh()`);
+  if (
+    !(await evaluate(
+      `!document.querySelector('[data-history-empty]').hidden && document.querySelector('[data-cleanup-message]').textContent.includes('26 dirette')`,
+    ))
+  )
+    throw Error('History cleanup progress and table refresh');
+  // Un debounce iniziato nello storico non deve riportare l'utente lì dopo una navigazione.
+  await evaluate(
+    `(()=>{const field=document.querySelector('[name=titleSearch]');field.focus();field.value='navigazione';field.dispatchEvent(new Event('input'));document.querySelectorAll('#navigation button')[5].click();})()`,
+  );
+  await sleep(500);
+  if (!(await evaluate(`location.pathname==='/orbis/manual'`)))
+    throw Error('Stale history debounce changed route');
   await evaluate(`document.querySelectorAll('#navigation button')[5].click()`);
   await sleep(300);
   if (!(await evaluate(`document.querySelectorAll('.manual article').length>5`)))
@@ -286,7 +419,7 @@ try {
   );
   if (errors.length) throw Error('Browser errors: ' + errors.join(', '));
   console.log(
-    'Browser: dashboard, channel CRUD, canvas slot, drag, save, localized manual, screenshot: OK',
+    'Browser: Windows pages, channel/profile CRUD, canvas, history filters/paging/reload, cleanup, export, manual: OK',
   );
 } finally {
   ws?.close();

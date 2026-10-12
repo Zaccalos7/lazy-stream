@@ -1,5 +1,6 @@
 #include "live_rows.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace orbis {
 // Unisce lo snapshot persistente con i contatori correnti: le sessioni finite non spariscono dalla pagina.
@@ -35,7 +36,9 @@ Json liveRows(Store& store, const Json& sessions) {
         const auto files = request.get("files"), scene = request.get("scene");
         const bool isScene = scene.isObject();
         const size_t total = isScene ? scene.get("items").size() : files.size();
-        const size_t position = total ? std::min<size_t>(std::max(0.0, row.get("position").num()), total - 1) : 0;
+        const double requestedPosition = row.get("position").num();
+        const size_t position = total && std::isfinite(requestedPosition) ?
+            size_t(std::clamp(requestedPosition, 0.0, double(total - 1))) : 0;
         row.set("position", double(position));
         row.set("total", double(total));
         row.set("isScene", isScene);

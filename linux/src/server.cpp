@@ -409,6 +409,18 @@ struct Api {
                     throw std::runtime_error("Ferma le dirette prima di importare");
             studio.store.importData(body);
             result = success();
+        } else if (std::regex_match(path, match, std::regex("/api/history/([0-9]+)/video/([0-9]+)")) && method == http::verb::get) {
+            // Le sorgenti riproducibili provengono dallo snapshot salvato, non da un percorso arbitrario nella URL.
+            const auto history = studio.store.get("history", std::stol(match[1]));
+            const auto files = history.get("request").get("files");
+            const auto index = std::stoull(match[2]);
+            if (index >= files.size()) throw std::runtime_error("Video non trovato nella playlist");
+            fs::path file = files.at(index).str();
+            if (!fs::is_regular_file(file)) throw std::runtime_error("File video non disponibile");
+            res.set(http::field::content_type, mime(file));
+            mediaResponse(file, req, res);
+            res.prepare_payload();
+            return res;
         } else if (path == "/api/history/cleanup/settings" && method == http::verb::post) {
             const double interval = body.get("intervalMonths").num(1),
                          months = body.get("olderThanMonths").num();

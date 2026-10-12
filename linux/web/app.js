@@ -8,6 +8,7 @@ let token = '',
   language = localStorage.getItem('orbis-language') || 'it',
   bundle = {},
   timer,
+  historySearchTimer,
   sourceCatalog = [];
 /** Seleziona elementi e costruisce il DOM; i testi diventano nodi testuali per evitare interpretazione HTML. */
 const $ = (s) => document.querySelector(s),
@@ -87,6 +88,10 @@ async function loadPageTemplates() {
       'MainChannelSetting',
       'MainVideoSetting',
       'MainLiveHistory',
+      'MainLive',
+      '_LiveRows',
+      '_StartWizardSetting',
+      '_StartWizardConfiguration',
     ].map(async (name) => {
       const response = await fetch(`/pages/${name}.html`);
       if (!response.ok) throw Error(`Pagina ${name} non disponibile`);
@@ -118,6 +123,9 @@ function renderWindowsPage(root, name) {
       startWizard();
     });
   });
+  fragment.querySelectorAll('[data-playlist-start]').forEach((control) => {
+    control.addEventListener('click', () => playlistStartWizard());
+  });
   fragment.querySelectorAll('[data-new-layout]').forEach((control) => {
     control.addEventListener('click', () =>
       compose({ name: 'Nuovo layout', width: 1280, height: 720, isLayout: true, items: [] }),
@@ -138,11 +146,13 @@ function pageFromLocation() {
 }
 /** Aggiorna pagina e indirizzo insieme, così i pulsanti Indietro/Avanti seguono lo stesso flusso. */
 function navigate(key) {
+  clearTimeout(historySearchTimer);
   page = key;
   window.history.pushState({ page: key }, '', routes[key]);
   render();
 }
 window.addEventListener('popstate', () => {
+  clearTimeout(historySearchTimer);
   page = pageFromLocation();
   render();
 });
@@ -335,8 +345,13 @@ function applyRowFilters() {
 /** Aggiorna i dati senza ricostruire il modulo aperto, preservando le modifiche ancora non salvate. */
 async function refresh() {
   data = await api('state');
-  if (!modalOpen) render();
+  // Il polling non deve sostituire il campo mentre l'utente sta scrivendo un filtro.
+  const editingHistory =
+    page === 'history' &&
+    document.activeElement?.closest('[data-history-filters], [data-history-cleanup-settings]');
+  if (!modalOpen && !editingHistory) render();
   else updatePreviews();
+  if (page === 'history') updateCleanupProgress();
 }
 /** Mostra uno stato vuoto esplicito, così l’assenza di dati non appare come un errore di caricamento. */
 function empty(root, text) {
@@ -607,8 +622,13 @@ function editChannel(c) {
       ...(data.profiles || []).map((p) => [p.id, p.title]),
     ]),
     check('Canale abilitato', 'isActive', c.isActive !== false),
+    check(
+      'Pulizia automatica',
+      'autoCleanupEnabled',
+      c.autoCleanupEnabled ?? c.autoCleanupOlderThanMonths > 0,
+    ),
     field(
-      'Pulizia: storico più vecchio di N mesi (0: disabilitata)',
+      'Pulizia: età in mesi (0: ieri, -1: tutto lo storico terminato)',
       'autoCleanupOlderThanMonths',
       c.autoCleanupOlderThanMonths || 0,
       'number',
@@ -668,6 +688,7 @@ function editChannel(c) {
     ])
       v[k] = number(k);
     v.isActive = checked('isActive');
+    v.autoCleanupEnabled = checked('autoCleanupEnabled');
     await api('channels' + (c.id ? '/' + c.id : ''), c.id ? 'PUT' : 'POST', v);
     closeModal();
   });
@@ -1186,7 +1207,7 @@ function scenes(root, layoutsOnly = false) {
   root.append(grid);
 }
 /** Modifica la bozza di scena ricevuta e la salva esplicitamente, mantenendo separati editor e persistenza. */
-function compose(scene) {
+function compose(scene, options = {}) {
   let selected = -1,
     drag = null;
   const canvas = el('div', { class: 'canvas', tabindex: 0 });
@@ -1202,6 +1223,13 @@ function compose(scene) {
     check('Layout: salva slot vuoti e overlay', 'isLayout', scene.isLayout),
   );
   const thumbs = new Map();
+  /** Riprende keepInside di composer.js: drag e frecce devono produrre rettangoli salvabili nel canvas. */
+  function keepInside(item) {
+    item.width = Math.min(scene.width, Math.max(16, Math.round(item.width)));
+    item.height = Math.min(scene.height, Math.max(16, Math.round(item.height)));
+    item.x = Math.min(scene.width - item.width, Math.max(0, Math.round(item.x)));
+    item.y = Math.min(scene.height - item.height, Math.max(0, Math.round(item.y)));
+  }
   /** Memorizza le anteprime per sorgente per evitare una nuova elaborazione FFmpeg a ogni movimento del mouse. */
   function thumbnail(item) {
     if (!item.sourceTarget || item.sourceKind === 'MICROPHONE' || item.sourceKind === 'OVERLAY')
@@ -1393,12 +1421,14 @@ function compose(scene) {
       item.x = Math.round(drag.ox + dx);
       item.y = Math.round(drag.oy + dy);
     }
+    keepInside(item);
     draw();
   });
   canvas.addEventListener('pointerup', () => {
     drag = null;
     inspect();
   });
+  canvas.addEventListener('pointercancel', () => { drag = null; inspect(); });
   canvas.addEventListener('keydown', (e) => {
     if (selected < 0) return;
     const item = scene.items[selected],
@@ -1411,6 +1441,7 @@ function compose(scene) {
     else if (e.key === 'ArrowUp') item.y -= step;
     else if (e.key === 'ArrowDown') item.y += step;
     else return;
+    if (selected >= 0) keepInside(item);
     e.preventDefault();
     draw();
     inspect();
@@ -1493,6 +1524,7 @@ function compose(scene) {
   for (const k of ['width', 'height'])
     settings.querySelector(`[name=${k}]`).addEventListener('change', (e) => {
       scene[k] = Number(e.target.value);
+      if (Number.isFinite(scene[k]) && scene[k] >= 16) scene.items.forEach(keepInside);
       canvas.style.aspectRatio = `${scene.width}/${scene.height}`;
       draw();
     });
@@ -1514,10 +1546,14 @@ function compose(scene) {
       scene.name = value('name');
       scene.description = value('description');
       scene.isLayout = checked('isLayout');
-      await api('scenes' + (scene.id ? '/' + scene.id : ''), scene.id ? 'PUT' : 'POST', scene);
+      const saved = await api('scenes' + (scene.id ? '/' + scene.id : ''), scene.id ? 'PUT' : 'POST', scene);
+      scene.id = saved.id;
+      if (options.onSaved) await options.onSaved(scene);
       closeModal();
     },
+    options.onSaved ? t('startLiveButton', 'Avvia Live') : t('save', 'Salva'),
   );
+  if (options.onBack) $('#modal-footer').prepend(button(t('back', 'Indietro'), options.onBack));
   draw();
   inspect();
 }
@@ -1662,88 +1698,125 @@ function editButton(b) {
     closeModal();
   });
 }
-/** Prepara la richiesta prima del countdown, così la sostituzione del modulo non perde i valori selezionati. */
-function startWizard(channelId = 0, sceneId = 0) {
-  const fields = el(
-    'div',
-    { class: 'fields' },
-    field(
-      'Canale',
-      'channelId',
-      channelId || data.channels?.[0]?.id,
-      'select',
-      (data.channels || []).map((c) => [c.id, c.channelName]),
-    ),
-    field(
-      'Profilo',
-      'profileId',
-      data.channels?.find((c) => c.id === channelId)?.profileId ||
-        data.profiles?.find((profile) => profile.isActive)?.id ||
-        1,
-      'select',
-      (data.profiles || []).map((p) => [p.id, p.title]),
-    ),
-    field('Scena', 'sceneId', sceneId, 'select', [
-      [0, 'Playlist del canale'],
-      ...(data.scenes || []).filter((s) => !s.isLayout).map((s) => [s.id, s.name]),
-    ]),
-    field('Chiave TikTok per questa diretta', 'streamKey', '', 'password'),
-    field('Conto alla rovescia (secondi)', 'countdown', 3, 'number'),
-    check('Ripeti playlist', 'loop', true),
-    field('Riprendi da (secondi)', 'offsetSeconds', 0, 'number'),
-  );
-  const channelSelect = fields.querySelector('[name=channelId]');
-  const keyLabel = fields.querySelector('[name=streamKey]').closest('label');
-  const updateKeyField = () => {
-    const channel = data.channels?.find((c) => c.id === Number(channelSelect.value));
-    keyLabel.hidden = !channel || !asksForKey(channel);
-    if (keyLabel.hidden) keyLabel.querySelector('input').value = '';
+/** Riprende _StartWizardSetting.cshtml: la prima scelta contiene solo i profili attivi. */
+function wizardSettings(draft) {
+  const root = el('div');
+  renderWindowsPage(root, '_StartWizardSetting');
+  const profiles = (data.profiles || []).filter((profile) => profile.isActive);
+  if (!profiles.some((profile) => profile.id === draft.profileId)) draft.profileId = profiles[0]?.id || 0;
+  for (const profile of profiles) {
+    const input = el('input', { type: 'radio', name: 'settingId', value: profile.id, checked: profile.id === draft.profileId });
+    input.addEventListener('change', () => { draft.profileId = profile.id; });
+    root.querySelector('[data-wizard-settings]').append(el('label', { class: 'row-card choice' }, input,
+      el('span', {}, el('strong', {}, profile.title), el('small', {}, ` · ${profile.videoCodecName || 'libx264'} · ${profile.videoBitrate} kbps · ${profile.videoWidth}×${profile.videoHeight} · ${profile.frameRate} fps`))));
+  }
+  root.querySelector('[data-wizard-no-settings]').hidden = profiles.length > 0;
+  root.querySelector('[data-wizard-open-profiles]').addEventListener('click', () => { closeModal(); navigate('profiles'); });
+  return root;
+}
+/** Riprende _StartWizardConfiguration.cshtml: canali attivi e chiave temporanea per TikTok. */
+function wizardConfiguration(draft) {
+  const root = el('div');
+  renderWindowsPage(root, '_StartWizardConfiguration');
+  const channels = (data.channels || []).filter((channel) => channel.isActive !== false);
+  if (!channels.some((channel) => channel.id === draft.channelId)) draft.channelId = channels[0]?.id || 0;
+  const keyLabel = root.querySelector('[data-wizard-live-key]');
+  const keyInput = keyLabel.querySelector('input');
+  keyInput.value = draft.streamKey || '';
+  const updateKey = () => {
+    const temporary = asksForKey(channels.find((channel) => channel.id === draft.channelId) || {});
+    keyLabel.hidden = !temporary;
+    keyInput.disabled = !temporary;
+    keyInput.required = temporary;
+    if (!temporary) keyInput.value = '';
   };
-  channelSelect.addEventListener('change', updateKeyField);
-  updateKeyField();
-  openModal(
-    'Avvia diretta · configurazione',
-    fields,
-    async () => {
-      const r = {
-        channelId: number('channelId'),
-        profileId: number('profileId'),
-        streamKey: value('streamKey'),
-        loop: checked('loop'),
-        offsetSeconds: number('offsetSeconds'),
-      };
-      if (number('sceneId')) r.sceneId = number('sceneId');
-      else {
-        const rows = (data.videos || [])
-          .filter((v) => v.channelId === r.channelId && v.enabled !== false)
-          .sort((a, b) => (a.order ?? a.id) - (b.order ?? b.id));
-        if (rows.length) {
-          r.files = rows.map((v) => v.videoPath);
-          r.videoProfiles = rows.map((v) => v.profileId || 0);
-          if (!r.offsetSeconds) r.offsetSeconds = rows[0].offsetSeconds || 0;
-        }
+  for (const channel of channels) {
+    const input = el('input', { type: 'radio', name: 'configurationId', value: channel.id, checked: channel.id === draft.channelId });
+    input.addEventListener('change', () => { draft.channelId = channel.id; draft.streamKey = ''; keyInput.value = ''; updateKey(); });
+    root.querySelector('[data-wizard-configurations]').append(el('label', { class: 'row-card choice' }, input,
+      el('span', {}, el('strong', {}, channel.channelName), el('small', {}, ` · ${channel.platform || 'Custom'} · ${channel.streamUrl}`), el('p', {}, channel.description || ''))));
+  }
+  root.querySelector('[data-wizard-no-configurations]').hidden = channels.length > 0;
+  root.querySelector('[data-wizard-open-channels]').addEventListener('click', () => { closeModal(); navigate('channels'); });
+  updateKey();
+  return root;
+}
+/** Valida le due scelte prima di cambiare dialogo, conservando una chiave temporanea solo in memoria. */
+function wizardRequest(draft) {
+  if (!draft.profileId || !draft.channelId) throw Error('Scegli un profilo attivo e una configurazione canale attiva');
+  const channel = data.channels?.find((item) => item.id === draft.channelId);
+  draft.streamKey = value('streamKey');
+  if (asksForKey(channel || {}) && !draft.streamKey.trim()) throw Error('La chiave TikTok di questa diretta è richiesta');
+  return { channelId: draft.channelId, profileId: draft.profileId, streamKey: draft.streamKey };
+}
+/** Sequenza Windows: profilo, destinazione, compositore; Indietro conserva tutte le scelte. */
+function startWizard(channelId = 0, sceneId = 0) {
+  const draft = { channelId, profileId: data.channels?.find((channel) => channel.id === channelId)?.profileId, streamKey: '' };
+  let scene = sceneId ? structuredClone(data.scenes?.find((item) => item.id === sceneId)) : null;
+  const settingsStep = () => {
+    openModal(t('startNewLiveTitle', 'Nuova diretta'), wizardSettings(draft), configurationStep, t('next', 'Avanti'));
+    $('#modal-footer .primary').disabled = !draft.profileId;
+  };
+  const configurationStep = () => {
+    const content = wizardConfiguration(draft);
+    content.append(field('Scena salvata', 'sceneId', scene?.id || 0, 'select', [[0, 'Nuova composizione'], ...(data.scenes || []).filter((item) => !item.isLayout).map((item) => [item.id, item.name])]));
+    openModal(t('startNewLiveTitle', 'Nuova diretta'), content, () => {
+      const request = wizardRequest(draft);
+      const chosen = number('sceneId');
+      if (chosen && chosen !== scene?.id) scene = structuredClone(data.scenes.find((item) => item.id === chosen));
+      if (!scene) {
+        const profile = data.profiles.find((item) => item.id === draft.profileId);
+        const portrait = asksForKey(data.channels.find((item) => item.id === draft.channelId));
+        const width = Number(profile.videoWidth) || 1280, height = Number(profile.videoHeight) || 720;
+        scene = { name: 'Nuova diretta', width: portrait ? Math.min(width, height) : width, height: portrait ? Math.max(width, height) : height, items: [], isLayout: false };
       }
-      let seconds = Math.min(60, Math.max(0, number('countdown')));
-      $('#modal-footer').replaceChildren(button(t('cancel', 'Annulla'), closeModal));
-      while (seconds > 0 && modalOpen) {
-        $('#modal-body').replaceChildren(
-          el(
-            'div',
-            { class: 'empty' },
-            el('div', { class: 'metric' }, seconds--),
-            el('p', {}, 'Avvio della diretta…'),
-          ),
-        );
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-      if (!modalOpen) return;
-      const started = await api('live/start', 'POST', r);
+      compose(scene, { onBack: configurationStep, onSaved: async (saved) => {
+        const started = await api('live/start', 'POST', { ...request, sceneId: saved.id, loop: true });
+        watched = started.id;
+        navigate('live');
+      } });
+    }, t('composeNext', 'Componi'));
+    $('#modal-footer').prepend(button(t('back', 'Indietro'), settingsStep));
+    $('#modal-footer .primary').disabled = !draft.channelId;
+  };
+  settingsStep();
+}
+/** Avvio playlist Windows con gli stessi due pannelli e la cartella; scansione e validazione precedono il countdown. */
+function playlistStartWizard() {
+  const draft = {};
+  const settings = wizardSettings(draft), configuration = wizardConfiguration(draft);
+  const channel = data.channels?.find((item) => item.id === draft.channelId);
+  const content = el('div', {}, settings, configuration,
+    field(t('playlistFolder', 'Cartella video'), 'videoFolder', channel?.videoFolder || ''),
+    el('details', {}, el('summary', {}, 'Opzioni playlist'), check('Ripeti playlist', 'loop', false), field('Countdown annullabile (secondi)', 'countdown', 3, 'number')));
+  openModal(t('startPlaylistTitle', 'Avvia playlist'), content, async () => {
+    const request = wizardRequest(draft);
+    const folder = value('videoFolder').trim();
+    if (!folder) throw Error('Scegli la cartella dei video');
+    const files = await api('scan', 'POST', { path: folder, preview: true });
+    if (!files.length) throw Error('La cartella non contiene video riproducibili');
+    request.files = files.map((file) => file.videoPath);
+    request.loop = checked('loop');
+    const seconds = Math.min(60, Math.max(0, Math.floor(number('countdown'))));
+    const body = $('#modal-body'), footer = $('#modal-footer');
+    const oldBody = [...body.childNodes], oldFooter = [...footer.childNodes];
+    footer.replaceChildren(button(t('cancel', 'Annulla'), closeModal));
+    for (let remaining = seconds; remaining > 0 && modalOpen; remaining--) {
+      body.replaceChildren(el('div', { class: 'empty' }, el('div', { class: 'metric' }, remaining), el('p', {}, 'Avvio della playlist…')));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    if (!modalOpen) return;
+    try {
+      const started = await api('live/start', 'POST', request);
       watched = started.id;
       closeModal();
       navigate('live');
-    },
-    'Avvia',
-  );
+    } catch (error) {
+      body.replaceChildren(...oldBody); footer.replaceChildren(...oldFooter);
+      throw error;
+    }
+  }, t('startPlaylistButton', 'Avvia playlist'));
+  $('#modal-footer .primary').disabled = !draft.profileId || !draft.channelId;
 }
 /** Modifica solo i parametri che il produttore FFmpeg Linux può applicare durante una diretta. */
 function editLiveParameters(session) {
@@ -2015,6 +2088,10 @@ function preview(root) {
 }
 /** Mostra le sessioni attive e i controlli di regia usando gli snapshot del motore. */
 function live(root) {
+  if (renderWindowsPage(root, 'MainLive')) {
+    renderLiveRows(root);
+    return;
+  }
   root.append(
     el(
       'div',
@@ -2105,6 +2182,126 @@ function live(root) {
   }
   root.append(grid);
   if (!data.live?.length) empty(root, 'Nessuna diretta. Avvia un canale dalla toolbar.');
+}
+/** Riprende filtri e tabella di MainLive.cshtml: una playlist occupa una riga e dieci righe una pagina. */
+function renderLiveRows(root) {
+  const params = new URLSearchParams(location.search);
+  const rows = data.liveRows || [];
+  const fields = Object.fromEntries(['liveStatus', 'channelName', 'platform'].map((key) => [key, root.querySelector(`[name=${key}]`)]));
+  const channels = [...new Set([...(data.channels || []).map((channel) => channel.channelName), ...rows.map((row) => row.channelName), params.get('channelName')])].filter(Boolean).sort();
+  for (const name of channels) fields.channelName.append(el('option', { value: name }, name));
+  for (const [key, input] of Object.entries(fields)) {
+    input.value = params.get(key) || '';
+    input.addEventListener('change', () => {
+      const next = new URLSearchParams(location.search);
+      if (input.value) next.set(key, input.value); else next.delete(key);
+      next.delete('p');
+      window.history.replaceState({}, '', `${routes.live}${next.size ? '?' + next : ''}`);
+      render();
+    });
+  }
+  const table = root.querySelector('[data-live-table]');
+  renderWindowsPage(table, '_LiveRows');
+  const filtered = rows.filter((row) => (!params.get('liveStatus') || row.status === params.get('liveStatus')) &&
+    (!params.get('channelName') || row.channelName === params.get('channelName')) &&
+    (!params.get('platform') || row.platform?.toLowerCase() === params.get('platform').toLowerCase()));
+  const totalPages = Math.ceil(filtered.length / 10);
+  const requested = Number(params.get('p'));
+  const pageNumber = Math.min(Math.max(0, Number.isSafeInteger(requested) ? requested : 0), Math.max(0, totalPages - 1));
+  const body = table.querySelector('[data-live-rows]');
+  for (const row of filtered.slice(pageNumber * 10, pageNumber * 10 + 10)) {
+    const session = data.live?.find((item) => item.id === row.id);
+    const controls = el('div', { class: 'actions' });
+    const addControl = (label, run, disabled = false, cls = '') => {
+      const control = button(label, run, cls);
+      control.disabled = disabled;
+      controls.append(control);
+    };
+    addControl(t(row.isScene ? 'sceneDetails' : 'playlistDetails', 'Dettagli'), () => openLiveDetails(row));
+    addControl(t('connectVideoSetting', 'Profilo video'), () => editHistoryProfile(row));
+    if (row.running && session) {
+      addControl(t('preview', 'Anteprima'), () => { watched = row.id; navigate('preview'); });
+      addControl(t('sceneDeckOpen', 'Regia e mixer'), () => livePanel(session));
+      addControl(t('playSpot', 'Spot'), async () => {
+        const path = prompt('Percorso del video spot:');
+        if (path) await api(`live/${row.id}/spot`, 'POST', { scene: { name: 'Spot', items: [{ sourceKind: 'FILE', sourceTarget: path, audioEnabled: true }] } });
+      });
+      addControl(t('stopLiveIconLabel', 'Ferma'), async () => { if (confirm('Fermare la diretta?')) await api(`live/${row.id}/stop`, 'POST', {}); }, false, 'danger');
+      if (session.takeover?.items?.length) addControl(t('sceneResume', 'Riprendi'), () => api(`live/${row.id}/resume`, 'POST', {}));
+      if (row.channelId) addControl(row.platform || 'Player', () => openPublicPlayer(session));
+    }
+    addControl(t('startLiveIconLabel', 'Riprendi'), () => replayHistory(row), row.running);
+    addControl(t('restartLiveIconLabel', 'Ricomincia'), async () => {
+      if (!confirm('Ricominciare dal primo video?')) return;
+      if (row.running) await api(`live/${row.id}/stop`, 'POST', {});
+      await replayHistory(row, true);
+    });
+    addControl(t('delete', 'Elimina'), () => remove('history', row.id), row.running, 'danger');
+    body.append(el('tr', { 'data-live-row': row.id },
+      el('td', {}, el('span', { class: `badge ${row.status}` }, row.status)),
+      el('td', {}, el('strong', {}, row.title || `Live ${row.id}`),
+        ...(row.isPlaylist ? [el('span', { class: 'badge' }, ` ${row.position + 1}/${row.total}`)] : []),
+        el('p', { class: 'path' }, `${row.platform || ''} · ${row.source || ''}`)),
+      el('td', {}, row.channelName || '—'), el('td', {}, new Date(row.startedAt).toLocaleString()), el('td', {}, controls)));
+  }
+  table.querySelector('[data-live-empty]').hidden = filtered.length > 0;
+  const pager = table.querySelector('[data-live-pager]');
+  for (const index of [...new Set([0, pageNumber - 1, pageNumber, pageNumber + 1, totalPages - 1])].filter((index) => index >= 0 && index < totalPages).sort((a, b) => a - b))
+    pager.append(button(String(index + 1), () => {
+      const next = new URLSearchParams(location.search);
+      if (index) next.set('p', String(index)); else next.delete('p');
+      window.history.replaceState({}, '', `${routes.live}${next.size ? '?' + next : ''}`);
+      render();
+    }, index === pageNumber ? 'primary' : ''));
+}
+/** Riprende la richiesta salvata; un replay usa video/offset interrotti, un restart torna al primo file. */
+async function replayHistory(item, beginning = false, fromIndex = null) {
+  const request = structuredClone(item.request);
+  if (!request) throw Error('Snapshot della diretta non disponibile');
+  const channel = data.channels?.find((value) => value.id === item.channelId);
+  if (asksForKey(channel || { platform: item.platform || request.platform, streamUrl: request.streamUrl })) {
+    const key = prompt('Nuova chiave TikTok per questa diretta:');
+    if (!key?.trim()) return;
+    request.streamKey = key.trim();
+  }
+  const restart = beginning || item.status === 'ENDED';
+  request.startIndex = request.scene ? 0 : fromIndex ?? (restart ? 0 : Math.min(Math.max(0, item.position || 0), (request.files?.length || 1) - 1));
+  request.offsetSeconds = fromIndex !== null || restart ? 0 : item.offsetSeconds || 0;
+  const started = await api('live/start', 'POST', request);
+  watched = started.id;
+  closeModal();
+  navigate('live');
+}
+/** Dettagli della playlist dalla stessa riga, con riproduzione locale e ripartenza da un video scelto. */
+function openLiveDetails(row) {
+  const content = el('div', {}, el('p', {}, `${row.channelName || '—'} · ${row.status}`));
+  const files = row.request?.files || [];
+  if (files.length) {
+    const table = el('table', {}, el('thead', {}, el('tr', {}, ...['Video', 'Stato', 'Azioni'].map((label) => el('th', {}, label)))));
+    files.forEach((path, index) => {
+      const state = index < row.position ? 'ENDED' : index === row.position ? row.status : 'OFFLINE';
+      const resume = button('Riparti da questo video', () => replayHistory(row, false, index));
+      resume.disabled = row.running;
+      table.append(el('tr', {}, el('td', { class: 'path' }, path), el('td', {}, state), el('td', {},
+        button('Riproduci', () => openModal(path.split('/').pop(), el('video', { controls: '', src: `/api/history/${row.id}/video/${index}`, style: 'width:100%' }))), resume)));
+    });
+    content.append(table);
+  } else content.append(el('pre', {}, JSON.stringify(row.request?.scene || {}, null, 2)));
+  openModal(t(row.isScene ? 'sceneDetails' : 'playlistDetails', 'Dettagli diretta'), content);
+}
+/** Collega un profilo alla richiesta persistita; se la live è in corso aggiorna anche il produttore. */
+function editHistoryProfile(row) {
+  const content = field(t('videoSettings', 'Profilo video'), 'linkedProfile', row.request?.profile?.id || row.request?.profileId || 0, 'select', (data.profiles || []).map((profile) => [profile.id, profile.title]));
+  openModal(t('connectVideoSetting', 'Collega profilo video'), content, async () => {
+    const profile = data.profiles.find((item) => item.id === number('linkedProfile'));
+    if (!profile) throw Error('Profilo non disponibile');
+    if (row.running) await api(`live/${row.id}/parameters`, 'POST', profile);
+    const history = await api(`history/${row.id}`);
+    history.request.profile = structuredClone(profile);
+    history.request.profileId = profile.id;
+    await api(`history/${row.id}`, 'PUT', history);
+    closeModal();
+  });
 }
 /** Aggiorna le immagini senza sovrapporre fetch per la stessa anteprima, contenendo il traffico durante il polling. */
 function updatePreviews() {
@@ -2228,73 +2425,149 @@ async function downloadExport() {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+/** Aggiorna il progresso senza ricostruire i filtri o perdere le modifiche al modulo. */
+function updateCleanupProgress() {
+  const panel = $('[data-cleanup-progress]');
+  if (!panel) return;
+  const state = data.cleanupProgress || {};
+  panel.hidden = !state.running && !state.error && !state.deletedLives;
+  $('[data-history-cleanup]').disabled = Boolean(state.running);
+  $('[data-cleanup-message]').textContent =
+    state.error ||
+    `${state.running ? 'Pulizia in corso' : 'Pulizia completata'}: ${state.deletedVideos || 0}/${state.totalVideos || 0} video, ${state.deletedLives || 0} dirette. ${state.currentVideo || ''}`;
+  $('[data-cleanup-bar]').max = Math.max(1, state.totalVideos || 0);
+  $('[data-cleanup-bar]').value = state.deletedVideos || 0;
+}
+/** Riprende i tre controlli Windows dalla prima configurazione canale attiva e ne salva solo i campi di pulizia. */
+function configureHistoryCleanup(root) {
+  const form = root.querySelector('[data-history-cleanup-settings]');
+  const channel = data.channels?.find((item) => item.isActive !== false) || {};
+  const enabled = form.elements.enabled;
+  enabled.checked = channel.autoCleanupEnabled ?? channel.autoCleanupOlderThanMonths > 0;
+  form.elements.intervalMonths.value = channel.autoCleanupIntervalMonths || 1;
+  form.elements.olderThanMonths.value = channel.autoCleanupOlderThanMonths ?? 0;
+  const showFields = () => {
+    root.querySelector('[data-cleanup-fields]').hidden = !enabled.checked;
+  };
+  enabled.addEventListener('change', showFields);
+  showFields();
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    action(async () => {
+      await api('history/cleanup/settings', 'POST', {
+        enabled: enabled.checked,
+        intervalMonths: Number(form.elements.intervalMonths.value),
+        olderThanMonths: Number(form.elements.olderThanMonths.value),
+      });
+      notify('Impostazioni di pulizia salvate');
+    });
+  });
+  root.querySelector('[data-history-cleanup]').addEventListener('click', () =>
+    action(async () => {
+      if (!confirm('Confermi la pulizia dello storico per il periodo selezionato?')) return;
+      const response = await fetch('/api/history/cleanup', {
+        method: 'POST',
+        headers: { 'X-Orbis-Token': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ months: Number(form.elements.olderThanMonths.value), async: true }),
+      });
+      const result = await response.json();
+      // Un lavoro già avviato si osserva invece di avviarne un secondo, come nella pagina Windows.
+      if (!response.ok && response.status !== 409)
+        throw Error(result.message || 'Pulizia non riuscita');
+      data.cleanupProgress = result;
+      updateCleanupProgress();
+    }),
+  );
+  updateCleanupProgress();
+}
 /** Restringe e impagina gli snapshot come MainLiveHistory.cshtml, senza perdere i filtri nell'URL. */
 function renderHistoryTemplate(root) {
   const params = new URLSearchParams(location.search);
+  const channelOf = (item) =>
+    item.channelName ||
+    item.request?.channelName ||
+    data.channels?.find((channel) => channel.id === item.channelId)?.channelName ||
+    String(item.channelId || '—');
   const fields = {
     channelName: root.querySelector('[name=channelName]'),
     liveStatus: root.querySelector('[name=liveStatus]'),
     titleSearch: root.querySelector('[name=titleSearch]'),
   };
-  const channels = [...new Set((data.history || []).map((item) =>
-    data.channels?.find((channel) => channel.id === item.channelId)?.channelName ||
-    String(item.channelId || ''),
-  ))].filter(Boolean);
+  const channels = [...new Set([...(data.history || []).map(channelOf), params.get('channelName')])]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
   for (const name of channels) fields.channelName.append(el('option', { value: name }, name));
   for (const [key, input] of Object.entries(fields)) input.value = params.get(key) || '';
   const setFilter = (key, value) => {
+    clearTimeout(historySearchTimer);
+    const focused = document.activeElement === fields.titleSearch;
+    const selection = [fields.titleSearch.selectionStart, fields.titleSearch.selectionEnd];
     const next = new URLSearchParams(location.search);
+    value = value.trim();
     if (value) next.set(key, value);
     else next.delete(key);
     next.delete('p');
     window.history.replaceState({}, '', `${routes.history}${next.size ? '?' + next : ''}`);
     render();
+    if (focused) {
+      const input = $('#content [name=titleSearch]');
+      input.focus();
+      input.setSelectionRange(...selection);
+    }
   };
   fields.channelName.addEventListener('change', () =>
     setFilter('channelName', fields.channelName.value),
   );
-  fields.liveStatus.addEventListener('change', () => setFilter('liveStatus', fields.liveStatus.value));
-  let pending;
+  fields.liveStatus.addEventListener('change', () =>
+    setFilter('liveStatus', fields.liveStatus.value),
+  );
   fields.titleSearch.addEventListener('input', () => {
-    clearTimeout(pending);
+    clearTimeout(historySearchTimer);
     const value = fields.titleSearch.value;
-    pending = setTimeout(() => setFilter('titleSearch', value), 400);
+    historySearchTimer = setTimeout(() => {
+      if (page === 'history') setFilter('titleSearch', value);
+    }, 400);
   });
   root.querySelector('[data-history-clear]').addEventListener('click', () => {
+    clearTimeout(historySearchTimer);
     window.history.replaceState({}, '', routes.history);
     render();
   });
-  root.querySelector('[data-history-export]').addEventListener('click', () =>
-    action(downloadExport),
-  );
-  root.querySelector('[data-history-cleanup]').addEventListener('click', () =>
-    action(async () => {
-      const months = prompt('Elimina le dirette terminate più vecchie di quanti mesi?', '3');
-      if (months && confirm('Confermi la pulizia dello storico?')) {
-        const result = await api('history/cleanup', 'POST', { months: Number(months) });
-        notify(`${result.deleted} dirette eliminate`);
-      }
-    }),
-  );
+  root
+    .querySelector('[data-history-export]')
+    .addEventListener('click', () => action(downloadExport));
+  configureHistoryCleanup(root);
   const titleOf = (item) =>
     item.request?.scene?.name || item.request?.files?.[0]?.split('/').pop() || `Live ${item.id}`;
-  const channelOf = (item) =>
-    data.channels?.find((channel) => channel.id === item.channelId)?.channelName ||
-    String(item.channelId || '—');
-  const filtered = [...(data.history || [])].reverse().filter((item) => {
-    const title = titleOf(item).toLowerCase();
-    return (
-      (!fields.channelName.value || channelOf(item) === fields.channelName.value) &&
-      (!fields.liveStatus.value || item.status === fields.liveStatus.value) &&
-      (!fields.titleSearch.value || title.includes(fields.titleSearch.value.toLowerCase()))
-    );
-  });
+  const filters = Object.fromEntries(
+    Object.keys(fields).map((key) => [key, (params.get(key) || '').trim()]),
+  );
+  const filtered = [...(data.history || [])]
+    .sort(
+      (a, b) => String(b.startedAt || '').localeCompare(String(a.startedAt || '')) || b.id - a.id,
+    )
+    .filter((item) => {
+      const title = titleOf(item).toLowerCase();
+      return (
+        (!filters.channelName || channelOf(item) === filters.channelName) &&
+        (!filters.liveStatus || item.status === filters.liveStatus) &&
+        (!filters.titleSearch || title.includes(filters.titleSearch.toLowerCase()))
+      );
+    });
   const totalPages = Math.ceil(filtered.length / 20);
-  const pageNumber = Math.min(Math.max(0, Number(params.get('p')) || 0), Math.max(0, totalPages - 1));
+  const requestedPage = Number(params.get('p'));
+  const pageNumber = Math.min(
+    Math.max(0, Number.isSafeInteger(requestedPage) ? requestedPage : 0),
+    Math.max(0, totalPages - 1),
+  );
   const rows = root.querySelector('[data-history-rows]');
   for (const item of filtered.slice(pageNumber * 20, pageNumber * 20 + 20)) {
     const path = item.request?.files?.[0] || item.request?.scene?.items?.[0]?.sourceTarget || '—';
-    const platform = data.channels?.find((channel) => channel.id === item.channelId)?.platform || '—';
+    const platform =
+      item.platform ||
+      item.request?.platform ||
+      data.channels?.find((channel) => channel.id === item.channelId)?.platform ||
+      '—';
     rows.append(
       el(
         'tr',
@@ -2328,15 +2601,22 @@ function renderHistoryTemplate(root) {
   }
   root.querySelector('[data-history-empty]').hidden = filtered.length > 0;
   const pager = root.querySelector('[data-history-pager]');
-  for (let index = 0; index < totalPages; index++)
+  // Limita i link per evitare una barra enorme quando lo storico contiene molti anni di dirette.
+  for (const index of [...new Set([0, pageNumber - 1, pageNumber, pageNumber + 1, totalPages - 1])]
+    .filter((index) => index >= 0 && index < totalPages)
+    .sort((a, b) => a - b))
     pager.append(
-      button(String(index + 1), () => {
-        const next = new URLSearchParams(location.search);
-        if (index) next.set('p', String(index));
-        else next.delete('p');
-        window.history.replaceState({}, '', `${routes.history}${next.size ? '?' + next : ''}`);
-        render();
-      }, index === pageNumber ? 'primary' : ''),
+      button(
+        String(index + 1),
+        () => {
+          const next = new URLSearchParams(location.search);
+          if (index) next.set('p', String(index));
+          else next.delete('p');
+          window.history.replaceState({}, '', `${routes.history}${next.size ? '?' + next : ''}`);
+          render();
+        },
+        index === pageNumber ? 'primary' : '',
+      ),
     );
 }
 /** Mostra gli esiti persistiti e consente riavvio o pulizia senza dipendere dalle sessioni ancora in memoria. */
