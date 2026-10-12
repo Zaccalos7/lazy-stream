@@ -1,0 +1,13 @@
+{
+  "name": "orbis-stream-linux-tools",
+  "private": true,
+  "scripts": {
+    "format": "npm run format:web && npm run format:cpp",
+    "format:web": "prettier --write 'web/*.{js,html,css}' 'web/pages/*.html' 'tests/*.mjs' package.json .prettierrc.json",
+    "format:cpp": "clang-format -i src/*.cpp src/*.hpp tests/*.cpp",
+    "format:check": "prettier --check 'web/*.{js,html,css}' 'web/pages/*.html' 'tests/*.mjs' package.json .prettierrc.json && clang-format --dry-run --Werror src/*.cpp src/*.hpp tests/*.cpp"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}
