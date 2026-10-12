@@ -1,0 +1,4 @@
+#pragma once
+
+// Valore unico letto da VERSION durante la configurazione CMake.
+#define ORBIS_VERSION "@ORBIS_VERSION@"
