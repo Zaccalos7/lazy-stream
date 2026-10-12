@@ -68,3 +68,7 @@ dist/
 
 # Local secrets
 .env
+
+# Linux C++ output
+linux/build*/
+linux/.cache/
