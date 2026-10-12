@@ -1,10 +1,13 @@
 #include "core.hpp"
+#include "history_cleanup_service.hpp"
 #include "live_stream_keys.hpp"
+#include "live_rows.hpp"
 #include "media_job.hpp"
 #include "scene_service.hpp"
 #include "version.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <regex>
@@ -239,8 +242,11 @@ struct Api {
             for (auto k :
                  {"channels", "profiles", "scenes", "buttons", "videos", "history", "preferences"})
                 result.set(k, studio.store.list(k));
-            result.set("live", studio.live());
+            auto sessions = studio.live();
+            result.set("live", sessions);
+            result.set("liveRows", liveRows(studio.store, sessions));
             result.set("metrics", metrics(studio.store.root));
+            result.set("cleanupProgress", studio.historyCleanup->progress());
         } else if (path == "/api/live" && method == http::verb::get)
             result = studio.live();
         else if (path == "/api/live/start" && method == http::verb::post) {
@@ -326,6 +332,11 @@ struct Api {
                 v.set("name", fs::path(file).filename().string());
                 v.set("enabled", true);
                 v.set("channelId", body.get("channelId"));
+                // Il wizard chiede una scansione senza importazione: ripetere l'avvio deve restituire gli stessi file.
+                if (body.get("preview").flag()) {
+                    result.push(v);
+                    continue;
+                }
                 auto existing = studio.store.list("videos");
                 bool duplicate = false;
                 for (size_t i = 0; i < existing.size(); ++i)
@@ -398,10 +409,50 @@ struct Api {
                     throw std::runtime_error("Ferma le dirette prima di importare");
             studio.store.importData(body);
             result = success();
-        } else if (path == "/api/history/cleanup" && method == http::verb::post) {
+        } else if (path == "/api/history/cleanup/settings" && method == http::verb::post) {
+            const double interval = body.get("intervalMonths").num(1),
+                         months = body.get("olderThanMonths").num();
+            if (!std::isfinite(interval) || !std::isfinite(months) || interval < 1 ||
+                interval > 12 || interval != std::floor(interval) || months < -1 || months > 120 ||
+                months != std::floor(months))
+                throw std::runtime_error("Periodo pulizia non valido");
+            historyCleanupThreshold(int(months));
+            auto channels = studio.store.list("channels");
+            bool saved = false;
+            for (size_t i = 0; i < channels.size(); ++i) {
+                auto channel = channels.at(i);
+                if (!channel.get("isActive").flag(true))
+                    continue;
+                const bool enabled = body.get("enabled").flag();
+                channel.set("autoCleanupEnabled", enabled);
+                // Spegnere il toggle conserva i periodi scelti, come SaveAutoCleanup su Windows.
+                if (enabled) {
+                    channel.set("autoCleanupIntervalMonths", interval);
+                    channel.set("autoCleanupOlderThanMonths", months);
+                }
+                studio.store.save("channels", channel, channel.get("id").num());
+                saved = true;
+                break;
+            }
+            if (!saved)
+                throw std::runtime_error("Nessuna configurazione canale attiva");
             result = success();
-            result.set("deleted", double(studio.store.cleanup(body.get("months").num(),
-                                                              body.get("channelId").num())));
+        } else if (path == "/api/history/cleanup" && method == http::verb::get) {
+            result = studio.historyCleanup->progress();
+        } else if (path == "/api/history/cleanup" && method == http::verb::post) {
+            const double months = body.get("months").num();
+            if (!std::isfinite(months) || months < -1 || months > 120 ||
+                months != std::floor(months))
+                throw std::runtime_error("Periodo pulizia non valido");
+            result = success();
+            if (body.get("async").flag()) {
+                const bool accepted =
+                    studio.historyCleanup->tryStart(int(months), body.get("channelId").num());
+                res.result(accepted ? http::status::accepted : http::status::conflict);
+                result = studio.historyCleanup->progress();
+            } else
+                result.set("deleted",
+                           double(studio.store.cleanup(int(months), body.get("channelId").num())));
         } else if (std::regex_match(path, match,
                                     std::regex("/api/media/(overlays|scene-media|images)"))) {
             auto type = match[1].str();
@@ -456,6 +507,14 @@ struct Api {
                         if (std::string(e.what()) != "Diretta non trovata")
                             throw;
                     }
+                    auto record = studio.store.get("history", id);
+                    if (!studio.store.removeHistoryIfInactive(id, record.get("startedAt").str()))
+                        throw std::runtime_error("Diretta ancora attiva");
+                    result = success();
+                    res.set(http::field::content_type, "application/json; charset=utf-8");
+                    res.body() = result.dump();
+                    res.prepare_payload();
+                    return res;
                 }
                 if (k == "profiles" || k == "scenes") {
                     auto channels = studio.store.list("channels");

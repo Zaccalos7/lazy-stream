@@ -78,6 +78,7 @@ class Store {
     Json exportData();
     void importData(const Json& data);
     int cleanup(int months, long channel = 0);
+    bool removeHistoryIfInactive(long id, const std::string& startedAt);
 };
 
 class Process {
@@ -173,6 +174,8 @@ class Session {
     void command(const std::string& name, const Json& data);
 };
 
+class LiveHistoryCleanupService;
+
 class Studio {
     std::mutex mutex;
     std::map<long, std::shared_ptr<Session>> sessions;
@@ -180,6 +183,7 @@ class Studio {
 
   public:
     Store store;
+    std::unique_ptr<LiveHistoryCleanupService> historyCleanup;
     explicit Studio(const fs::path& root);
     ~Studio();
     long start(Json request);

@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include "history_cleanup_service.hpp"
 #include "live_stream_keys.hpp"
 #include "scene_service.hpp"
 #include "stream_platform.hpp"
@@ -72,6 +73,23 @@ int main() {
         expect(standInStreamKey("  channel  ") == "asked-at-every-live:channel",
                "TikTok key stand-in");
         expect(isStandInStreamKey(standInStreamKey("channel")), "TikTok key not publishable");
+        using namespace std::chrono;
+        const auto reference = system_clock::to_time_t(sys_days{year{2024} / 3 / 31} + hours{12});
+        expect(historyCleanupThreshold(1, reference) == "2024-02-29T12:00:00Z",
+               "cleanup leap month clamp");
+        expect(historyCleanupThreshold(12, reference) == "2023-03-31T12:00:00Z",
+               "cleanup calendar year");
+        expect(historyCleanupThreshold(0, reference) == "2024-03-30T12:00:00Z",
+               "cleanup yesterday");
+        expect(historyCleanupThreshold(-1, reference) == "2024-03-31T12:00:00Z",
+               "cleanup everything");
+        bad = false;
+        try {
+            historyCleanupThreshold(-2, reference);
+        } catch (const std::runtime_error&) {
+            bad = true;
+        }
+        expect(bad, "cleanup invalid threshold rejected");
         FlvRelay relay;
         relay.segment();
         auto v = segment(1000);
@@ -221,6 +239,43 @@ int main() {
                 bad = true;
             }
             expect(bad, "overlay outside library rejected");
+        }
+        {
+            Store store(dir / "cleanup");
+            auto old = Json::parse(
+                R"({"status":"ENDED","channelId":1,"startedAt":"2020-01-01T00:00:00Z","request":{"files":["first.mp4","second.mp4"]}})");
+            const auto oldId = store.save("history", old);
+            auto scene = old.clone();
+            scene.set("request", Json::parse(R"({"scene":{"name":"Old scene"}})"));
+            store.save("history", scene);
+            auto otherChannel = old.clone();
+            otherChannel.set("channelId", 2.0);
+            store.save("history", otherChannel);
+            auto live = old.clone();
+            live.set("status", "LIVE");
+            const auto liveId = store.save("history", live);
+            live.set("status", "STARTING");
+            store.save("history", live);
+            auto fresh = old.clone();
+            fresh.set("startedAt", now());
+            store.save("history", fresh);
+            expect(!store.removeHistoryIfInactive(liveId, old.get("startedAt").str()),
+                   "cleanup protects active status");
+            expect(!store.removeHistoryIfInactive(oldId, "2019-01-01T00:00:00Z"),
+                   "cleanup rejects stale identity");
+            LiveHistoryCleanupService cleanup(store);
+            expect(cleanup.tryStart(0, 1), "cleanup worker started");
+            for (int i = 0; i < 200 && cleanup.progress().get("running").flag(); ++i)
+                std::this_thread::sleep_for(milliseconds{10});
+            const auto progress = cleanup.progress();
+            expect(!progress.get("running").flag() && progress.get("error").str().empty(),
+                   "cleanup worker completed");
+            expect(progress.get("deletedLives").num() == 2 &&
+                       progress.get("deletedVideos").num() == 3 &&
+                       progress.get("totalVideos").num() == 3,
+                   "cleanup counts playlist and scene snapshots");
+            expect(store.list("history").size() == 4,
+                   "cleanup preserves active, fresh and other channel history");
         }
         for (const auto [folder, schema] : {
                  std::pair{"foreign", "CREATE TABLE setting(id INTEGER); PRAGMA user_version=1"},

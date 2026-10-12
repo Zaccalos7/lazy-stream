@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include "history_cleanup_service.hpp"
 #include "live_stream_keys.hpp"
 #include "stream_platform.hpp"
 #include <algorithm>
@@ -354,7 +355,8 @@ Session::Session(Store& s, Json r, long pk)
         }
         if (playlist.empty())
             throw std::runtime_error("Playlist vuota");
-        original = playlist[0];
+        index = int(r.get("startIndex").num());
+        original = playlist[index];
     }
     offset = r.get("offsetSeconds").num();
 }
@@ -384,6 +386,9 @@ Json Session::snapshot() {
     Json s;
     s.set("id", double(id));
     s.set("channelId", double(channel));
+    s.set("channelName", request.get("channelName"));
+    s.set("platform", request.get("platform"));
+    s.set("startedAt", request.get("startedAt"));
     s.set("status", state);
     s.set("error", error);
     s.set("position", double(index));
@@ -665,12 +670,13 @@ void Session::run() {
         publisher.stop();
         {
             std::lock_guard lock(mutex);
-            state = "ENDED";
+            // Uno stop richiesto dall'utente è distinto dalla fine naturale della playlist.
+            state = stopped ? "STOPPED" : "ENDED";
         }
     } catch (const std::exception& e) {
         std::lock_guard lock(mutex);
-        state = stopped ? "ENDED" : "ERROR";
-        error = e.what();
+        state = stopped ? "STOPPED" : "ERROR";
+        error = stopped ? "" : e.what();
     }
     producer.stop();
     publisher.stop();
@@ -705,6 +711,7 @@ void Session::run() {
         h.set("status", s.get("status"));
         h.set("error", s.get("error"));
         h.set("offsetSeconds", s.get("offsetSeconds"));
+        h.set("position", s.get("position"));
         h.set("endedAt", now());
         store.save("history", h, id);
     } catch (...) {
@@ -715,6 +722,7 @@ void Session::run() {
 // Avvia la manutenzione periodica separatamente dalle richieste, per applicare la conservazione di
 // storico e log.
 Studio::Studio(const fs::path& root) : store(root) {
+    historyCleanup = std::make_unique<LiveHistoryCleanupService>(store);
     housekeeping = std::jthread([this](std::stop_token stop) {
         while (!stop.stop_requested()) {
             try {
@@ -723,13 +731,16 @@ Studio::Studio(const fs::path& root) : store(root) {
                     auto c = channels.at(i);
                     int months = c.get("autoCleanupOlderThanMonths").num(),
                         interval = c.get("autoCleanupIntervalMonths").num(1);
-                    if (months > 0 && interval > 0) {
+                    // I record precedenti senza toggle mantengono la vecchia impostazione per mesi.
+                    if (c.get("autoCleanupEnabled").flag(months > 0) && interval > 0) {
                         auto last = c.get("lastCleanupEpoch").num();
                         double epoch = std::time(nullptr);
-                        if (epoch - last > interval * 30.0 * 86400) {
-                            store.cleanup(months, c.get("id").num());
-                            c.set("lastCleanupEpoch", epoch);
-                            store.save("channels", c, c.get("id").num());
+                        if (historyCleanupThreshold(-1, std::time_t(last)) <
+                                historyCleanupThreshold(interval) &&
+                            historyCleanup->tryStart(months, c.get("id").num())) {
+                            auto updated = store.get("channels", c.get("id").num());
+                            updated.set("lastCleanupEpoch", epoch);
+                            store.save("channels", updated, c.get("id").num());
                         }
                     }
                 }
@@ -750,6 +761,7 @@ Studio::Studio(const fs::path& root) : store(root) {
 Studio::~Studio() {
     housekeeping.request_stop();
     housekeeping.join();
+    historyCleanup.reset();
     stopAll();
 }
 
@@ -771,6 +783,9 @@ long Studio::start(Json r) {
             if (s->channel == channel && !s->done())
                 throw std::runtime_error("Canale già in diretta");
         r.set("streamUrl", c.get("streamUrl"));
+        // Lo storico conserva l'identità al momento della diretta, anche se il canale cambia.
+        r.set("channelName", c.get("channelName"));
+        r.set("platform", c.get("platform"));
         if (!asksForStreamKey(c.get("platform").str(), c.get("platformStreamName").str(),
                               c.get("streamUrl").str()))
             r.set("streamKey", c.get("streamKey"));
@@ -821,13 +836,23 @@ long Studio::start(Json r) {
     } else {
         if (!r.get("files").size())
             throw std::runtime_error("Playlist vuota");
+        const double startIndex = r.get("startIndex").num();
+        if (!std::isfinite(startIndex) || startIndex < 0 || startIndex != std::floor(startIndex) ||
+            startIndex >= double(r.get("files").size()))
+            throw std::runtime_error("Indice iniziale playlist non valido");
         for (size_t i = 0; i < r.get("files").size(); ++i)
             probe(r.get("files").at(i).str());
     }
+    const double offset = r.get("offsetSeconds").num();
+    if (!std::isfinite(offset) || offset < 0)
+        throw std::runtime_error("Posizione di ripresa non valida");
     Json h;
     h.set("status", "STARTING");
-    h.set("startedAt", now());
+    r.set("startedAt", now());
+    h.set("startedAt", r.get("startedAt"));
     h.set("channelId", double(channel));
+    h.set("channelName", r.get("channelName"));
+    h.set("platform", r.get("platform"));
     auto saved = r.clone();
     saved.set("streamKey", "");
     h.set("request", saved);

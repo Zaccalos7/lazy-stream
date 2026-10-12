@@ -1,5 +1,6 @@
 #include "core.hpp"
 #include "database_schema.hpp"
+#include "history_cleanup_service.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -408,24 +409,34 @@ void Store::importData(const Json& data) {
     }
 }
 
-// Elimina lo storico oltre la soglia; ogni mese è approssimato a 30 giorni per il calcolo della
-// durata.
+// Ricontrolla stato e identità sotto il mutex SQLite: un elenco precedente non basta a proteggere
+// una live.
+bool Store::removeHistoryIfInactive(long id, const std::string& startedAt) {
+    std::lock_guard lock(mutex);
+    Statement q(db, "SELECT data FROM records WHERE kind='history' AND id=?");
+    q.integer(1, id);
+    if (q.step() != SQLITE_ROW)
+        return false;
+    auto item = Json::parse(reinterpret_cast<const char*>(sqlite3_column_text(q.p, 0)));
+    auto status = item.get("status").str();
+    if (status == "LIVE" || status == "STARTING" || item.get("startedAt").str() != startedAt)
+        return false;
+    remove("history", id);
+    return true;
+}
+
+// Mantiene l'API sincrona precedente ma usa le stesse soglie e protezioni del servizio progressivo.
 int Store::cleanup(int months, long channel) {
-    if (months < 1 || months > 120)
-        throw std::runtime_error("Mesi: 1–120");
-    auto cutoff = std::time(nullptr) - static_cast<long>(months) * 30 * 86400;
-    std::tm tm{};
-    gmtime_r(&cutoff, &tm);
-    std::ostringstream s;
-    s << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+    auto cutoff = historyCleanupThreshold(months);
     int n = 0;
     auto a = list("history");
     for (size_t i = 0; i < a.size(); ++i) {
         auto v = a.at(i);
         auto status = v.get("status").str();
-        if (status != "LIVE" && status != "STARTING" && v.get("startedAt").str() < s.str() &&
-            (!channel || v.get("channelId").num() == channel)) {
-            remove("history", v.get("id").num());
+        if (status != "LIVE" && status != "STARTING" && !v.get("startedAt").str().empty() &&
+            v.get("startedAt").str() < cutoff &&
+            (!channel || v.get("channelId").num() == channel) &&
+            removeHistoryIfInactive(v.get("id").num(), v.get("startedAt").str())) {
             ++n;
         }
     }
