@@ -1,0 +1,56 @@
+<section class="windows-page" data-windows-source="Pages/MainLiveHistory.cshtml">
+  <div class="page-header">
+    <div>
+      <a data-go="liveMenu" href="/orbis/mainLiveMenu" data-i18n="back">Indietro</a>
+      <h1 data-i18n="liveHistory">Storico Live</h1>
+    </div>
+    <div class="actions">
+      <button type="button" data-history-export>Esporta</button>
+      <button type="button" data-history-cleanup data-i18n="runCleanupNow">Pulisci storico</button>
+    </div>
+  </div>
+
+  <div class="toolbar history-filters" data-history-filters>
+    <label>
+      <span data-i18n="channel">Canale</span>
+      <select name="channelName"><option value="">–</option></select>
+    </label>
+    <label>
+      <span data-i18n="liveStatus">Stato live</span>
+      <select name="liveStatus">
+        <option value="">–</option>
+        <option value="LIVE">LIVE</option>
+        <option value="STARTING">STARTING</option>
+        <option value="ENDED">ENDED</option>
+        <option value="ERROR">ERROR</option>
+        <option value="STOPPED">STOPPED</option>
+        <option value="INTERRUPTED">INTERRUPTED</option>
+      </select>
+    </label>
+    <label>
+      <span data-i18n="searchByTitle">Cerca per titolo</span>
+      <input type="search" name="titleSearch" />
+    </label>
+    <button type="button" data-history-clear data-i18n="clearFilters">Cancella filtri</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="list roomy">
+      <thead>
+        <tr>
+          <th data-i18n="title">Titolo</th>
+          <th data-i18n="liveStatus">Stato</th>
+          <th data-i18n="channel">Canale</th>
+          <th data-i18n="platform">Piattaforma</th>
+          <th data-i18n="path">Percorso</th>
+          <th data-i18n="data">Data</th>
+          <th data-i18n="outcome">Esito</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody data-history-rows></tbody>
+    </table>
+  </div>
+  <div class="card empty" data-history-empty hidden data-i18n="noDataPresent">Nessun dato</div>
+  <nav class="history-pager" data-history-pager aria-label="Pagine storico"></nav>
+</section>

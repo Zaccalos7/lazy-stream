@@ -1,0 +1,44 @@
+<section class="windows-page" data-windows-source="Pages/MainChannelSetting.cshtml">
+  <div class="page-header">
+    <div>
+      <h1 data-i18n="channelSettings">Settaggi Canale</h1>
+      <p>
+        <a data-go="settingsMenu" href="/orbis/mainSetting" data-i18n="settings">Impostazioni</a>
+        › <span data-i18n="configureChannel">Configura canale</span>
+      </p>
+    </div>
+    <button type="button" class="primary" data-new-channel data-i18n="addConfiguration">
+      Aggiungi configurazione
+    </button>
+  </div>
+
+  <div class="toolbar" data-channel-filters>
+    <label>
+      Platform
+      <select name="platformFilter" aria-label="Platform">
+        <option value="">–</option>
+        <option value="Twitch">Twitch</option>
+        <option value="YouTube">YouTube</option>
+        <option value="Kick">Kick</option>
+        <option value="Facebook">Facebook Gaming</option>
+        <option value="TikTok">TikTok</option>
+        <option value="Custom">Personalizzato</option>
+      </select>
+    </label>
+    <label>
+      <span data-i18n="active">Attive</span> / <span data-i18n="deactive">Disattive</span>
+      <select name="activeFilter" aria-label="Stato">
+        <option value="">–</option>
+        <option value="true" data-i18n="active">Attive</option>
+        <option value="false" data-i18n="deactive">Disattive</option>
+      </select>
+    </label>
+    <label>
+      <span data-i18n="search">Cerca</span>
+      <input name="channelSearch" type="search" />
+    </label>
+  </div>
+
+  <div data-channel-list></div>
+  <div class="card empty" data-channel-empty hidden data-i18n="noDataPresent">Nessun dato</div>
+</section>

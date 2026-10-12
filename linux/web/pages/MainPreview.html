@@ -1,0 +1,77 @@
+<section class="windows-page" data-windows-source="Pages/MainPreview.cshtml">
+  <div class="page-header">
+    <div>
+      <a data-go="liveMenu" href="/orbis/mainLiveMenu" data-i18n="back">Indietro</a>
+      <h1 data-i18n="livePreviewTitle">Anteprima live</h1>
+      <p data-i18n="livePreviewSubtitle">Guarda la diretta e regola le sorgenti.</p>
+    </div>
+    <div class="actions" data-preview-actions hidden>
+      <button type="button" data-preview-spot data-i18n="playSpot">Manda in onda spot</button>
+      <button type="button" class="danger" data-preview-stop data-i18n="stopLiveIconLabel">
+        Ferma live
+      </button>
+      <button type="button" data-preview-public data-i18n="liveNow">Live ora</button>
+    </div>
+  </div>
+
+  <label class="toolbar live-picker" data-live-picker hidden>
+    <span data-i18n="runningLives">Live in corso</span>
+    <select aria-label="Live in corso" data-live-select></select>
+  </label>
+
+  <div data-preview-empty class="card empty">
+    <p data-i18n="noLiveRunning">Nessuna live in corso</p>
+    <button type="button" class="primary" data-start data-i18n="startLiveButton">Avvia Live</button>
+  </div>
+
+  <div data-preview hidden>
+    <div class="preview-main">
+      <article class="card preview-stage">
+        <div class="preview-screen">
+          <img class="preview" data-preview-frame alt="Anteprima della diretta" />
+        </div>
+        <div class="preview-bar">
+          <div class="preview-id">
+            <strong data-preview-name></strong>
+            <span class="caption" data-preview-channel></span>
+          </div>
+          <span class="caption" data-preview-position></span>
+        </div>
+      </article>
+
+      <section class="card scene-strip" data-scene-strip>
+        <div class="scene-strip-head">
+          <h3 data-i18n="sceneStrip">Pulsanti scena</h3>
+          <button type="button" data-preview-deck-open data-i18n="sceneConfigure">
+            Configura regia
+          </button>
+        </div>
+        <div class="scene-strip-grid" data-scene-strip-grid></div>
+      </section>
+
+      <section class="card preview-mixer" data-mixer>
+        <h3 data-i18n="sourceVolumes">Volume sorgenti</h3>
+        <div class="mixer-rows" data-mixer-rows></div>
+        <p class="caption" data-i18n="sourceVolumesHint">Regola il mix della diretta.</p>
+      </section>
+    </div>
+
+    <section class="card preview-params">
+      <h3 data-i18n="liveOutput">Uscita live</h3>
+      <div class="preview-facts">
+        <div>
+          <span data-i18n="resolution">Risoluzione</span><strong data-preview-resolution></strong>
+        </div>
+        <div><span data-i18n="frameRate">Frame rate</span><strong data-preview-fps></strong></div>
+        <div><span data-i18n="codec">Codec</span><strong data-preview-codec></strong></div>
+        <div><span data-i18n="bitrate">Bitrate</span><strong data-preview-bitrate></strong></div>
+      </div>
+      <div class="toolbar">
+        <button type="button" data-preview-parameters data-i18n="videoParameters">
+          Parametri video
+        </button>
+        <button type="button" data-preview-next>Video successivo</button>
+      </div>
+    </section>
+  </div>
+</section>
