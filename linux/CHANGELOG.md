@@ -1,5 +1,18 @@
 # Cronologia del port Linux
 
+## 0.0.4 — 2026-10-12
+
+- `MainLiveHistory.cshtml` e il suo modello ripresi nella pagina Storico: filtri Canale/Stato/Titolo combinati, ordinamento per avvio e pagine da 20 righe, con scelte mantenute nell'URL.
+- Il polling conserva il testo e il focus dei filtri; una ricerca ritardata non riapre lo storico dopo una navigazione.
+- Nome e piattaforma del canale salvati nello snapshot della diretta, indipendentemente dalle modifiche successive al canale.
+- `LiveHistoryCleanupService.cs` portato in un servizio C++ dedicato: worker, progresso, conteggi video/dirette, un lavoro alla volta e protezione dei record LIVE/STARTING.
+- Soglie “ieri” e “tutto” e mesi di calendario; controlli di pulizia automatica della prima configurazione attiva e scheduler per canale. Disabilitare la pulizia conserva i periodi scelti.
+- Export dal browser autenticato con chiavi oscurate; test C++, API/FFmpeg e Chrome per storico, pulizia e download.
+- Vincoli `keepInside` di `composer.js` ripresi per drag, ridimensionamento e frecce; test del salvataggio effettivo del layout dopo il trascinamento.
+- Stop manuale distinto dalla fine naturale (`STOPPED`/`ENDED`); indice e timestamp persistiti per riprendere la playlist dal video interrotto.
+
+Il modello dati Linux conserva un record per diretta con la playlist nello snapshot: il progresso conta i video inclusi, ma la rimozione è atomica per diretta. I media originali e le scene salvate nella libreria restano disponibili; la cancellazione delle scene temporanee Windows richiede ancora un modello equivalente.
+
 ## 0.0.3 — 2026-10-12
 
 - Regole di `SceneService.cs` portate in C++: layout con slot, canvas valido, sorgenti presenti, file e overlay nella libreria, duplicati e rettangoli entro i bordi.

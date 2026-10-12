@@ -31,7 +31,7 @@ Per creare l'installer Debian, dalla cartella `linux/`:
 bash scripts/create-deb.sh
 ```
 
-Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_3.2.0_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
+Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.4_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
 
 Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle applicazioni; FFmpeg è una dipendenza della distribuzione. Un pacchetto compilato su Ubuntu 24.04 richiede versioni compatibili di glibc e delle librerie. Ricompila sulla distribuzione di destinazione se necessario. Il codice non impone x86_64, ma ARM64 non è stato verificato.
 
