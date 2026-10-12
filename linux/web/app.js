@@ -1836,6 +1836,7 @@ function wizardRequest(draft) {
 }
 /** Sequenza Windows: profilo, destinazione, compositore; Indietro conserva tutte le scelte. */
 function startWizard(channelId = 0, sceneId = 0) {
+  if (page !== 'live') navigate('live');
   const draft = {
     channelId,
     profileId: data.channels?.find((channel) => channel.id === channelId)?.profileId,

@@ -22,8 +22,8 @@ Originali: `Domain/Entities.cs`, `Services/SettingService.cs`, `Streaming/Stream
 | W003 | Eliminazione | API e conferma | P |
 | W004 | Nome e descrizione | campi canale | V |
 | W005 | URL RTMP/RTMPS e chiave | validazione e publisher FFmpeg | V RTMP; P RTMPS |
-| W006 | Nome pubblico/ID piattaforma | `platformStreamName` e player pubblico | P |
-| W007 | Attivazione/disattivazione canale | `isActive`, controllo all'avvio | P |
+| W006 | Piattaforma della configurazione e nome del canale | `platformStreamName` salva la piattaforma come su Windows; il player usa `channelName` o un handle Linux precedente | V link Twitch e compatibilità DB; P altre piattaforme |
+| W007 | Attivazione/disattivazione canale | filtro stato e pulsante nel client, `isActive` persistito e controllato all'avvio | V toggle browser; P blocco avvio dedicato |
 | W008 | Cartella locale associata | scansione automatica o playlist importata | V |
 | W009 | Scena associata | `scenePkid` | P |
 | W010 | Profilo associato | `profileId` | V |
@@ -31,12 +31,12 @@ Originali: `Domain/Entities.cs`, `Services/SettingService.cs`, `Streaming/Stream
 | W012 | YouTube | ingest RTMP, ricerca live e player | P, serve account reale |
 | W013 | Kick | ingest configurabile e pagina pubblica | P, serve account reale |
 | W014 | Facebook | ingest configurabile e pagina pubblica | P, serve account reale |
-| W015 | TikTok | nuova chiave ad ogni avvio, senza salvarla nel canale | P |
+| W015 | TikTok | `live_stream_keys.cpp` riconosce nome pubblico o domini ingest regionali, salva un segnaposto e richiede una chiave nuova ad ogni diretta | V per riconoscimento, persistenza e rifiuto chiave mancante; P per piattaforma reale |
 | W016 | TikTok verticale | orientamento del profilo e fitting con bande | P |
 | W017 | RTMP personalizzato | nessun vincolo sul provider | V con ingest locale |
 | W018 | Regole di pulizia per canale | mesi, intervallo e ultimo controllo persistito | P |
 | W019 | Scelta nativo RTMP / FFmpeg sender | unico trasporto FFmpeg sender | D |
-| W020 | Normalizzazioni speciali URL/chiave YouTube | concatenazione server/chiave; normalizzazioni Windows aggiuntive assenti | M |
+| W020 | Normalizzazioni speciali URL/chiave YouTube | `stream_platform.cpp` converte schema e host ingest RTMP YouTube in RTMPS conservando chiave, porta e percorso | V per primary/backup e host estranei; altre regole da confrontare |
 
 ## Profili video e audio
 
@@ -44,11 +44,11 @@ Originali: `Domain/VideoSetting*.cs`, `Domain/FfmpegCodecCatalog.cs`, `Services/
 
 | ID | Funzione Windows | Linux | Stato |
 |---|---|---|---|
-| W021 | Elenco e ricerca profili | pagina Profili video | P |
+| W021 | Elenco e ricerca profili | `MainVideoSetting.html`: i seed sono template, i profili personalizzati compaiono nelle righe | V browser per elenco e ricerca di base |
 | W022 | Creazione, modifica, duplicazione | form e API SQLite | V creazione; P modifica/duplicazione |
 | W023 | Eliminazione e riferimenti | rifiuto se associato ad un canale | P |
 | W024 | Preset per piattaforma | sei profili iniziali, TikTok verticale | P |
-| W025 | Attivo/predefinito per piattaforma | profilo selezionato esplicitamente dal canale | D |
+| W025 | Attivo/predefinito per piattaforma | toggle `isActive`, wizard usa il profilo attivo se il canale non ne impone uno | P percorso server; multi-attivo ancora da allineare |
 | W026 | Elenco encoder FFmpeg installati | comando `-encoders` | P |
 | W027 | H.264 software | libx264 | V |
 | W028 | Accelerazione hardware | NVENC/QSV, da verificare con driver reali | P |
@@ -76,20 +76,20 @@ Originali: `Services/StreamingService.cs`, `Services/FfmpegVideoPlaylistStreamer
 
 | ID | Funzione Windows | Linux | Stato |
 |---|---|---|---|
-| W046 | Procedura di avvio | dialogo canale/profilo/scena/playlist | P |
-| W047 | Countdown annullabile | conto alla rovescia nel dialogo | P |
+| W046 | Procedura di avvio | `_StartWizardSetting.html` → `_StartWizardConfiguration.html` → compositore; avvio playlist distinto con cartella, solo profili e canali attivi | V Chrome con scena e playlist su ingest RTMP locale, Indietro e chiave TikTok |
+| W047 | Countdown annullabile | conto alla rovescia nella playlist, generazione del dialogo controllata per impedire un avvio dopo l'annullamento | V Chrome |
 | W048 | Avvio da cartella | elenco video riconosciuti | V |
 | W049 | Aggiunta singolo file | percorso assoluto con FFprobe | P |
 | W050 | Ordinamento naturale | confronto numerico senza overflow | V |
 | W051 | Esclusione cartelle e duplicati | scansione solo file media e controllo per canale | P |
 | W052 | Riordino e rimozione | pulsanti su/giù e delete | P |
 | W053 | Abilitazione per video | checkbox, esclusione all'avvio | P |
-| W054 | Ripresa da timestamp | `-ss`, posizione memorizzata | V per takeover/ripresa; P riavvio storico |
+| W054 | Ripresa da timestamp | `startIndex` e `offsetSeconds`, indice persistito; replay, ricomincia e riparti da un video nei dettagli | V motore FFmpeg; P controlli browser |
 | W055 | Ripeti playlist o termina | loop e stato ENDED | V |
 | W056 | Dirette concorrenti | sessione/processi/relay per diretta | P, test attuale sequenziale |
 | W057 | Blocco doppio avvio canale | controllo in `Studio::start` | P |
 | W058 | Successivo e salto ad indice | comandi next/jump | P |
-| W059 | Stop singolo e generale | arresto dei gruppi FFmpeg | V singolo; P generale |
+| W059 | Stop singolo e generale | arresto dei gruppi FFmpeg, stato STOPPED per stop manuale distinto da ENDED | V singolo; P generale |
 | W060 | Riconnessione e watchdog | 3 tentativi, controllo dati/uscita a 30 s | P |
 | W061 | Recupero dopo crash | record INTERRUPTED, helper parent-death | P |
 
@@ -101,8 +101,8 @@ Originali: `Services/SceneService.cs`, `Services/SourceCatalogService.cs`, `Serv
 |---|---|---|---|
 | W062 | Elenco/salvataggio/duplicazione/eliminazione scene | pagina Scene e layout | V salvataggio; P altre azioni |
 | W063 | Nome, descrizione e canvas | dati scena | V |
-| W064 | Layout con slot vuoti e overlay conservati | `isLayout` e normalizzazione al salvataggio | P |
-| W065 | Creazione scena distinta dal layout | “Usa layout”, copia con nuovo ID | P |
+| W064 | Layout con slot vuoti e overlay conservati | `scene_service.cpp`: almeno uno slot, target puliti solo per non-overlay, overlay verificati nella libreria | V regole di salvataggio; P editor completo |
+| W065 | Creazione scena distinta dal layout | “Usa layout”, copia con nuovo ID; SceneService duplica scene già in onda o se cambia il tipo | V copia su modifica in storico; P flusso UI completo |
 | W066 | Posizione, dimensioni e ordine dei layer | compositor e filter graph | V trascinamento; P resize/layer |
 | W067 | Allineamento al centro | pulsante Centra | P |
 | W068 | Altri strumenti di allineamento Windows | coordinate numeriche disponibili; non tutti i comandi dedicati | M |
@@ -117,13 +117,13 @@ Originali: `Services/SceneService.cs`, `Services/SourceCatalogService.cs`, `Serv
 | W077 | Thumbnail file/camera/schermo | `/api/snapshot`, JPEG | V file; P hardware |
 | W078 | Probe risoluzione/codec/durata | FFprobe JSON | V |
 | W079 | Proxy media leggeri | job FFmpeg cancellabile, cache MP4 e progresso | V |
-| W080 | Libreria overlay | upload, elenco e cancellazione | P |
+| W080 | Libreria overlay | upload, elenco e cancellazione; rifiuto di overlay fuori libreria o ancora referenziati | V controllo dei riferimenti; P upload/media avanzati |
 | W081 | PNG/JPEG statici | loop del decoder | P |
 | W082 | GIF/WebP animati e WebM alpha | loop/format rgba e overlay FFmpeg | P, alpha da verificare per decoder |
 | W083 | Audio separato per sorgente | volume 0–200% e mute, `amix` | V su singola sorgente; P multi-sorgente |
 | W084 | Silenzio per sorgenti senza audio | `anullsrc` | P |
 | W085 | Anteprima composizione live | output JPEG a 2 fps, 640 px | V pipeline; P verifica visiva in live |
-| W086 | Scena di ogni live conservata nello storico | snapshot del request, distinto dal layout | P |
+| W086 | Scena di ogni live conservata nello storico | snapshot del request, distinto dal layout; scene già usate non sovrascritte o cancellate | V vincolo di modifica/cancellazione; P flusso completo di riavvio |
 | W087 | Cattura Wayland | portale PipeWire assente | M; funzione Linux aggiuntiva |
 
 ## Pulsanti scena, intermezzi e spot
@@ -153,7 +153,7 @@ Originali: `Services/LivePreviewService.cs`, `Streaming/LivePreviewFrames.cs`, `
 
 | ID | Funzione Windows | Linux | Stato |
 |---|---|---|---|
-| W102 | Selezione della diretta osservata | pannello Regia per ID | P |
+| W102 | Selezione della diretta osservata | `MainPreview.html`: selettore delle sessioni e `?live=ID` | V selezione browser senza live multipla; P con dirette concorrenti |
 | W103 | Frame con stamp/ETag | 304 sul frame già posseduto | P |
 | W104 | Long polling frame / notifiche SSE | polling browser a 2 secondi | D |
 | W105 | Riproduzione file con seek | Range e lettura a blocchi | V |
@@ -161,11 +161,11 @@ Originali: `Services/LivePreviewService.cs`, `Streaming/LivePreviewFrames.cs`, `
 | W107 | YouTube stato in onda e avviso | controllo best effort, consenso/errori → UNVERIFIED | P |
 | W108 | Monitoraggio automatico YouTube con cache | richiesta esplicita del player; polling/cache continua assenti | M |
 | W109 | Chiudi avviso per live | sessionStorage per ID | P |
-| W110 | Storico e snapshot | record SQLite per live, esito e date | V |
-| W111 | Riavvio storico | richiesta salvata e offset, chiave corrente del canale | P |
-| W112 | Eliminazione storico con protezione live | delete rifiutata per sessione attiva | P |
-| W113 | Pulizia manuale/per canale/automatica | selezione per età e canale | P |
-| W114 | Pulizia progressiva dello storico | transazione sincrona per elenco corrente; barra progressiva assente | M |
+| W110 | Storico e snapshot | `MainLiveHistory.html`: filtri Canale/Stato/Titolo, pagine da 20 righe e URL persistente; nome/piattaforma conservati nello snapshot | V API/FFmpeg e browser |
+| W111 | Riavvio storico | richiesta salvata, indice video e offset; replay/riparti/ricomincia nella Gestione Live, chiave corrente del canale o fresca TikTok | V motore FFmpeg; P singoli controlli replay |
+| W112 | Eliminazione storico con protezione live | sessione e stato persistito LIVE/STARTING ricontrollati prima della cancellazione | V API e C++ |
+| W113 | Pulizia manuale/per canale/automatica | soglie -1=tutto, 0=ieri, mesi di calendario; toggle/periodi salvati sulla prima configurazione attiva, scheduler per canale | V C++/API/browser e scheduler al riavvio |
+| W114 | Pulizia progressiva dello storico | `history_cleanup_service.cpp`: worker, progresso video/dirette e barra; rimozione atomica dello snapshot per diretta, senza eliminare scene di libreria | V C++/API/browser; D modello record e scene temporanee Windows |
 | W115 | Export dati/storico senza chiave | JSON con chiavi vuote | V |
 | W116 | CPU, RAM e swap | `/proc/stat`, `/proc/meminfo` | P |
 | W117 | Rete | contatori `/proc/net/dev`, escluso loopback | P |
@@ -181,7 +181,7 @@ Originali: `I18n/*`, `Ui/*`, `Messages/*`, `Pages/*`, `Logging/FileLoggerProvide
 
 | ID | Funzione Windows | Linux | Stato |
 |---|---|---|---|
-| W123 | Navigazione desktop | browser locale con sidebar | D |
+| W123 | Navigazione desktop | percorsi `/orbis/*` e prime tre pagine di ingresso HTML ripresi da Windows; shell browser locale | P per gerarchia/rotte; D per shell e resa |
 | W124 | Tema sistema/chiaro/scuro | CSS e preferenza locale | P |
 | W125 | 21 lingue UI/messaggi | bundle originali inclusi, navigazione localizzata | P |
 | W126 | Traduzione completa di tutti i controlli | nuovi controlli Linux ancora in italiano | M |

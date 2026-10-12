@@ -42,11 +42,12 @@ Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle ap
 3. **Playlist:** importa una cartella locale o aggiungi percorsi assoluti. Abilita, riordina, associa un profilo al singolo video e imposta la posizione iniziale.
 4. **Scene e layout:** aggiungi file, desktop X11, camera V4L2, microfono PulseAudio, slot e overlay. Trascina/ridimensiona; usa frecce, Shift e Canc. Puoi trascinare file dal desktop nel canvas: vengono copiati nella libreria locale. “Usa layout” crea una scena distinta dagli slot salvati.
 5. **Overlay e pulsanti scena:** carica i media, scegli modalità a schermo intero o sovrapposta, posizione, durata e scorciatoia. I tasti funzionano quando il pannello di regia è aperto e chiedono conferma.
-6. **Avvia diretta:** scegli canale/profilo/scena, loop e posizione iniziale; il countdown è annullabile.
-7. **Regia:** controlla anteprima, bitrate di uscita, mixer 0–200%, mute, salto, cambio profilo, intermezzi e spot in coda. Il publisher FFmpeg resta aperto durante i cambi dei produttori; la sostituzione può introdurre una breve pausa di codifica.
-8. **Storico:** consulta snapshot/esito, riavvia e cancella; esporta JSON senza chiavi e pulisci lo storico manualmente o per canale.
-9. **Attività:** CPU, memoria, swap, rete, disco, uptime, sensori disponibili e processi FFmpeg. `—` indica il primo campione o un contatore assente.
-10. **Manuale:** consulta le 21 versioni del manuale originale, con screenshot Windows. Stampa o salva in PDF dal browser.
+6. **Avvia Live:** scegli un profilo attivo, poi una configurazione canale attiva e componi la scena, nello stesso ordine Windows. **Avvia playlist** usa gli stessi pannelli e una cartella locale; nelle opzioni trovi loop e countdown annullabile.
+7. **Gestione Live:** tabella con filtri Stato/Canale/Piattaforma e dieci righe per pagina. Dettagli apre i video della playlist; Riprendi usa video e timestamp interrotti, Ricomincia parte dall'inizio. Il profilo può essere collegato anche a una diretta già salvata.
+8. **Regia:** controlla anteprima, bitrate di uscita, mixer 0–200%, mute, salto, cambio profilo, intermezzi e spot in coda. Il publisher FFmpeg resta aperto durante i cambi dei produttori; la sostituzione può introdurre una breve pausa di codifica.
+9. **Storico:** filtra per canale, stato e titolo, consulta snapshot/esito, riavvia e cancella. Esporta JSON senza chiavi; la pulizia manuale o programmata mostra i conteggi e conserva le dirette attive.
+10. **Attività:** CPU, memoria, swap, rete, disco, uptime, sensori disponibili e processi FFmpeg. `—` indica il primo campione o un contatore assente.
+11. **Manuale:** consulta le 21 versioni del manuale originale, con screenshot Windows. Stampa o salva in PDF dal browser.
 
 ## Dati e opzioni
 
@@ -91,7 +92,7 @@ ctest --test-dir build --output-on-failure
 node tests/browser.mjs build/orbis-stream /tmp/orbis-linux-preview.png
 ```
 
-Il secondo comando richiede Node 22+ e Google Chrome; usa un profilo temporaneo senza finestra. I test principali richiedono FFmpeg/FFprobe, usano cartelle temporanee e non pubblicano su piattaforme esterne. Verificano SQLite/export/import, parser FLV a blocchi, timestamp continui, server/token, playlist reale, audio/video, mixer, takeover/ripresa, RTMP locale, proxy, benchmark e riproduzione con Range. Il test browser verifica CRUD canali, trascinamento/salvataggio canvas e manuale.
+Il secondo comando richiede Node 22+ e Google Chrome; usa un profilo temporaneo senza finestra. I test principali richiedono FFmpeg/FFprobe, usano cartelle temporanee e un ingest RTMP locale. Verificano SQLite/export/import, parser FLV a blocchi, timestamp continui, server/token, playlist reale, audio/video, mixer, takeover/ripresa, proxy, benchmark e riproduzione con Range. Il browser verifica le pagine Windows portate, i wizard, avvio playlist via RTMP, countdown annullabile, storico/filtri/paginazione, pulizia, download dell'export, salvataggio canvas e manuale.
 
 Per aggiornare il censimento e le risorse dal checkout Windows:
 

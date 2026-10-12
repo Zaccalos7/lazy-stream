@@ -567,7 +567,14 @@ try {
     await sleep(100);
   }
   if (sceneLive?.status !== 'LIVE')
-    throw Error('Browser compositor did not start real scene: ' + JSON.stringify(sceneLive));
+    throw Error(
+      'Browser compositor did not start real scene: ' +
+        JSON.stringify(sceneLive) +
+        '; ' +
+        (await evaluate(
+          `document.querySelector('[data-modal-error]')?.textContent || document.querySelector('#notice').textContent`,
+        )),
+    );
   await sleep(800);
   await evaluate(`refresh();`);
   await evaluate(

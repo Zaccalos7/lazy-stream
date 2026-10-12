@@ -10,6 +10,10 @@
 - Export dal browser autenticato con chiavi oscurate; test C++, API/FFmpeg e Chrome per storico, pulizia e download.
 - Vincoli `keepInside` di `composer.js` ripresi per drag, ridimensionamento e frecce; test del salvataggio effettivo del layout dopo il trascinamento.
 - Stop manuale distinto dalla fine naturale (`STOPPED`/`ENDED`); indice e timestamp persistiti per riprendere la playlist dal video interrotto.
+- `MainLive.cshtml`, `_LiveRows.cshtml` e i due partial del wizard hanno file HTML dedicati: tabella di dieci dirette per pagina, filtri Stato/Canale/Piattaforma e azioni per playlist/scene persistite anche dopo il riavvio.
+- `live_rows.cpp` unisce snapshot storici e sessioni correnti; dettagli playlist con riproduzione locale, ripresa da un video, ricomincia e collegamento profilo.
+- Avvio scena nell'ordine profilo attivo → configurazione attiva → compositore; avvio playlist con cartella e countdown annullabile. Errori mostrati nel dialogo e scelte conservate durante Indietro o un avvio rifiutato.
+- Test Chrome con FFmpeg in ascolto su localhost: avvio reale di playlist e scena dal wizard, dettagli/riproduzione e stop della scena; avvio da scena senza obbligo di cartella playlist.
 
 Il modello dati Linux conserva un record per diretta con la playlist nello snapshot: il progresso conta i video inclusi, ma la rimozione è atomica per diretta. I media originali e le scene salvate nella libreria restano disponibili; la cancellazione delle scene temporanee Windows richiede ancora un modello equivalente.
 

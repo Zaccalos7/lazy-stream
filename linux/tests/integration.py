@@ -55,6 +55,9 @@ def main():
             for resource, marker in [('/', b'OrbisStream'),('/app.js',b'bootstrap'),('/resources/ui/ui.it.json',b'startLive'),('/pages/MainMenu.html',b'Pages/MainMenu.cshtml'),('/pages/MainLayoutList.html',b'Pages/MainLayoutList.cshtml'),('/pages/MainPreview.html',b'Pages/MainPreview.cshtml'),('/pages/MainChannelSetting.html',b'Pages/MainChannelSetting.cshtml'),('/pages/MainVideoSetting.html',b'Pages/MainVideoSetting.cshtml'),('/pages/MainLiveHistory.html',b'Pages/MainLiveHistory.cshtml')]:
                 with urllib.request.urlopen(urllib.request.Request(base+resource,headers={'Authorization':'Bearer '+token}),timeout=5) as r:
                     assert marker in r.read(), 'installed web resource: '+resource
+            for page_name in ['MainLive','_LiveRows','_StartWizardSetting','_StartWizardConfiguration']:
+                with urllib.request.urlopen(urllib.request.Request(base+f'/pages/{page_name}.html',headers={'Authorization':'Bearer '+token}),timeout=5) as r:
+                    assert f'Pages/{page_name}.cshtml'.encode() in r.read(), 'installed live wizard resource: '+page_name
             p = {'title':'Test','videoWidth':320,'videoHeight':180,'frameRate':25,'videoBitrate':500,'audioBitrate':64,'gopSize':1,'preset':'ultrafast','lowLatency':True}
             profile=api('profiles','POST',p)['id']
             clip=root/'clip.mp4'
