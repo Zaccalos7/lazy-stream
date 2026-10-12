@@ -6,21 +6,47 @@
       <p data-i18n="liveManagementDescription">Avvia, interrompi e monitora le tue dirette.</p>
     </div>
     <div class="actions">
-      <button type="button" data-playlist-start data-i18n="startPlaylistButton">Avvia playlist</button>
-      <button type="button" class="primary" data-start data-i18n="startLiveButton">Avvia Live</button>
+      <button type="button" data-playlist-start data-i18n="startPlaylistButton">
+        Avvia playlist
+      </button>
+      <button type="button" class="primary" data-start data-i18n="startLiveButton">
+        Avvia Live
+      </button>
     </div>
   </div>
   <div class="toolbar" data-live-filters>
-    <label><span data-i18n="liveStatus">Stato live</span><select name="liveStatus">
-      <option value="">–</option><option value="LIVE">LIVE</option><option value="OFFLINE">OFFLINE</option>
-      <option value="ENDED">ENDED</option><option value="ERROR">ERROR</option><option value="STOPPED">STOPPED</option>
-      <option value="STARTING">STARTING</option><option value="RECONNECTING">RECONNECTING</option><option value="INTERRUPTED">INTERRUPTED</option>
-    </select></label>
-    <label><span data-i18n="channel">Canale</span><select name="channelName"><option value="">–</option></select></label>
-    <label><span data-i18n="platform">Piattaforma</span><select name="platform">
-      <option value="">–</option><option value="Custom">Custom</option><option value="Twitch">Twitch</option>
-      <option value="YouTube">YouTube</option><option value="Kick">Kick</option><option value="Facebook">Facebook</option><option value="TikTok">TikTok</option>
-    </select></label>
+    <label
+      ><span data-i18n="liveStatus">Stato live</span
+      ><select name="liveStatus">
+        <option value="">–</option>
+        <option value="LIVE">LIVE</option>
+        <option value="OFFLINE">OFFLINE</option>
+        <option value="ENDED">ENDED</option>
+        <option value="ERROR">ERROR</option>
+        <option value="STOPPED">STOPPED</option>
+        <option value="STARTING">STARTING</option>
+        <option value="RECONNECTING">RECONNECTING</option>
+        <option value="INTERRUPTED">INTERRUPTED</option>
+      </select></label
+    >
+    <label
+      ><span data-i18n="channel">Canale</span
+      ><select name="channelName">
+        <option value="">–</option>
+      </select></label
+    >
+    <label
+      ><span data-i18n="platform">Piattaforma</span
+      ><select name="platform">
+        <option value="">–</option>
+        <option value="Custom">Custom</option>
+        <option value="Twitch">Twitch</option>
+        <option value="YouTube">YouTube</option>
+        <option value="Kick">Kick</option>
+        <option value="Facebook">Facebook</option>
+        <option value="TikTok">TikTok</option>
+      </select></label
+    >
   </div>
   <div data-live-table></div>
 </section>
