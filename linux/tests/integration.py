@@ -52,7 +52,7 @@ def main():
                 raise AssertionError('unauthorized API accepted')
             except urllib.error.HTTPError as e:
                 assert e.code == 401
-            for resource, marker in [('/', b'OrbisStream'),('/app.js',b'bootstrap'),('/resources/ui/ui.it.json',b'startLive'),('/pages/MainMenu.html',b'Pages/MainMenu.cshtml'),('/pages/MainLayoutList.html',b'Pages/MainLayoutList.cshtml'),('/pages/MainPreview.html',b'Pages/MainPreview.cshtml'),('/pages/MainChannelSetting.html',b'Pages/MainChannelSetting.cshtml'),('/pages/MainVideoSetting.html',b'Pages/MainVideoSetting.cshtml')]:
+            for resource, marker in [('/', b'OrbisStream'),('/app.js',b'bootstrap'),('/resources/ui/ui.it.json',b'startLive'),('/pages/MainMenu.html',b'Pages/MainMenu.cshtml'),('/pages/MainLayoutList.html',b'Pages/MainLayoutList.cshtml'),('/pages/MainPreview.html',b'Pages/MainPreview.cshtml'),('/pages/MainChannelSetting.html',b'Pages/MainChannelSetting.cshtml'),('/pages/MainVideoSetting.html',b'Pages/MainVideoSetting.cshtml'),('/pages/MainLiveHistory.html',b'Pages/MainLiveHistory.cshtml')]:
                 with urllib.request.urlopen(urllib.request.Request(base+resource,headers={'Authorization':'Bearer '+token}),timeout=5) as r:
                     assert marker in r.read(), 'installed web resource: '+resource
             p = {'title':'Test','videoWidth':320,'videoHeight':180,'frameRate':25,'videoBitrate':500,'audioBitrate':64,'gopSize':1,'preset':'ultrafast','lowLatency':True}
@@ -94,6 +94,19 @@ def main():
             # I primi database Linux usavano platformStreamName come handle: restano leggibili.
             legacy=api('channels','POST',{'channelName':'Etichetta','platform':'Twitch','platformStreamName':'oldhandle','streamUrl':'rtmp://live.twitch.tv/app','streamKey':'test-key'})['id']
             assert api(f'platform/{legacy}')['publicUrl']=='https://www.twitch.tv/oldhandle'
+            # La pagina Storico salva solo la pulizia della prima configurazione attiva.
+            api('history/cleanup/settings','POST',{'enabled':True,'intervalMonths':3,'olderThanMonths':0})
+            cleanup_channel=api(f'channels/{twitch}')
+            assert cleanup_channel['streamKey']=='test-key' and cleanup_channel['streamUrl']=='rtmp://live.twitch.tv/app'
+            assert cleanup_channel['autoCleanupEnabled'] and cleanup_channel['autoCleanupOlderThanMonths']==0
+            api('history/cleanup/settings','POST',{'enabled':False,'intervalMonths':1,'olderThanMonths':24})
+            disabled=api(f'channels/{twitch}')
+            assert not disabled['autoCleanupEnabled'] and disabled['autoCleanupIntervalMonths']==3 and disabled['autoCleanupOlderThanMonths']==0
+            try:
+                api('history/cleanup','POST',{'months':-2,'async':True})
+                raise AssertionError('invalid cleanup threshold accepted')
+            except urllib.error.HTTPError as e:
+                assert e.code==400
             # A TikTok ingest is temporary even if the channel is labelled Custom.
             temporary=api('channels','POST',{'channelName':'Temporary key','platform':'Custom','streamUrl':'rtmp://push.tiktokcdn.com/live','streamKey':'do-not-store','profileId':profile})['id']
             saved=api('channels/'+str(temporary))
@@ -142,6 +155,32 @@ def main():
             history=api('history/'+str(live))
             assert history['status']=='ENDED'
             assert history['request']['profile']['id']==profile, 'active profile selected'
+            assert history['channelName']=='Active profile' and history['platform']=='Custom'
+            saved_channel=api(f'channels/{channel}')
+            api(f'channels/{channel}','PUT',{**saved_channel,'channelName':'Renamed channel','platform':'Twitch'})
+            assert api(f'history/{live}')['channelName']=='Active profile', 'history retained channel identity'
+            rows=api('state')['liveRows']
+            persisted_row=next(row for row in rows if row['id']==live)
+            assert persisted_row['isPlaylist'] and persisted_row['total']==2 and persisted_row['channelName']=='Active profile'
+            with urllib.request.urlopen(urllib.request.Request(base+f'/api/history/{live}/video/0',headers={'Authorization':'Bearer '+token,'Range':'bytes=0-99'})) as r:
+                assert r.status==206 and len(r.read())==100,'history video range playback'
+            previews=api('scan','POST',{'path':str(root),'preview':True})
+            assert str(clip) in [v['videoPath'] for v in previews]
+            assert previews==api('scan','POST',{'path':str(root),'preview':True}), 'repeat scan remains read-only'
+            replay_output=root/'replay.flv'
+            replay=api('live/start','POST',{'files':[str(clip),str(clip)],'profileId':profile,'startIndex':1,'offsetSeconds':.5,'loop':False,'outputFile':str(replay_output)})['id']
+            for _ in range(100):
+                replay_state=next(state for state in api('live') if state['id']==replay)
+                if replay_state['status'] in ('ENDED','ERROR'): break
+                time.sleep(.05)
+            assert replay_state['status']=='ENDED', replay_state
+            replay_info=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_format','-of','json',str(replay_output)],text=True))
+            assert 1 < float(replay_info['format']['duration']) < 2, replay_info
+            try:
+                api('live/start','POST',{'files':[str(clip)],'profileId':profile,'startIndex':1,'outputFile':str(root/'invalid.flv')})
+                raise AssertionError('invalid playlist start index accepted')
+            except urllib.error.HTTPError as e:
+                assert e.code==400
             assert 'streamKey' not in json.dumps(api('export')) or 'secret' not in json.dumps(api('export'))
             # Mixed mute, takeover and resume go through the persistent publisher.
             output2=root/'switch.flv'
@@ -153,8 +192,28 @@ def main():
             api(f'live/{live2}/resume','POST',{})
             time.sleep(.8)
             api(f'live/{live2}/stop','POST',{})
-            assert api('history/'+str(live2))['status']=='ENDED'
+            assert api('history/'+str(live2))['status']=='STOPPED'
             assert output2.stat().st_size>5000
+            # Il worker elimina snapshot datati e restituisce conteggi coerenti senza toccare una live.
+            old={'status':'ENDED','channelId':channel,'channelName':'Old channel','platform':'Custom','startedAt':'2020-01-01T00:00:00Z','request':{'files':['one.mp4','two.mp4']}}
+            old_id=api('history','POST',old)['id']
+            protected=api('history','POST',{**old,'status':'LIVE'})['id']
+            try:
+                api(f'history/{protected}','DELETE')
+                raise AssertionError('active persisted history deleted')
+            except urllib.error.HTTPError as e:
+                assert e.code==400
+            api('history/cleanup','POST',{'months':0,'channelId':channel,'async':True})
+            for _ in range(100):
+                cleanup=api('history/cleanup')
+                if not cleanup['running']: break
+                time.sleep(.01)
+            assert not cleanup['running'] and not cleanup['error'],cleanup
+            assert cleanup['totalVideos']==2 and cleanup['deletedVideos']==2 and cleanup['deletedLives']==1,cleanup
+            assert api(f'history/{protected}')['status']=='LIVE'
+            assert old_id not in [h['id'] for h in api('history')]
+            api(f'history/{protected}','PUT',{**old,'status':'ENDED'})
+            api(f'history/{protected}','DELETE')
             # Publish through a real RTMP connection to a local FFmpeg ingest.
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1',0))
@@ -179,7 +238,29 @@ def main():
                 if ingest.poll() is None:
                     ingest.terminate()
                     ingest.wait(timeout=3)
-            print('HTTP authentication, persistence, FFmpeg playlist, continuous FLV timestamps, mixer, takeover, resume, stop: OK')
+            # Riavvia il server per esercitare lo scheduler reale senza aspettare un intervallo artificiale.
+            scheduled_channel=api(f'channels/{channel}')
+            api(f'channels/{channel}','PUT',{**scheduled_channel,'autoCleanupEnabled':True,'autoCleanupIntervalMonths':1,'autoCleanupOlderThanMonths':0,'lastCleanupEpoch':0})
+            scheduled=api('history','POST',{**old,'channelId':channel})['id']
+            proc.send_signal(signal.SIGTERM)
+            proc.wait(timeout=8)
+            proc=subprocess.Popen([sys.argv[1],'--no-browser','--data-dir',str(root/'data'),'--port',str(port)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            for _ in range(3):
+                line=proc.stdout.readline()
+                if '?token=' in line:
+                    token=line.strip().split('token=')[-1]
+                    break
+            for _ in range(100):
+                try:
+                    restarted=api('state')
+                    if scheduled not in [item['id'] for item in restarted['history']]: break
+                except urllib.error.URLError:
+                    pass
+                time.sleep(.05)
+            assert scheduled not in [item['id'] for item in restarted['history']], 'scheduled cleanup at startup'
+            assert api(f'channels/{channel}')['lastCleanupEpoch']>0
+            assert live in [row['id'] for row in restarted['liveRows']], 'live table retained finished histories after restart'
+            print('HTTP/SQLite, FFmpeg playlist/replay/RTMP, timestamps, mixer, stop status, history cleanup/scheduler: OK')
         finally:
             proc.send_signal(signal.SIGTERM)
             try:

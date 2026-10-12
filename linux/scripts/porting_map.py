@@ -39,7 +39,7 @@ SERVICE_TARGETS = {
     "OverlayLibrary": "src/server.cpp; src/core.cpp",
     "MediaStore": "src/server.cpp",
     "NaturalFileNameComparer": "src/core.cpp",
-    "LiveHistoryCleanupService": "src/core.cpp; src/stream.cpp",
+    "LiveHistoryCleanupService": "src/history_cleanup_service.cpp; src/history_cleanup_service.hpp; src/core.cpp; src/stream.cpp",
     "BackgroundTaskExecutor": "src/stream.cpp; src/media_job.cpp",
 }
 
@@ -82,6 +82,11 @@ HTML_TARGETS = {
     "MainPreview": "web/pages/MainPreview.html; web/app.js",
     "MainChannelSetting": "web/pages/MainChannelSetting.html; web/app.js",
     "MainVideoSetting": "web/pages/MainVideoSetting.html; web/app.js",
+    "MainLiveHistory": "web/pages/MainLiveHistory.html; web/app.js",
+    "MainLive": "web/pages/MainLive.html; web/app.js; src/live_rows.cpp",
+    "_LiveRows": "web/pages/_LiveRows.html; web/app.js; src/live_rows.cpp",
+    "_StartWizardSetting": "web/pages/_StartWizardSetting.html; web/app.js",
+    "_StartWizardConfiguration": "web/pages/_StartWizardConfiguration.html; web/app.js",
 }
 
 
@@ -112,6 +117,10 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
         target = "web/index.html; web/app.js" if "/Shared/_Layout" in path else "web/app.js"
         return target, "PARZIALE", "Pagina Razor da riprodurre nel client Linux"
     if "/Pages/" in path and path.endswith(".cs"):
+        if name == "MainLive.cshtml":
+            return "src/live_rows.cpp; src/server.cpp; web/app.js", "PARZIALE", "Righe/snapshot e wizard portati; locking video e notifiche push Windows ancora diversi"
+        if name == "MainLiveHistory.cshtml":
+            return "src/history_cleanup_service.cpp; src/server.cpp; web/app.js", "PARZIALE", "Filtri e pulizia portati; modello dati e scene temporanee ancora diversi"
         return "web/app.js; src/server.cpp", "PARZIALE", "Flusso e validazioni della pagina da confrontare"
     if "/Services/" in path and path.endswith(".cs"):
         if name == "SceneService":

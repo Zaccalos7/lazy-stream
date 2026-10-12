@@ -1,5 +1,6 @@
 #include "core.hpp"
 #include "history_cleanup_service.hpp"
+#include "live_rows.hpp"
 #include "live_stream_keys.hpp"
 #include "scene_service.hpp"
 #include "stream_platform.hpp"
@@ -128,6 +129,24 @@ int main() {
             expect(store.list("channels").size() == 1, "import transaction rollback");
             store.importData(exported);
             expect(store.get("channels", id).get("streamKey").str().empty(), "import cleared key");
+            auto historic = Json::parse(
+                R"({"status":"STOPPED","startedAt":"2020-01-01T00:00:00Z","channelId":1,"channelName":"Original name","platform":"Twitch","position":1,"request":{"files":["first.mp4","second.mp4"]}})");
+            const auto historicId = store.save("history", historic);
+            auto currentSessions = Json::array();
+            currentSessions.push(
+                Json::parse("{\"id\":" + std::to_string(historicId) +
+                            ",\"status\":\"LIVE\",\"position\":0,\"offsetSeconds\":2}"));
+            auto rows = liveRows(store, currentSessions);
+            expect(rows.size() == 1 && rows.at(0).get("running").flag() &&
+                       rows.at(0).get("title").str() == "first.mp4" &&
+                       rows.at(0).get("channelName").str() == "Original name",
+                   "live rows merge session and historical identity");
+            auto offlineRows = liveRows(store, Json::array());
+            expect(offlineRows.at(0).get("status").str() == "STOPPED" &&
+                       offlineRows.at(0).get("title").str() == "second.mp4" &&
+                       offlineRows.at(0).get("isPlaylist").flag(),
+                   "live rows persist after app restart");
+            store.remove("history", historicId);
 
             // CheckSlots e CheckLayout devono applicare le stesse regole anche senza editor web.
             Json layout;
