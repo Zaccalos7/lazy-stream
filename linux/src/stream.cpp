@@ -789,7 +789,8 @@ long Studio::start(Json r) {
         if (!asksForStreamKey(c.get("platform").str(), c.get("platformStreamName").str(),
                               c.get("streamUrl").str()))
             r.set("streamKey", c.get("streamKey"));
-        if (!r.has("files") && !r.has("scene")) {
+        // Una scena scelta nel wizard non richiede la cartella playlist del canale.
+        if (!r.has("files") && !r.has("scene") && r.get("sceneId").num() <= 0) {
             if (c.get("scenePkid").num() > 0)
                 r.set("scene", store.get("scenes", c.get("scenePkid").num()));
             else {
