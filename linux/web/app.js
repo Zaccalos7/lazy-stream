@@ -5,6 +5,7 @@ let token = '',
   page = 'dashboard',
   watched = 0,
   modalOpen = false,
+  modalGeneration = 0,
   language = localStorage.getItem('orbis-language') || 'it',
   bundle = {},
   timer,
@@ -186,6 +187,12 @@ async function action(fn) {
     await refresh();
   } catch (e) {
     notify(e.message);
+    if (modalOpen) {
+      $('#modal [data-modal-error]')?.remove();
+      $('#modal-body').prepend(
+        el('p', { class: 'infobar error', role: 'alert', 'data-modal-error': '' }, e.message),
+      );
+    }
   }
 }
 /** Collega i pulsanti al gestore comune per condividere aggiornamenti ed errori delle azioni. */
@@ -231,6 +238,7 @@ function number(name, fallback = 0) {
 }
 /** Apre un modulo con salvataggio comune, così ogni editor condivide il ciclo di apertura e chiusura. */
 function openModal(title, content, save, label = t('save', 'Salva')) {
+  ++modalGeneration;
   modalOpen = true;
   $('#modal-title').textContent = title;
   $('#modal-body').replaceChildren(content);
@@ -240,13 +248,17 @@ function openModal(title, content, save, label = t('save', 'Salva')) {
 }
 /** Chiude l’editor e ripristina lo stato della pagina per consentire nuovamente gli aggiornamenti completi. */
 function closeModal() {
+  ++modalGeneration;
   $('#modal').close();
   modalOpen = false;
   deckActive = false;
 }
 $('#modal').addEventListener('close', () => {
-  modalOpen = false;
-  deckActive = false;
+  if (!$('#modal').open) {
+    ++modalGeneration;
+    modalOpen = false;
+    deckActive = false;
+  }
 });
 const navKeys = {
   dashboard: 'dashboard',
@@ -1428,7 +1440,10 @@ function compose(scene, options = {}) {
     drag = null;
     inspect();
   });
-  canvas.addEventListener('pointercancel', () => { drag = null; inspect(); });
+  canvas.addEventListener('pointercancel', () => {
+    drag = null;
+    inspect();
+  });
   canvas.addEventListener('keydown', (e) => {
     if (selected < 0) return;
     const item = scene.items[selected],
@@ -1546,7 +1561,11 @@ function compose(scene, options = {}) {
       scene.name = value('name');
       scene.description = value('description');
       scene.isLayout = checked('isLayout');
-      const saved = await api('scenes' + (scene.id ? '/' + scene.id : ''), scene.id ? 'PUT' : 'POST', scene);
+      const saved = await api(
+        'scenes' + (scene.id ? '/' + scene.id : ''),
+        scene.id ? 'PUT' : 'POST',
+        scene,
+      );
       scene.id = saved.id;
       if (options.onSaved) await options.onSaved(scene);
       closeModal();
@@ -1703,15 +1722,43 @@ function wizardSettings(draft) {
   const root = el('div');
   renderWindowsPage(root, '_StartWizardSetting');
   const profiles = (data.profiles || []).filter((profile) => profile.isActive);
-  if (!profiles.some((profile) => profile.id === draft.profileId)) draft.profileId = profiles[0]?.id || 0;
+  if (!profiles.some((profile) => profile.id === draft.profileId))
+    draft.profileId = profiles[0]?.id || 0;
   for (const profile of profiles) {
-    const input = el('input', { type: 'radio', name: 'settingId', value: profile.id, checked: profile.id === draft.profileId });
-    input.addEventListener('change', () => { draft.profileId = profile.id; });
-    root.querySelector('[data-wizard-settings]').append(el('label', { class: 'row-card choice' }, input,
-      el('span', {}, el('strong', {}, profile.title), el('small', {}, ` · ${profile.videoCodecName || 'libx264'} · ${profile.videoBitrate} kbps · ${profile.videoWidth}×${profile.videoHeight} · ${profile.frameRate} fps`))));
+    const input = el('input', {
+      type: 'radio',
+      name: 'settingId',
+      value: profile.id,
+      checked: profile.id === draft.profileId,
+    });
+    input.addEventListener('change', () => {
+      draft.profileId = profile.id;
+    });
+    root
+      .querySelector('[data-wizard-settings]')
+      .append(
+        el(
+          'label',
+          { class: 'row-card choice' },
+          input,
+          el(
+            'span',
+            {},
+            el('strong', {}, profile.title),
+            el(
+              'small',
+              {},
+              ` · ${profile.videoCodecName || 'libx264'} · ${profile.videoBitrate} kbps · ${profile.videoWidth}×${profile.videoHeight} · ${profile.frameRate} fps`,
+            ),
+          ),
+        ),
+      );
   }
   root.querySelector('[data-wizard-no-settings]').hidden = profiles.length > 0;
-  root.querySelector('[data-wizard-open-profiles]').addEventListener('click', () => { closeModal(); navigate('profiles'); });
+  root.querySelector('[data-wizard-open-profiles]').addEventListener('click', () => {
+    closeModal();
+    navigate('profiles');
+  });
   return root;
 }
 /** Riprende _StartWizardConfiguration.cshtml: canali attivi e chiave temporanea per TikTok. */
@@ -1719,7 +1766,8 @@ function wizardConfiguration(draft) {
   const root = el('div');
   renderWindowsPage(root, '_StartWizardConfiguration');
   const channels = (data.channels || []).filter((channel) => channel.isActive !== false);
-  if (!channels.some((channel) => channel.id === draft.channelId)) draft.channelId = channels[0]?.id || 0;
+  if (!channels.some((channel) => channel.id === draft.channelId))
+    draft.channelId = channels[0]?.id || 0;
   const keyLabel = root.querySelector('[data-wizard-live-key]');
   const keyInput = keyLabel.querySelector('input');
   keyInput.value = draft.streamKey || '';
@@ -1731,51 +1779,114 @@ function wizardConfiguration(draft) {
     if (!temporary) keyInput.value = '';
   };
   for (const channel of channels) {
-    const input = el('input', { type: 'radio', name: 'configurationId', value: channel.id, checked: channel.id === draft.channelId });
-    input.addEventListener('change', () => { draft.channelId = channel.id; draft.streamKey = ''; keyInput.value = ''; updateKey(); });
-    root.querySelector('[data-wizard-configurations]').append(el('label', { class: 'row-card choice' }, input,
-      el('span', {}, el('strong', {}, channel.channelName), el('small', {}, ` · ${channel.platform || 'Custom'} · ${channel.streamUrl}`), el('p', {}, channel.description || ''))));
+    const input = el('input', {
+      type: 'radio',
+      name: 'configurationId',
+      value: channel.id,
+      checked: channel.id === draft.channelId,
+    });
+    input.addEventListener('change', () => {
+      draft.channelId = channel.id;
+      draft.streamKey = '';
+      keyInput.value = '';
+      updateKey();
+    });
+    root
+      .querySelector('[data-wizard-configurations]')
+      .append(
+        el(
+          'label',
+          { class: 'row-card choice' },
+          input,
+          el(
+            'span',
+            {},
+            el('strong', {}, channel.channelName),
+            el('small', {}, ` · ${channel.platform || 'Custom'} · ${channel.streamUrl}`),
+            el('p', {}, channel.description || ''),
+          ),
+        ),
+      );
   }
   root.querySelector('[data-wizard-no-configurations]').hidden = channels.length > 0;
-  root.querySelector('[data-wizard-open-channels]').addEventListener('click', () => { closeModal(); navigate('channels'); });
+  root.querySelector('[data-wizard-open-channels]').addEventListener('click', () => {
+    closeModal();
+    navigate('channels');
+  });
   updateKey();
   return root;
 }
 /** Valida le due scelte prima di cambiare dialogo, conservando una chiave temporanea solo in memoria. */
 function wizardRequest(draft) {
-  if (!draft.profileId || !draft.channelId) throw Error('Scegli un profilo attivo e una configurazione canale attiva');
+  if (!draft.profileId || !draft.channelId)
+    throw Error('Scegli un profilo attivo e una configurazione canale attiva');
   const channel = data.channels?.find((item) => item.id === draft.channelId);
   draft.streamKey = value('streamKey');
-  if (asksForKey(channel || {}) && !draft.streamKey.trim()) throw Error('La chiave TikTok di questa diretta è richiesta');
+  if (asksForKey(channel || {}) && !draft.streamKey.trim())
+    throw Error('La chiave TikTok di questa diretta è richiesta');
   return { channelId: draft.channelId, profileId: draft.profileId, streamKey: draft.streamKey };
 }
 /** Sequenza Windows: profilo, destinazione, compositore; Indietro conserva tutte le scelte. */
 function startWizard(channelId = 0, sceneId = 0) {
-  const draft = { channelId, profileId: data.channels?.find((channel) => channel.id === channelId)?.profileId, streamKey: '' };
+  const draft = {
+    channelId,
+    profileId: data.channels?.find((channel) => channel.id === channelId)?.profileId,
+    streamKey: '',
+  };
   let scene = sceneId ? structuredClone(data.scenes?.find((item) => item.id === sceneId)) : null;
   const settingsStep = () => {
-    openModal(t('startNewLiveTitle', 'Nuova diretta'), wizardSettings(draft), configurationStep, t('next', 'Avanti'));
+    openModal(
+      t('startNewLiveTitle', 'Nuova diretta'),
+      wizardSettings(draft),
+      configurationStep,
+      t('next', 'Avanti'),
+    );
     $('#modal-footer .primary').disabled = !draft.profileId;
   };
   const configurationStep = () => {
     const content = wizardConfiguration(draft);
-    content.append(field('Scena salvata', 'sceneId', scene?.id || 0, 'select', [[0, 'Nuova composizione'], ...(data.scenes || []).filter((item) => !item.isLayout).map((item) => [item.id, item.name])]));
-    openModal(t('startNewLiveTitle', 'Nuova diretta'), content, () => {
-      const request = wizardRequest(draft);
-      const chosen = number('sceneId');
-      if (chosen && chosen !== scene?.id) scene = structuredClone(data.scenes.find((item) => item.id === chosen));
-      if (!scene) {
-        const profile = data.profiles.find((item) => item.id === draft.profileId);
-        const portrait = asksForKey(data.channels.find((item) => item.id === draft.channelId));
-        const width = Number(profile.videoWidth) || 1280, height = Number(profile.videoHeight) || 720;
-        scene = { name: 'Nuova diretta', width: portrait ? Math.min(width, height) : width, height: portrait ? Math.max(width, height) : height, items: [], isLayout: false };
-      }
-      compose(scene, { onBack: configurationStep, onSaved: async (saved) => {
-        const started = await api('live/start', 'POST', { ...request, sceneId: saved.id, loop: true });
-        watched = started.id;
-        navigate('live');
-      } });
-    }, t('composeNext', 'Componi'));
+    content.append(
+      field('Scena salvata', 'sceneId', scene?.id || 0, 'select', [
+        [0, 'Nuova composizione'],
+        ...(data.scenes || []).filter((item) => !item.isLayout).map((item) => [item.id, item.name]),
+      ]),
+    );
+    openModal(
+      t('startNewLiveTitle', 'Nuova diretta'),
+      content,
+      () => {
+        const request = wizardRequest(draft);
+        const chosen = number('sceneId');
+        if (chosen && chosen !== scene?.id)
+          scene = structuredClone(data.scenes.find((item) => item.id === chosen));
+        if (!scene) {
+          const profile = data.profiles.find((item) => item.id === draft.profileId);
+          const portrait = asksForKey(data.channels.find((item) => item.id === draft.channelId));
+          const width = Number(profile.videoWidth) || 1280,
+            height = Number(profile.videoHeight) || 720;
+          scene = {
+            name: 'Nuova diretta',
+            width: portrait ? Math.min(width, height) : width,
+            height: portrait ? Math.max(width, height) : height,
+            items: [],
+            isLayout: false,
+          };
+        }
+        compose(scene, {
+          onBack: configurationStep,
+          onSaved: async (saved) => {
+            const started = await api('live/start', 'POST', {
+              ...request,
+              sceneId: saved.id,
+              loop: true,
+            });
+            watched = started.id;
+            navigate('live');
+          },
+        });
+      },
+      t('composeNext', 'Componi'),
+    );
     $('#modal-footer').prepend(button(t('back', 'Indietro'), settingsStep));
     $('#modal-footer .primary').disabled = !draft.channelId;
   };
@@ -1784,38 +1895,70 @@ function startWizard(channelId = 0, sceneId = 0) {
 /** Avvio playlist Windows con gli stessi due pannelli e la cartella; scansione e validazione precedono il countdown. */
 function playlistStartWizard() {
   const draft = {};
-  const settings = wizardSettings(draft), configuration = wizardConfiguration(draft);
+  const settings = wizardSettings(draft),
+    configuration = wizardConfiguration(draft);
   const channel = data.channels?.find((item) => item.id === draft.channelId);
-  const content = el('div', {}, settings, configuration,
+  const content = el(
+    'div',
+    {},
+    settings,
+    configuration,
     field(t('playlistFolder', 'Cartella video'), 'videoFolder', channel?.videoFolder || ''),
-    el('details', {}, el('summary', {}, 'Opzioni playlist'), check('Ripeti playlist', 'loop', false), field('Countdown annullabile (secondi)', 'countdown', 3, 'number')));
-  openModal(t('startPlaylistTitle', 'Avvia playlist'), content, async () => {
-    const request = wizardRequest(draft);
-    const folder = value('videoFolder').trim();
-    if (!folder) throw Error('Scegli la cartella dei video');
-    const files = await api('scan', 'POST', { path: folder, preview: true });
-    if (!files.length) throw Error('La cartella non contiene video riproducibili');
-    request.files = files.map((file) => file.videoPath);
-    request.loop = checked('loop');
-    const seconds = Math.min(60, Math.max(0, Math.floor(number('countdown'))));
-    const body = $('#modal-body'), footer = $('#modal-footer');
-    const oldBody = [...body.childNodes], oldFooter = [...footer.childNodes];
-    footer.replaceChildren(button(t('cancel', 'Annulla'), closeModal));
-    for (let remaining = seconds; remaining > 0 && modalOpen; remaining--) {
-      body.replaceChildren(el('div', { class: 'empty' }, el('div', { class: 'metric' }, remaining), el('p', {}, 'Avvio della playlist…')));
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    if (!modalOpen) return;
-    try {
-      const started = await api('live/start', 'POST', request);
-      watched = started.id;
-      closeModal();
-      navigate('live');
-    } catch (error) {
-      body.replaceChildren(...oldBody); footer.replaceChildren(...oldFooter);
-      throw error;
-    }
-  }, t('startPlaylistButton', 'Avvia playlist'));
+    el(
+      'details',
+      {},
+      el('summary', {}, 'Opzioni playlist'),
+      check('Ripeti playlist', 'loop', false),
+      field('Countdown annullabile (secondi)', 'countdown', 3, 'number'),
+    ),
+  );
+  openModal(
+    t('startPlaylistTitle', 'Avvia playlist'),
+    content,
+    async () => {
+      const request = wizardRequest(draft);
+      const folder = value('videoFolder').trim();
+      if (!folder) throw Error('Scegli la cartella dei video');
+      const files = await api('scan', 'POST', { path: folder, preview: true });
+      if (!files.length) throw Error('La cartella non contiene video riproducibili');
+      request.files = files.map((file) => file.videoPath);
+      request.loop = checked('loop');
+      const seconds = Math.min(60, Math.max(0, Math.floor(number('countdown'))));
+      const body = $('#modal-body'),
+        footer = $('#modal-footer');
+      const generation = modalGeneration;
+      const oldBody = [...body.childNodes],
+        oldFooter = [...footer.childNodes];
+      footer.replaceChildren(button(t('cancel', 'Annulla'), closeModal));
+      for (
+        let remaining = seconds;
+        remaining > 0 && modalOpen && generation === modalGeneration;
+        remaining--
+      ) {
+        body.replaceChildren(
+          el(
+            'div',
+            { class: 'empty' },
+            el('div', { class: 'metric' }, remaining),
+            el('p', {}, 'Avvio della playlist…'),
+          ),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      if (!modalOpen || generation !== modalGeneration) return;
+      try {
+        const started = await api('live/start', 'POST', request);
+        watched = started.id;
+        closeModal();
+        navigate('live');
+      } catch (error) {
+        body.replaceChildren(...oldBody);
+        footer.replaceChildren(...oldFooter);
+        throw error;
+      }
+    },
+    t('startPlaylistButton', 'Avvia playlist'),
+  );
   $('#modal-footer .primary').disabled = !draft.profileId || !draft.channelId;
 }
 /** Modifica solo i parametri che il produttore FFmpeg Linux può applicare durante una diretta. */
@@ -2187,14 +2330,28 @@ function live(root) {
 function renderLiveRows(root) {
   const params = new URLSearchParams(location.search);
   const rows = data.liveRows || [];
-  const fields = Object.fromEntries(['liveStatus', 'channelName', 'platform'].map((key) => [key, root.querySelector(`[name=${key}]`)]));
-  const channels = [...new Set([...(data.channels || []).map((channel) => channel.channelName), ...rows.map((row) => row.channelName), params.get('channelName')])].filter(Boolean).sort();
+  const fields = Object.fromEntries(
+    ['liveStatus', 'channelName', 'platform'].map((key) => [
+      key,
+      root.querySelector(`[name=${key}]`),
+    ]),
+  );
+  const channels = [
+    ...new Set([
+      ...(data.channels || []).map((channel) => channel.channelName),
+      ...rows.map((row) => row.channelName),
+      params.get('channelName'),
+    ]),
+  ]
+    .filter(Boolean)
+    .sort();
   for (const name of channels) fields.channelName.append(el('option', { value: name }, name));
   for (const [key, input] of Object.entries(fields)) {
     input.value = params.get(key) || '';
     input.addEventListener('change', () => {
       const next = new URLSearchParams(location.search);
-      if (input.value) next.set(key, input.value); else next.delete(key);
+      if (input.value) next.set(key, input.value);
+      else next.delete(key);
       next.delete('p');
       window.history.replaceState({}, '', `${routes.live}${next.size ? '?' + next : ''}`);
       render();
@@ -2202,12 +2359,19 @@ function renderLiveRows(root) {
   }
   const table = root.querySelector('[data-live-table]');
   renderWindowsPage(table, '_LiveRows');
-  const filtered = rows.filter((row) => (!params.get('liveStatus') || row.status === params.get('liveStatus')) &&
-    (!params.get('channelName') || row.channelName === params.get('channelName')) &&
-    (!params.get('platform') || row.platform?.toLowerCase() === params.get('platform').toLowerCase()));
+  const filtered = rows.filter(
+    (row) =>
+      (!params.get('liveStatus') || row.status === params.get('liveStatus')) &&
+      (!params.get('channelName') || row.channelName === params.get('channelName')) &&
+      (!params.get('platform') ||
+        row.platform?.toLowerCase() === params.get('platform').toLowerCase()),
+  );
   const totalPages = Math.ceil(filtered.length / 10);
   const requested = Number(params.get('p'));
-  const pageNumber = Math.min(Math.max(0, Number.isSafeInteger(requested) ? requested : 0), Math.max(0, totalPages - 1));
+  const pageNumber = Math.min(
+    Math.max(0, Number.isSafeInteger(requested) ? requested : 0),
+    Math.max(0, totalPages - 1),
+  );
   const body = table.querySelector('[data-live-rows]');
   for (const row of filtered.slice(pageNumber * 10, pageNumber * 10 + 10)) {
     const session = data.live?.find((item) => item.id === row.id);
@@ -2217,18 +2381,37 @@ function renderLiveRows(root) {
       control.disabled = disabled;
       controls.append(control);
     };
-    addControl(t(row.isScene ? 'sceneDetails' : 'playlistDetails', 'Dettagli'), () => openLiveDetails(row));
+    addControl(t(row.isScene ? 'sceneDetails' : 'playlistDetails', 'Dettagli'), () =>
+      openLiveDetails(row),
+    );
     addControl(t('connectVideoSetting', 'Profilo video'), () => editHistoryProfile(row));
     if (row.running && session) {
-      addControl(t('preview', 'Anteprima'), () => { watched = row.id; navigate('preview'); });
+      addControl(t('preview', 'Anteprima'), () => {
+        watched = row.id;
+        navigate('preview');
+      });
       addControl(t('sceneDeckOpen', 'Regia e mixer'), () => livePanel(session));
       addControl(t('playSpot', 'Spot'), async () => {
         const path = prompt('Percorso del video spot:');
-        if (path) await api(`live/${row.id}/spot`, 'POST', { scene: { name: 'Spot', items: [{ sourceKind: 'FILE', sourceTarget: path, audioEnabled: true }] } });
+        if (path)
+          await api(`live/${row.id}/spot`, 'POST', {
+            scene: {
+              name: 'Spot',
+              items: [{ sourceKind: 'FILE', sourceTarget: path, audioEnabled: true }],
+            },
+          });
       });
-      addControl(t('stopLiveIconLabel', 'Ferma'), async () => { if (confirm('Fermare la diretta?')) await api(`live/${row.id}/stop`, 'POST', {}); }, false, 'danger');
-      if (session.takeover?.items?.length) addControl(t('sceneResume', 'Riprendi'), () => api(`live/${row.id}/resume`, 'POST', {}));
-      if (row.channelId) addControl(row.platform || 'Player', () => openPublicPlayer(session));
+      addControl(
+        t('stopLiveIconLabel', 'Ferma'),
+        async () => {
+          if (confirm('Fermare la diretta?')) await api(`live/${row.id}/stop`, 'POST', {});
+        },
+        false,
+        'danger',
+      );
+      if (session.takeover?.items?.length)
+        addControl(t('sceneResume', 'Riprendi'), () => api(`live/${row.id}/resume`, 'POST', {}));
+      if (row.channelId) addControl(row.platform || 'Player', () => showPlatformPlayer(session));
     }
     addControl(t('startLiveIconLabel', 'Riprendi'), () => replayHistory(row), row.running);
     addControl(t('restartLiveIconLabel', 'Ricomincia'), async () => {
@@ -2237,35 +2420,64 @@ function renderLiveRows(root) {
       await replayHistory(row, true);
     });
     addControl(t('delete', 'Elimina'), () => remove('history', row.id), row.running, 'danger');
-    body.append(el('tr', { 'data-live-row': row.id },
-      el('td', {}, el('span', { class: `badge ${row.status}` }, row.status)),
-      el('td', {}, el('strong', {}, row.title || `Live ${row.id}`),
-        ...(row.isPlaylist ? [el('span', { class: 'badge' }, ` ${row.position + 1}/${row.total}`)] : []),
-        el('p', { class: 'path' }, `${row.platform || ''} · ${row.source || ''}`)),
-      el('td', {}, row.channelName || '—'), el('td', {}, new Date(row.startedAt).toLocaleString()), el('td', {}, controls)));
+    body.append(
+      el(
+        'tr',
+        { 'data-live-row': row.id },
+        el('td', {}, el('span', { class: `badge ${row.status}` }, row.status)),
+        el(
+          'td',
+          {},
+          el('strong', {}, row.title || `Live ${row.id}`),
+          ...(row.isPlaylist
+            ? [el('span', { class: 'badge' }, ` ${row.position + 1}/${row.total}`)]
+            : []),
+          el('p', { class: 'path' }, `${row.platform || ''} · ${row.source || ''}`),
+        ),
+        el('td', {}, row.channelName || '—'),
+        el('td', {}, new Date(row.startedAt).toLocaleString()),
+        el('td', {}, controls),
+      ),
+    );
   }
   table.querySelector('[data-live-empty]').hidden = filtered.length > 0;
   const pager = table.querySelector('[data-live-pager]');
-  for (const index of [...new Set([0, pageNumber - 1, pageNumber, pageNumber + 1, totalPages - 1])].filter((index) => index >= 0 && index < totalPages).sort((a, b) => a - b))
-    pager.append(button(String(index + 1), () => {
-      const next = new URLSearchParams(location.search);
-      if (index) next.set('p', String(index)); else next.delete('p');
-      window.history.replaceState({}, '', `${routes.live}${next.size ? '?' + next : ''}`);
-      render();
-    }, index === pageNumber ? 'primary' : ''));
+  for (const index of [...new Set([0, pageNumber - 1, pageNumber, pageNumber + 1, totalPages - 1])]
+    .filter((index) => index >= 0 && index < totalPages)
+    .sort((a, b) => a - b))
+    pager.append(
+      button(
+        String(index + 1),
+        () => {
+          const next = new URLSearchParams(location.search);
+          if (index) next.set('p', String(index));
+          else next.delete('p');
+          window.history.replaceState({}, '', `${routes.live}${next.size ? '?' + next : ''}`);
+          render();
+        },
+        index === pageNumber ? 'primary' : '',
+      ),
+    );
 }
 /** Riprende la richiesta salvata; un replay usa video/offset interrotti, un restart torna al primo file. */
 async function replayHistory(item, beginning = false, fromIndex = null) {
   const request = structuredClone(item.request);
   if (!request) throw Error('Snapshot della diretta non disponibile');
   const channel = data.channels?.find((value) => value.id === item.channelId);
-  if (asksForKey(channel || { platform: item.platform || request.platform, streamUrl: request.streamUrl })) {
+  if (
+    asksForKey(
+      channel || { platform: item.platform || request.platform, streamUrl: request.streamUrl },
+    )
+  ) {
     const key = prompt('Nuova chiave TikTok per questa diretta:');
     if (!key?.trim()) return;
     request.streamKey = key.trim();
   }
   const restart = beginning || item.status === 'ENDED';
-  request.startIndex = request.scene ? 0 : fromIndex ?? (restart ? 0 : Math.min(Math.max(0, item.position || 0), (request.files?.length || 1) - 1));
+  request.startIndex = request.scene
+    ? 0
+    : (fromIndex ??
+      (restart ? 0 : Math.min(Math.max(0, item.position || 0), (request.files?.length || 1) - 1)));
   request.offsetSeconds = fromIndex !== null || restart ? 0 : item.offsetSeconds || 0;
   const started = await api('live/start', 'POST', request);
   watched = started.id;
@@ -2277,13 +2489,43 @@ function openLiveDetails(row) {
   const content = el('div', {}, el('p', {}, `${row.channelName || '—'} · ${row.status}`));
   const files = row.request?.files || [];
   if (files.length) {
-    const table = el('table', {}, el('thead', {}, el('tr', {}, ...['Video', 'Stato', 'Azioni'].map((label) => el('th', {}, label)))));
+    const table = el(
+      'table',
+      {},
+      el(
+        'thead',
+        {},
+        el('tr', {}, ...['Video', 'Stato', 'Azioni'].map((label) => el('th', {}, label))),
+      ),
+    );
     files.forEach((path, index) => {
-      const state = index < row.position ? 'ENDED' : index === row.position ? row.status : 'OFFLINE';
+      const state =
+        index < row.position ? 'ENDED' : index === row.position ? row.status : 'OFFLINE';
       const resume = button('Riparti da questo video', () => replayHistory(row, false, index));
       resume.disabled = row.running;
-      table.append(el('tr', {}, el('td', { class: 'path' }, path), el('td', {}, state), el('td', {},
-        button('Riproduci', () => openModal(path.split('/').pop(), el('video', { controls: '', src: `/api/history/${row.id}/video/${index}`, style: 'width:100%' }))), resume)));
+      table.append(
+        el(
+          'tr',
+          {},
+          el('td', { class: 'path' }, path),
+          el('td', {}, state),
+          el(
+            'td',
+            {},
+            button('Riproduci', () =>
+              openModal(
+                path.split('/').pop(),
+                el('video', {
+                  controls: '',
+                  src: `/api/history/${row.id}/video/${index}`,
+                  style: 'width:100%',
+                }),
+              ),
+            ),
+            resume,
+          ),
+        ),
+      );
     });
     content.append(table);
   } else content.append(el('pre', {}, JSON.stringify(row.request?.scene || {}, null, 2)));
@@ -2291,7 +2533,13 @@ function openLiveDetails(row) {
 }
 /** Collega un profilo alla richiesta persistita; se la live è in corso aggiorna anche il produttore. */
 function editHistoryProfile(row) {
-  const content = field(t('videoSettings', 'Profilo video'), 'linkedProfile', row.request?.profile?.id || row.request?.profileId || 0, 'select', (data.profiles || []).map((profile) => [profile.id, profile.title]));
+  const content = field(
+    t('videoSettings', 'Profilo video'),
+    'linkedProfile',
+    row.request?.profile?.id || row.request?.profileId || 0,
+    'select',
+    (data.profiles || []).map((profile) => [profile.id, profile.title]),
+  );
   openModal(t('connectVideoSetting', 'Collega profilo video'), content, async () => {
     const profile = data.profiles.find((item) => item.id === number('linkedProfile'));
     if (!profile) throw Error('Profilo non disponibile');
@@ -2582,15 +2830,7 @@ function renderHistoryTemplate(root) {
         el(
           'td',
           { class: 'actions' },
-          button('Riavvia', async () => {
-            const request = structuredClone(item.request);
-            if (asksForKey(data.channels?.find((channel) => channel.id === item.channelId) || {}))
-              request.streamKey = prompt('Nuova chiave TikTok:') || '';
-            request.offsetSeconds = item.offsetSeconds || 0;
-            const started = await api('live/start', 'POST', request);
-            watched = started.id;
-            navigate('live');
-          }),
+          button('Riavvia', () => replayHistory(item)),
           button('Snapshot', () =>
             openModal('Snapshot della diretta', el('pre', {}, JSON.stringify(item, null, 2))),
           ),

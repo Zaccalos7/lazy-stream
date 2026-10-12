@@ -128,6 +128,14 @@ try {
     ))
   )
     throw Error('Windows MainLiveMenu template');
+  await evaluate(`document.querySelector('[data-start]').click()`);
+  if (
+    !(await evaluate(
+      `document.querySelector('[data-wizard-no-settings]')?.hidden===false && document.querySelector('#modal-footer .primary').disabled`,
+    ))
+  )
+    throw Error('Windows wizard requires an active profile');
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
   await evaluate(`document.querySelectorAll('#navigation button')[2].click()`);
   await sleep(100);
   if (
@@ -254,7 +262,9 @@ try {
   await sleep(100);
   if (!(await evaluate(`document.querySelectorAll('#modal .tile').length===1`)))
     throw Error('Canvas slot creation');
-  await evaluate(`(()=>{for (const [key,value] of [['width',640],['height',360]]) {const field=document.querySelector('#modal .inspector [name='+key+']');field.value=value;field.dispatchEvent(new Event('input'));}})()`);
+  await evaluate(
+    `(()=>{for (const [key,value] of [['width',640],['height',360]]) {const field=document.querySelector('#modal .inspector [name='+key+']');field.value=value;field.dispatchEvent(new Event('input'));}})()`,
+  );
   const box = await evaluate(
     `(()=>{const b=document.querySelector('#modal .tile').getBoundingClientRect();return {x:b.x+30,y:b.y+30};})()`,
   );
@@ -282,7 +292,11 @@ try {
     throw Error('Canvas dragging');
   await evaluate(`document.querySelector('#modal-footer .primary').click()`);
   await sleep(300);
-  if (!(await evaluate(`!document.querySelector('#modal').open && document.querySelector('[data-layout-list] article')?.textContent.includes('Nuovo layout')`)))
+  if (
+    !(await evaluate(
+      `!document.querySelector('#modal').open && document.querySelector('[data-layout-list] article')?.textContent.includes('Nuovo layout')`,
+    ))
+  )
     throw Error('Layout persistence UI');
   // Fixture reali nel database temporaneo: pagine e filtri devono funzionare anche per canali eliminati.
   for (let index = 0; index < 25; index++)
@@ -302,6 +316,103 @@ try {
     request: { scene: { name: 'Altro programma' } },
   });
   await evaluate(
+    `document.querySelectorAll('#navigation button')[1].click();document.querySelector('[data-go=live]').click();refresh()`,
+  );
+  if (
+    !(await evaluate(
+      `document.querySelector('[data-windows-source="Pages/MainLive.cshtml"]')!==null && document.querySelectorAll('[data-live-rows] tr').length===10`,
+    ))
+  )
+    throw Error('Windows live table and page size');
+  for (const [key, value] of [
+    ['liveStatus', 'ENDED'],
+    ['channelName', 'Canale storico'],
+    ['platform', 'Twitch'],
+  ])
+    await evaluate(
+      `(()=>{const field=document.querySelector('[data-live-filters] [name=${key}]');field.value=${JSON.stringify(value)};field.dispatchEvent(new Event('change'));})()`,
+    );
+  await evaluate(
+    `[...document.querySelectorAll('[data-live-pager] button')].find(b=>b.textContent==='3').click()`,
+  );
+  await sleep(100);
+  if (
+    !(await evaluate(
+      `new URLSearchParams(location.search).get('p')==='2' && new URLSearchParams(location.search).get('platform')==='Twitch' && document.querySelectorAll('[data-live-rows] tr').length===5`,
+    ))
+  )
+    throw Error('Windows live filters and pagination');
+  const tiktok = (
+    await api('channels', 'POST', {
+      channelName: 'TikTok wizard',
+      platform: 'TikTok',
+      streamUrl: 'rtmp://push.tiktokcdn.com/live',
+      streamKey: 'temporary',
+    })
+  ).id;
+  await evaluate(`refresh();`);
+  await evaluate(`document.querySelector('#content [data-start]').click()`);
+  if (
+    !(await evaluate(
+      `document.querySelector('[data-windows-source="Pages/_StartWizardSetting.cshtml"]')!==null && document.querySelectorAll('#modal [name=settingId]').length===1 && document.querySelector('#modal [name=settingId]').checked`,
+    ))
+  )
+    throw Error('Windows wizard profile first, active profiles only');
+  await evaluate(`document.querySelector('#modal-footer .primary').click()`);
+  await sleep(100);
+  if (
+    !(await evaluate(
+      `document.querySelector('[data-windows-source="Pages/_StartWizardConfiguration.cshtml"]')!==null`,
+    ))
+  )
+    throw Error('Windows wizard channel second');
+  await evaluate(
+    `(()=>{const field=document.querySelector('#modal [name=configurationId][value="${tiktok}"]');field.click();document.querySelector('#modal-footer .primary').click();})()`,
+  );
+  await sleep(100);
+  if (
+    !(await evaluate(
+      `!document.querySelector('[data-wizard-live-key]').hidden && document.querySelector('[data-modal-error]')?.textContent.includes('TikTok')`,
+    ))
+  )
+    throw Error('Windows wizard refuses missing fresh TikTok key');
+  await evaluate(
+    `document.querySelector('#modal [name=streamKey]').value='fresh-test-key';document.querySelector('#modal-footer .primary').click()`,
+  );
+  await sleep(100);
+  if (
+    !(await evaluate(
+      `document.querySelector('#modal .canvas')!==null && Number(document.querySelector('#modal .fields [name=width]').value) < Number(document.querySelector('#modal .fields [name=height]').value)`,
+    ))
+  )
+    throw Error('Windows wizard opens portrait compositor for TikTok');
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
+  await sleep(100);
+  if (
+    !(await evaluate(
+      `document.querySelector('#modal [name=configurationId]:checked')?.value==='${tiktok}' && document.querySelector('#modal [name=streamKey]').value==='fresh-test-key'`,
+    ))
+  )
+    throw Error('Wizard Back loses configuration or temporary key');
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
+  await sleep(100);
+  if (!(await evaluate(`document.querySelector('#modal [name=settingId]:checked')!==null`)))
+    throw Error('Wizard Back loses selected profile');
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
+  if ((await api('live')).length) throw Error('Cancelled wizard started a live');
+  await evaluate(`document.querySelector('[data-playlist-start]').click()`);
+  await evaluate(
+    `document.querySelector('#modal [name=videoFolder]').value='/folder/that/does/not/exist';document.querySelector('#modal-footer .primary').click()`,
+  );
+  await sleep(150);
+  if (
+    !(await evaluate(
+      `document.querySelector('#modal').open && document.querySelector('[data-modal-error]')!==null && document.querySelector('#modal [name=videoFolder]').value==='/folder/that/does/not/exist'`,
+    ))
+  )
+    throw Error('Playlist error loses selections or is hidden outside dialog');
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
+  await evaluate(
     `document.querySelectorAll('#navigation button')[1].click();document.querySelector('[data-go=history]').click();refresh()`,
   );
   if (
@@ -309,7 +420,14 @@ try {
       `document.querySelector('[data-windows-source="Pages/MainLiveHistory.cshtml"]')!==null && document.querySelectorAll('[data-history-rows] tr').length===20`,
     ))
   )
-    throw Error('Windows history template and page size: ' + await evaluate(`JSON.stringify({path:location.pathname,rows:document.querySelectorAll('[data-history-rows] tr').length,notice:document.querySelector('#notice').textContent,source:document.querySelector('[data-windows-source]')?.dataset.windowsSource})`) + '; ' + errors.join(', '));
+    throw Error(
+      'Windows history template and page size: ' +
+        (await evaluate(
+          `JSON.stringify({path:location.pathname,rows:document.querySelectorAll('[data-history-rows] tr').length,notice:document.querySelector('#notice').textContent,source:document.querySelector('[data-windows-source]')?.dataset.windowsSource})`,
+        )) +
+        '; ' +
+        errors.join(', '),
+    );
   await evaluate(
     `(()=>{const field=document.querySelector('[name=channelName]');field.value='Canale storico';field.dispatchEvent(new Event('change'));})()`,
   );
