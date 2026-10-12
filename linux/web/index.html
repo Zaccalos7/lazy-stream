@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OrbisStream · Linux</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <aside>
+      <h1>◉ OrbisStream</h1>
+      <small>LINUX · STUDIO</small>
+      <nav id="navigation"></nav>
+      <footer>
+        <label
+          >Lingua
+          <select id="language"></select></label
+        ><label
+          >Tema
+          <select id="theme">
+            <option value="system">Sistema</option>
+            <option value="dark">Scuro</option>
+            <option value="light">Chiaro</option>
+          </select></label
+        ><span id="version"></span>
+      </footer>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <small id="eyebrow">STUDIO</small>
+          <h2 id="title">Panoramica</h2>
+        </div>
+        <div class="actions">
+          <span id="live-count"></span><button id="start">＋ Avvia diretta</button
+          ><button id="stop-all" class="danger">Ferma tutte</button>
+        </div>
+      </header>
+      <div id="notice" role="status"></div>
+      <section id="content"></section>
+    </main>
+    <dialog id="modal">
+      <form method="dialog">
+        <header>
+          <h3 id="modal-title"></h3>
+          <button value="cancel" aria-label="Chiudi">×</button>
+        </header>
+        <div id="modal-body"></div>
+        <footer id="modal-footer"></footer>
+      </form>
+    </dialog>
+    <input type="file" id="file-picker" hidden />
+  </body>
+</html>
