@@ -1,0 +1,255 @@
+#include "core.hpp"
+#include "live_stream_keys.hpp"
+#include "scene_service.hpp"
+#include "stream_platform.hpp"
+#include <iostream>
+#include <stdexcept>
+#include <unistd.h>
+using namespace orbis;
+
+void expect(bool ok, const char* message) {
+    if (!ok)
+        throw std::runtime_error(message);
+}
+
+std::vector<unsigned char> segment(unsigned ts) {
+    std::vector<unsigned char> v = {'F', 'L', 'V', 1, 5, 0, 0, 0, 9, 0,    0, 0, 0, 9, 0,
+                                    0,   2,   0,   0, 0, 0, 0, 0, 0, 0x17, 1, 0, 0, 0, 13};
+    v[17] = (ts >> 16) & 255;
+    v[18] = (ts >> 8) & 255;
+    v[19] = ts & 255;
+    v[20] = ts >> 24;
+    return v;
+}
+
+int main() {
+    try {
+        auto j = Json::parse("{\"items\":[{\"value\":2}]}");
+        j.get("items").at(0).set("value", 3.0);
+        expect(j.get("items").at(0).get("value").num() == 3, "JSON mutation");
+        bool bad = false;
+        try {
+            Json::parse("{} bad");
+        } catch (...) {
+            bad = true;
+        }
+        expect(bad, "JSON trailing bytes");
+        expect(naturalLess("clip2.mp4", "clip10.mp4"), "natural order");
+        expect(naturalLess("clip999999999999999999999.mp4", "clip1000000000000000000000.mp4"),
+               "large numbers");
+        expect(normalizeIngestUrl("rtmp://a.rtmp.youtube.com/live2/key") ==
+                   "rtmps://a.rtmps.youtube.com/live2/key",
+               "YouTube primary RTMPS");
+        expect(normalizeIngestUrl("rtmps://b.rtmp.youtube.com:443/live2/key") ==
+                   "rtmps://b.rtmps.youtube.com:443/live2/key",
+               "YouTube backup RTMPS");
+        expect(normalizeIngestUrl("rtmp://other-rtmp.youtube.com/live/key") ==
+                   "rtmp://other-rtmp.youtube.com/live/key",
+               "unrelated host unchanged");
+        expect(normalizeIngestUrl("rtmps://example.test/live/key") ==
+                   "rtmps://example.test/live/key",
+               "other platforms unchanged");
+        expect(isTikTokIngest("rtmps://push-rtmp-1.tiktokcdn-eu.com/live"),
+               "regional TikTok ingest");
+        expect(!isTikTokIngest("rtmp://evil-tiktokcdn.com/live"), "TikTok domain boundary");
+        expect(detectStreamPlatform("rtmp://fa723fc1b171.global-contribute.live-video.net/live") ==
+                   StreamPlatform::Kick,
+               "Kick IVS endpoint before Twitch network");
+        expect(detectStreamPlatform("rtmp://ingest.global-contribute.live-video.net/live") ==
+                   StreamPlatform::Twitch,
+               "Twitch shared network");
+        expect(detectStreamPlatform("rtmps://a.rtmps.youtube.com/live") == StreamPlatform::YouTube,
+               "YouTube ingest detection");
+        expect(detectStreamPlatform("rtmps://live-api-s.facebook.com/live") ==
+                   StreamPlatform::Facebook,
+               "Facebook ingest detection");
+        expect(detectStreamPlatform("https://a.rtmps.youtube.com/live") == StreamPlatform::Generic,
+               "non-RTMP URL ignored");
+        expect(asksForStreamKey("Custom", "tiktok", "rtmp://example.test/live"),
+               "TikTok public name requires fresh key");
+        expect(asksForStreamKey("Custom", "", "rtmp://push.tiktokcdn.com/live"),
+               "TikTok ingest requires fresh key");
+        expect(standInStreamKey("  channel  ") == "asked-at-every-live:channel",
+               "TikTok key stand-in");
+        expect(isStandInStreamKey(standInStreamKey("channel")), "TikTok key not publishable");
+        FlvRelay relay;
+        relay.segment();
+        auto v = segment(1000);
+        std::vector<unsigned char> out;
+        for (auto c : v) {
+            auto chunk = relay.feed(&c, 1, false);
+            out.insert(out.end(), chunk.begin(), chunk.end());
+        }
+        expect(out.size() == v.size(), "fragmented FLV");
+        expect(relay.timestamp() == 0, "zero epoch");
+        relay.segment();
+        out = relay.feed(v.data(), v.size(), false);
+        expect(out.size() == v.size() - 13, "single header");
+        expect(relay.timestamp() == 1, "continuous FLV");
+        auto dir = fs::temp_directory_path() / ("orbis-core-" + std::to_string(getpid()));
+        fs::create_directories(dir);
+        {
+            Store store(dir);
+            Json c;
+            c.set("channelName", "Test");
+            c.set("streamUrl", "rtmp://example.test/live");
+            c.set("streamKey", "secret");
+            auto id = store.save("channels", c);
+            expect(store.get("channels", id).get("streamKey").str() == "secret", "persistence");
+            auto exported = store.exportData();
+            expect(exported.get("channels").at(0).get("streamKey").str().empty(), "export secrets");
+            auto dup = exported.clone();
+            dup.get("channels").push(dup.get("channels").at(0));
+            bad = false;
+            try {
+                store.importData(dup);
+            } catch (...) {
+                bad = true;
+            }
+            expect(bad, "duplicate import rejected");
+            expect(store.list("channels").size() == 1, "import transaction rollback");
+            store.importData(exported);
+            expect(store.get("channels", id).get("streamKey").str().empty(), "import cleared key");
+
+            // CheckSlots e CheckLayout devono applicare le stesse regole anche senza editor web.
+            Json layout;
+            layout.set("name", "Layout");
+            layout.set("isLayout", true);
+            layout.set("width", 320.0);
+            layout.set("height", 180.0);
+            layout.set("items", Json::array());
+            bad = false;
+            try {
+                saveScene(store, layout);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "empty layout rejected");
+            Json slot;
+            slot.set("sourceKind", "FILE");
+            slot.set("sourceTarget", "/temporary/source.mp4");
+            slot.set("x", 0.0);
+            slot.set("y", 0.0);
+            slot.set("width", 320.0);
+            slot.set("height", 180.0);
+            layout.get("items").push(slot);
+            const auto layoutId = saveScene(store, layout);
+            expect(
+                store.get("scenes", layoutId).get("items").at(0).get("sourceTarget").str().empty(),
+                "layout source target cleared");
+            auto outside = layout.clone();
+            outside.get("items").at(0).set("x", 1.0);
+            bad = false;
+            try {
+                saveScene(store, outside);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "outside-canvas slot rejected");
+
+            writeFile(dir / "clip.mp4", "fixture");
+            Json scene = layout.clone();
+            scene.set("name", "Scena");
+            scene.set("isLayout", false);
+            scene.get("items").at(0).set("sourceTarget", (dir / "clip.mp4").string());
+            auto sceneId = saveScene(store, scene);
+            auto numericKind = scene.clone();
+            numericKind.get("items").at(0).set("sourceKind", "0");
+            auto numericId = saveScene(store, numericKind);
+            expect(store.get("scenes", numericId).get("items").at(0).get("sourceKind").str() ==
+                       "FILE",
+                   "Windows numeric source kind normalized");
+            auto duplicate = scene.clone();
+            duplicate.get("items").push(duplicate.get("items").at(0));
+            bad = false;
+            try {
+                saveScene(store, duplicate);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "duplicate source rejected");
+            auto missing = scene.clone();
+            missing.get("items").at(0).set("sourceTarget", (dir / "missing.mp4").string());
+            bad = false;
+            try {
+                saveScene(store, missing);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "missing file rejected");
+
+            Json record;
+            Json request;
+            request.set("scene", store.get("scenes", sceneId));
+            record.set("request", request);
+            store.save("history", record);
+            auto revised = scene.clone();
+            revised.set("name", "Scena modificata");
+            auto revisionId = saveScene(store, revised, sceneId);
+            expect(revisionId != sceneId, "on-air scene copied on edit");
+            expect(store.get("scenes", sceneId).get("name").str() == "Scena",
+                   "on-air scene unchanged");
+            bad = false;
+            try {
+                ensureSceneCanDelete(store, sceneId);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "on-air scene cannot be deleted");
+
+            writeFile(dir / "overlays" / "badge.png", "fixture");
+            Json overlay;
+            overlay.set("sourceKind", "OVERLAY");
+            overlay.set("sourceTarget", (dir / "overlays" / "badge.png").string());
+            overlay.set("x", 0.0);
+            overlay.set("y", 0.0);
+            overlay.set("width", 50.0);
+            overlay.set("height", 50.0);
+            auto withOverlay = layout.clone();
+            withOverlay.get("items").push(overlay);
+            saveScene(store, withOverlay);
+            expect(overlayInUse(store, dir / "overlays" / "badge.png"),
+                   "used overlay cannot be deleted");
+            overlay.set("sourceTarget", (dir / "clip.mp4").string());
+            bad = false;
+            try {
+                validateSceneForSave(Json::parse("{\"name\":\"Invalid\",\"isLayout\":true,"
+                                                 "\"width\":320,\"height\":180,\"items\":[" +
+                                                 overlay.dump() + "]}"),
+                                     dir);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "overlay outside library rejected");
+        }
+        for (const auto [folder, schema] : {
+                 std::pair{"foreign", "CREATE TABLE setting(id INTEGER); PRAGMA user_version=1"},
+                 std::pair{"future", "PRAGMA user_version=99"},
+             }) {
+            const auto path = dir / folder;
+            fs::create_directories(path);
+            sqlite3* db = nullptr;
+            expect(sqlite3_open((path / "stream.db").c_str(), &db) == SQLITE_OK,
+                   "open incompatible database fixture");
+            expect(sqlite3_exec(db, schema, nullptr, nullptr, nullptr) == SQLITE_OK,
+                   "create incompatible database fixture");
+            sqlite3_close(db);
+            bad = false;
+            try {
+                Store incompatible(path);
+            } catch (const std::runtime_error&) {
+                bad = true;
+            }
+            expect(bad, "incompatible database rejected");
+        }
+        fs::remove_all(dir);
+        expect(capture({"printf", "%s", "$(touch /tmp/orbis-must-not-exist)"}) ==
+                   "$(touch /tmp/orbis-must-not-exist)",
+               "no shell interpolation");
+        std::cout << "JSON, SQLite, export/import, natural sorting, processes, FLV: OK\n";
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << '\n';
+        return 1;
+    }
+}
