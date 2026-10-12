@@ -195,9 +195,16 @@ async function action(fn) {
     }
   }
 }
-/** Collega i pulsanti al gestore comune per condividere aggiornamenti ed errori delle azioni. */
-const button = (label, fn, cls = '') =>
-  el('button', { type: 'button', class: cls, onclick: () => action(fn) }, label);
+/** Condivide errori e refresh e blocca il doppio clic mentre un'azione è in corso. */
+const button = (label, fn, cls = '') => {
+  const control = el('button', { type: 'button', class: cls }, label);
+  control.addEventListener('click', async () => {
+    control.disabled = true;
+    await action(fn);
+    if (control.isConnected) control.disabled = false;
+  });
+  return control;
+};
 /** Costruisce campi e selettori con la stessa struttura DOM per uniformare i moduli. */
 function field(label, name, value = '', type = 'text', options) {
   const input =
@@ -360,6 +367,7 @@ async function refresh() {
   // Il polling non deve sostituire il campo mentre l'utente sta scrivendo un filtro.
   const editingHistory =
     page === 'history' &&
+    document.activeElement?.matches('input, select') &&
     document.activeElement?.closest('[data-history-filters], [data-history-cleanup-settings]');
   if (!modalOpen && !editingHistory) render();
   else updatePreviews();
@@ -1887,7 +1895,12 @@ function startWizard(channelId = 0, sceneId = 0) {
       },
       t('composeNext', 'Componi'),
     );
-    $('#modal-footer').prepend(button(t('back', 'Indietro'), settingsStep));
+    $('#modal-footer').prepend(
+      button(t('back', 'Indietro'), () => {
+        draft.streamKey = value('streamKey');
+        settingsStep();
+      }),
+    );
     $('#modal-footer .primary').disabled = !draft.channelId;
   };
   settingsStep();

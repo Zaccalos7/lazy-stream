@@ -1,5 +1,6 @@
-import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile, readFile, readdir } from 'node:fs/promises';
+import { spawn, execFile } from 'node:child_process';
+import { mkdtemp, rm, writeFile, readFile, readdir, mkdir, stat } from 'node:fs/promises';
+import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:net';
@@ -24,7 +25,7 @@ const app = spawn(process.argv[2] || 'linux/build/orbis-stream', [
 let out = '';
 app.stdout.on('data', (d) => (out += d));
 app.stderr.on('data', (d) => process.stderr.write(d));
-let chrome, ws;
+let chrome, ws, ingest;
 try {
   for (let i = 0; i < 100 && !out.includes('?token='); i++) await sleep(100);
   const token = out.match(/token=([a-f0-9]{64})/)?.[1];
@@ -412,6 +413,176 @@ try {
   )
     throw Error('Playlist error loses selections or is hidden outside dialog');
   await evaluate(`document.querySelector('#modal-footer button').click()`);
+  // Avvio dal browser e publisher reali, verso FFmpeg in ascolto soltanto su localhost.
+  const mediaFolder = join(temp, 'media');
+  await mkdir(mediaFolder);
+  const run = promisify(execFile);
+  await run('ffmpeg', [
+    '-v',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'testsrc2=size=320x180:rate=25',
+    '-f',
+    'lavfi',
+    '-i',
+    'sine=frequency=440:sample_rate=48000',
+    '-t',
+    '1',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'ultrafast',
+    '-c:a',
+    'aac',
+    join(mediaFolder, 'clip.mp4'),
+  ]);
+  const active = (await api('profiles')).find((profile) => profile.isActive);
+  await api(`profiles/${active.id}`, 'PUT', {
+    ...active,
+    videoWidth: 320,
+    videoHeight: 180,
+    videoBitrate: 500,
+    frameRate: 25,
+    preset: 'ultrafast',
+  });
+  const ingestPort = await freePort();
+  const destination = (await api('channels'))[0];
+  await api(`channels/${destination.id}`, 'PUT', {
+    ...destination,
+    streamUrl: `rtmp://127.0.0.1:${ingestPort}/live`,
+  });
+  await evaluate(`refresh()`);
+  await evaluate(`document.querySelector('[data-playlist-start]').click()`);
+  await evaluate(
+    `document.querySelector('#modal [name=videoFolder]').value=${JSON.stringify(mediaFolder)};document.querySelector('#modal [name=countdown]').value='2';document.querySelector('#modal-footer .primary').click()`,
+  );
+  await sleep(150);
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
+  await sleep(2100);
+  if ((await api('history')).length !== 26) throw Error('Cancelled countdown started playlist');
+  const recording = join(temp, 'browser-rtmp.flv');
+  ingest = spawn(
+    'ffmpeg',
+    [
+      '-v',
+      'error',
+      '-nostdin',
+      '-y',
+      '-listen',
+      '1',
+      '-i',
+      `rtmp://127.0.0.1:${ingestPort}/live/test-key`,
+      '-c',
+      'copy',
+      '-f',
+      'flv',
+      recording,
+    ],
+    { stdio: 'ignore' },
+  );
+  await sleep(300);
+  await evaluate(`document.querySelector('[data-playlist-start]').click()`);
+  await evaluate(
+    `document.querySelector('#modal [name=videoFolder]').value=${JSON.stringify(mediaFolder)};document.querySelector('#modal [name=countdown]').value='0';document.querySelector('#modal-footer .primary').click()`,
+  );
+  let streamed;
+  for (let i = 0; i < 100; i++) {
+    streamed = (await api('history')).find((item) =>
+      item.request?.files?.includes(join(mediaFolder, 'clip.mp4')),
+    );
+    if (streamed && ['ENDED', 'ERROR'].includes(streamed.status)) break;
+    await sleep(100);
+  }
+  if (streamed?.status !== 'ENDED' || (await stat(recording)).size < 1000)
+    throw Error('Browser playlist did not publish through real RTMP: ' + JSON.stringify(streamed));
+  await evaluate(`refresh()`);
+  if (
+    !(await evaluate(
+      `location.pathname==='/orbis/mainLive' && !document.querySelector('#modal').open && document.querySelector('[data-live-rows]').textContent.includes('clip.mp4')`,
+    ))
+  )
+    throw Error('Browser playlist did not return to Windows live table');
+  await evaluate(
+    `[...document.querySelector('[data-live-row="${streamed.id}"]').querySelectorAll('button')].find(button=>button.textContent.includes('Dettagli')).click()`,
+  );
+  await sleep(100);
+  if (!(await evaluate(`document.querySelector('#modal table').textContent.includes('clip.mp4')`)))
+    throw Error('Windows live playlist details');
+  await evaluate(
+    `[...document.querySelectorAll('#modal button')].find(button=>button.textContent==='Riproduci').click()`,
+  );
+  if (
+    !(await evaluate(
+      `document.querySelector('#modal video').getAttribute('src')==='/api/history/${streamed.id}/video/0'`,
+    ))
+  )
+    throw Error('Live details source playback');
+  await evaluate(`document.querySelector('#modal-footer button').click()`);
+  await api(`history/${streamed.id}`, 'DELETE');
+  for (let i = 0; i < 50 && ingest.exitCode === null; i++) await sleep(100);
+  if (ingest.exitCode !== 0) throw Error('RTMP test ingest did not finish');
+  const sceneRecording = join(temp, 'browser-scene.flv');
+  ingest = spawn(
+    'ffmpeg',
+    [
+      '-v',
+      'error',
+      '-nostdin',
+      '-y',
+      '-listen',
+      '1',
+      '-i',
+      `rtmp://127.0.0.1:${ingestPort}/live/test-key`,
+      '-c',
+      'copy',
+      '-f',
+      'flv',
+      sceneRecording,
+    ],
+    { stdio: 'ignore' },
+  );
+  await sleep(300);
+  await evaluate(`refresh();`);
+  await evaluate(
+    `document.querySelector('#content [data-start]').click();document.querySelector('#modal-footer .primary').click()`,
+  );
+  await sleep(100);
+  await evaluate(`document.querySelector('#modal-footer .primary').click()`);
+  await sleep(100);
+  await evaluate(
+    `window.__savedPrompt=window.prompt;window.prompt=()=>${JSON.stringify(join(mediaFolder, 'clip.mp4'))};[...document.querySelectorAll('#modal .toolbar button')].find(button=>button.textContent==='File').click();window.prompt=window.__savedPrompt`,
+  );
+  for (let i = 0; i < 60 && !(await evaluate(`document.querySelector('#modal .tile')!==null`)); i++)
+    await sleep(100);
+  await evaluate(`document.querySelector('#modal-footer .primary').click()`);
+  let sceneLive;
+  for (let i = 0; i < 80; i++) {
+    sceneLive = (await api('history')).find(
+      (item) => item.channelId === destination.id && item.request?.scene?.name === 'Nuova diretta',
+    );
+    if (sceneLive && ['LIVE', 'ERROR'].includes(sceneLive.status)) break;
+    await sleep(100);
+  }
+  if (sceneLive?.status !== 'LIVE')
+    throw Error('Browser compositor did not start real scene: ' + JSON.stringify(sceneLive));
+  await sleep(800);
+  await evaluate(`refresh();`);
+  await evaluate(
+    `window.confirm=()=>true;[...document.querySelector('[data-live-row="${sceneLive.id}"]').querySelectorAll('button')].find(button=>button.textContent.includes('Ferma')).click()`,
+  );
+  for (let i = 0; i < 80; i++) {
+    if ((await api(`history/${sceneLive.id}`)).status === 'STOPPED') break;
+    await sleep(100);
+  }
+  if (
+    (await api(`history/${sceneLive.id}`)).status !== 'STOPPED' ||
+    (await stat(sceneRecording)).size < 1000
+  )
+    throw Error('Browser Stop did not persist STOPPED or publish scene');
+  await api(`history/${sceneLive.id}`, 'DELETE');
   await evaluate(
     `document.querySelectorAll('#navigation button')[1].click();document.querySelector('[data-go=history]').click();refresh()`,
   );
@@ -462,13 +633,19 @@ try {
     ))
   )
     throw Error('History title debounce, page reset and focus');
+  await evaluate(`window.__browserReloadMarker=true`);
   await send('Page.reload');
-  for (
-    let i = 0;
-    i < 60 && !(await evaluate(`document.querySelector('[data-history-rows]')!==null`));
-    i++
-  )
+  for (let i = 0; i < 60; i++) {
+    try {
+      if (
+        await evaluate(
+          `window.__browserReloadMarker!==true && document.querySelector('[data-history-rows]')!==null`,
+        )
+      )
+        break;
+    } catch {}
     await sleep(100);
+  }
   if (
     !(await evaluate(
       `document.querySelectorAll('[data-history-rows] tr').length===6 && document.querySelector('[name=titleSearch]').value==='Programma 2'`,
@@ -537,11 +714,12 @@ try {
   );
   if (errors.length) throw Error('Browser errors: ' + errors.join(', '));
   console.log(
-    'Browser: Windows pages, channel/profile CRUD, canvas, history filters/paging/reload, cleanup, export, manual: OK',
+    'Browser: Windows pages/wizards, real RTMP playlist/scene, stop, CRUD, canvas, history filters/paging, cleanup/export: OK',
   );
 } finally {
   ws?.close();
   chrome?.kill('SIGTERM');
+  ingest?.kill('SIGTERM');
   app.kill('SIGTERM');
   await sleep(500);
   await rm(temp, { recursive: true, force: true });
