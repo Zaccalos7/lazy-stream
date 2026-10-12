@@ -3,7 +3,8 @@
 #include <cmath>
 
 namespace orbis {
-// Unisce lo snapshot persistente con i contatori correnti: le sessioni finite non spariscono dalla pagina.
+// Unisce lo snapshot persistente con i contatori correnti: le sessioni finite non spariscono dalla
+// pagina.
 Json liveRows(Store& store, const Json& sessions) {
     auto history = store.list("history"), channels = store.list("channels");
     std::vector<Json> rows;
@@ -14,20 +15,24 @@ Json liveRows(Store& store, const Json& sessions) {
         for (size_t j = 0; j < sessions.size(); ++j)
             if (sessions.at(j).get("id").num() == row.get("id").num()) {
                 current = sessions.at(j);
-                for (const auto key : {"status", "position", "offsetSeconds", "outputKbps", "error"})
+                for (const auto key :
+                     {"status", "position", "offsetSeconds", "outputKbps", "error"})
                     row.set(key, current.get(key));
                 break;
             }
         auto status = row.get("status").str();
-        row.set("running", current.has("id") && (status == "LIVE" || status == "STARTING" || status == "RECONNECTING"));
+        row.set("running", current.has("id") && (status == "LIVE" || status == "STARTING" ||
+                                                 status == "RECONNECTING"));
         // Gli storici precedenti al port di MainLiveHistory non avevano ancora questi due campi.
         std::string channelName = row.get("channelName").str(request.get("channelName").str());
         std::string platform = row.get("platform").str(request.get("platform").str());
         for (size_t j = 0; j < channels.size(); ++j) {
             auto channel = channels.at(j);
             if (channel.get("id").num() == row.get("channelId").num()) {
-                if (channelName.empty()) channelName = channel.get("channelName").str();
-                if (platform.empty()) platform = channel.get("platform").str("Custom");
+                if (channelName.empty())
+                    channelName = channel.get("channelName").str();
+                if (platform.empty())
+                    platform = channel.get("platform").str("Custom");
                 break;
             }
         }
@@ -37,8 +42,9 @@ Json liveRows(Store& store, const Json& sessions) {
         const bool isScene = scene.isObject();
         const size_t total = isScene ? scene.get("items").size() : files.size();
         const double requestedPosition = row.get("position").num();
-        const size_t position = total && std::isfinite(requestedPosition) ?
-            size_t(std::clamp(requestedPosition, 0.0, double(total - 1))) : 0;
+        const size_t position = total && std::isfinite(requestedPosition)
+                                    ? size_t(std::clamp(requestedPosition, 0.0, double(total - 1)))
+                                    : 0;
         row.set("position", double(position));
         row.set("total", double(total));
         row.set("isScene", isScene);
@@ -53,7 +59,8 @@ Json liveRows(Store& store, const Json& sessions) {
         return left != right ? left > right : a.get("id").num() > b.get("id").num();
     });
     auto result = Json::array();
-    for (const auto& row : rows) result.push(row);
+    for (const auto& row : rows)
+        result.push(row);
     return result;
 }
 } // namespace orbis
