@@ -72,3 +72,4 @@ dist/
 # Linux C++ output
 linux/build*/
 linux/.cache/
+linux/node_modules/
