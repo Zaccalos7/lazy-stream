@@ -13,6 +13,7 @@ class QLabel;
 class QTableWidget;
 class QVBoxLayout;
 class QTimer;
+class QShortcut;
 class QProgressBar;
 
 namespace orbis {
@@ -29,10 +30,13 @@ class NativeWindow : public QMainWindow {
     QVBoxLayout* bodyLayout = nullptr;
     QTableWidget* table = nullptr;
     QLineEdit* search = nullptr;
-    QComboBox *channelFilter = nullptr, *statusFilter = nullptr, *platformFilter = nullptr, *livePicker = nullptr;
+    QComboBox *channelFilter = nullptr, *statusFilter = nullptr, *platformFilter = nullptr,
+              *livePicker = nullptr;
     QLabel *preview = nullptr, *previewFacts = nullptr, *cleanupLabel = nullptr;
     QProgressBar* cleanupBar = nullptr;
     long watched = 0;
+    long armedDeck = 0;
+    QList<QShortcut*> deckShortcuts;
     int currentPage = 0, pageSize = 20;
     QLabel* pageLabel = nullptr;
     bool sampling = false;
@@ -68,7 +72,7 @@ class NativeWindow : public QMainWindow {
     void exportData();
     void importData();
     void removeRecord(const QString& kind, long id);
-    bool confirm(const char* key);
+    bool confirm(const char* key, const QString& subject = {});
     void run(const std::function<void()>& action);
     void runAsync(std::function<Json()> job, std::function<void(Json)> finished = {});
     void showError(const std::exception& error);
@@ -76,15 +80,27 @@ class NativeWindow : public QMainWindow {
     QTableWidget* makeTable(const QStringList& headers);
     void addPager(int size);
     void updatePreview();
+
+  protected:
+    void closeEvent(QCloseEvent* event) override;
+
   public:
     NativeWindow(Studio& studio, fs::path resources);
     ~NativeWindow() override;
     void navigate(const QString& key);
     void sample();
     void setLanguage(const QString& language);
-    QString language() const { return translations.language(); }
-    QStringList languages() const { return translations.languages(); }
+
+    QString language() const {
+        return translations.language();
+    }
+
+    QStringList languages() const {
+        return translations.languages();
+    }
+
     void editScene(Json scene, std::function<void(Json)> saved = {});
 };
+
 int runNativeApp(int argc, char** argv, Studio& studio, const fs::path& resources);
 } // namespace orbis

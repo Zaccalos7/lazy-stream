@@ -1,6 +1,6 @@
 # OrbisStream · macOS Apple Silicon
 
-È disponibile anche il [port Linux in C++20](linux/README.md), nella cartella `linux/`, con [censimento e confronto punto per punto del progetto Windows](linux/docs/MIGRAZIONE.md).
+È disponibile anche il [app Linux nativa in C++20/Qt 6](linux/README.md), nella cartella `linux/`, con [censimento e confronto punto per punto del progetto Windows](linux/docs/MIGRAZIONE.md).
 
 Applicazione Swift e SwiftUI per macOS 14+, esclusivamente arm64. FFmpeg compone e codifica le sorgenti; VideoToolbox utilizza l’accelerazione Apple. Sidebar, toolbar, SF Symbols, Portachiavi, pannelli file, AVFoundation e WebKit sono nativi.
 
