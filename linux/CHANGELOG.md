@@ -1,5 +1,16 @@
 # Cronologia del port Linux
 
+## 0.0.5 — 2026-10-12
+
+- Avvio grafico predefinito riscritto in C++/Qt 6 Widgets: nessun browser, WebView o listener HTTP. `--headless` mantiene l’API per test e automazioni.
+- Finestre native per navigazione, canali, profili, wizard, dirette/storico, mixer, deck, scene/layout e librerie media. Canvas QGraphicsView con spostamento, ridimensionamento, livelli e file dal desktop.
+- Player Qt Multimedia con scelta del backend FFmpeg disponibile, decoder GStreamer nel pacchetto e prova di fotogrammi MP4 reali; manuale in widget Qt con stampa/esportazione PDF.
+- Tutti i 21 cataloghi Windows e le 439 chiavi originali riusati senza modifiche, selezione persistente, lingua iniziale dal sistema, formati locali e arabo RTL. Cataloghi standard Qt per i dialoghi di sistema.
+- Test Qt di navigazione multilingua, CRUD e geometria del canvas, playlist reale dal wizard; controllo avvio nativo senza HTTP anche dal pacchetto estratto.
+- Dipendenze Qt, traduzioni e font Unicode nel `.deb`; codice C++ formattato con clang-format.
+
+Il port non dichiara ancora parità completa Windows: le differenze sono elencate in `docs/INTERFACCIA_NATIVA.md` e `docs/MIGRAZIONE.md`.
+
 ## 0.0.4 — 2026-10-12
 
 - `MainLiveHistory.cshtml` e il suo modello ripresi nella pagina Storico: filtri Canale/Stato/Titolo combinati, ordinamento per avvio e pagine da 20 righe, con scelte mantenute nell'URL.
