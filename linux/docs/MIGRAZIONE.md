@@ -1,12 +1,14 @@
 # Migrazione Windows → Linux: elenco punto per punto
 
-Riferimento: checkout locale `lazy-stream-windows`, 12 ottobre 2026. Destinazione: `lazy-stream-mac/linux`, C++20 + FFmpeg + SQLite + browser locale. Questo elenco parte dal progetto Windows, non dalle aggiunte specifiche di macOS.
+**Interfaccia corrente (0.0.5):** C++/Qt Widgets nativa. Le righe V storiche possono riferirsi ai test del motore o al precedente client di riferimento; non attestano automaticamente parità del nuovo front end. La verifica Qt e le differenze sono in [INTERFACCIA_NATIVA.md](INTERFACCIA_NATIVA.md). Tutti i 21 cataloghi Windows sono disponibili nella GUI.
+
+Riferimento: checkout locale `lazy-stream-windows`, 12 ottobre 2026. Destinazione: `lazy-stream-mac/linux`, C++20 + Qt 6 Widgets + FFmpeg + SQLite. Questo elenco parte dal progetto Windows, non dalle aggiunte specifiche di macOS.
 
 L'[inventario completo](INVENTARIO_WINDOWS.md) riporta 257 file, 61 route API, tipi, proprietà, metodi pubblici e hash SHA-256. È riproducibile con `scripts/sync-windows.py`; [windows-inventory.json](windows-inventory.json) contiene i dati per strumenti automatici.
 
 ## Significato degli stati
 
-- **V:** verificato dai test Linux con server, FFmpeg o browser reali.
+- **V:** verificato dai test Linux con Qt, server, FFmpeg o client di riferimento reali.
 - **P:** codice presente; la singola funzione non ha una prova dedicata oppure richiede hardware/servizi esterni.
 - **D:** equivalente Linux con comportamento o architettura differente.
 - **M:** parità ancora mancante. Non considerare queste voci completate.
@@ -181,12 +183,12 @@ Originali: `I18n/*`, `Ui/*`, `Messages/*`, `Pages/*`, `Logging/FileLoggerProvide
 
 | ID | Funzione Windows | Linux | Stato |
 |---|---|---|---|
-| W123 | Navigazione desktop | percorsi `/orbis/*` e prime tre pagine di ingresso HTML ripresi da Windows; shell browser locale | P per gerarchia/rotte; D per shell e resa |
+| W123 | Navigazione desktop | finestra Qt nativa e navigazione nelle sette sezioni; HTML conservati come riferimento | V avvio nativo e navigazione in 21 lingue; P resa/contratto Windows |
 | W124 | Tema sistema/chiaro/scuro | CSS e preferenza locale | P |
 | W125 | 21 lingue UI/messaggi | bundle originali inclusi, navigazione localizzata | P |
 | W126 | Traduzione completa di tutti i controlli | nuovi controlli Linux ancora in italiano | M |
 | W127 | Manuale in 21 lingue con figure | originale incluso, figure Windows dichiarate | V rendering |
-| W128 | Stampa/salvataggio PDF manuale | stampa browser | P |
+| W128 | Stampa/salvataggio PDF manuale | stampa/PDF con QTextDocument e QPrinter | P |
 | W129 | Screenshot Linux in ogni lingua | non generati come sostituti del manuale Windows | M |
 | W130 | Sfondo personalizzato dashboard | upload immagini e preferenza SQLite | P |
 | W131 | Log FFmpeg consultabile/esportabile | file per sessione e API testo | P |

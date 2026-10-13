@@ -19,29 +19,29 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `README.md` | `66ccca707c11` | README.md | PARZIALE | Manuale Linux specifico |
 | `samples/overlays/README.md` | `b73da3f7d115` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
 | `sed_script.sh` | `39affaa82590` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.App/App.xaml.cs` | `fa306ba1e768` | src/main.cpp; web/index.html | PARZIALE | Shell Linux usa browser locale |
-| `src/Orbis.Stream.App/AppText.cs` | `d32b2ac1363c` | src/main.cpp; web/index.html | PARZIALE | Shell Linux usa browser locale |
-| `src/Orbis.Stream.App/AssemblyInfo.cs` | `3fac2af92385` | src/main.cpp; web/index.html | PARZIALE | Shell Linux usa browser locale |
-| `src/Orbis.Stream.App/MainWindow.xaml.cs` | `329383722b26` | src/main.cpp; web/index.html | PARZIALE | Shell Linux usa browser locale |
+| `src/Orbis.Stream.App/App.xaml.cs` | `fa306ba1e768` | src/main.cpp; src/native_window.cpp | PARZIALE | Shell Qt nativa predefinita; API solo in headless |
+| `src/Orbis.Stream.App/AppText.cs` | `d32b2ac1363c` | src/main.cpp; src/native_window.cpp | PARZIALE | Shell Qt nativa predefinita; API solo in headless |
+| `src/Orbis.Stream.App/AssemblyInfo.cs` | `3fac2af92385` | src/main.cpp; src/native_window.cpp | PARZIALE | Shell Qt nativa predefinita; API solo in headless |
+| `src/Orbis.Stream.App/MainWindow.xaml.cs` | `329383722b26` | src/main.cpp; src/native_window.cpp | PARZIALE | Shell Qt nativa predefinita; API solo in headless |
 | `src/Orbis.Stream.App/Orbis.Stream.App.csproj` | `47c879e7516a` | CMakeLists.txt; VERSION | PARZIALE | Build e versione Linux indipendenti |
-| `src/Orbis.Stream.App/wwwroot/css/base.css` | `5db6e559e01e` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/cleanup.css` | `9a4a2966b57d` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/composer.css` | `455d58d4c336` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/controls.css` | `d5e27201578c` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/countdown.css` | `fcbd69f01e27` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/dashboard.css` | `13961623f1f2` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/feedback.css` | `d377efab2eb3` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/layout.css` | `55b191daaea9` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/manual.css` | `90306123fa2e` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/meters.css` | `f64ce9cd08c1` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/overlays.css` | `a8a51f570c8a` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/preview.css` | `921fc6a25460` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/scenes.css` | `72e1e16e57f5` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/surfaces.css` | `0b2f7af39ad6` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/css/tokens.css` | `31e9770fc711` | web/style.css | PARZIALE | Stile/struttura da confrontare selettore per selettore |
-| `src/Orbis.Stream.App/wwwroot/js/composer.js` | `19b109c44fef` | web/app.js | PARZIALE | Interazioni da confrontare funzione per funzione |
-| `src/Orbis.Stream.App/wwwroot/js/scenes.js` | `e783d7c11821` | web/app.js | PARZIALE | Interazioni da confrontare funzione per funzione |
-| `src/Orbis.Stream.App/wwwroot/js/site.js` | `02d513390548` | web/app.js | PARZIALE | Interazioni da confrontare funzione per funzione |
+| `src/Orbis.Stream.App/wwwroot/css/base.css` | `5db6e559e01e` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/cleanup.css` | `9a4a2966b57d` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/composer.css` | `455d58d4c336` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/controls.css` | `d5e27201578c` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/countdown.css` | `fcbd69f01e27` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/dashboard.css` | `13961623f1f2` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/feedback.css` | `d377efab2eb3` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/layout.css` | `55b191daaea9` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/manual.css` | `90306123fa2e` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/meters.css` | `f64ce9cd08c1` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/overlays.css` | `a8a51f570c8a` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/preview.css` | `921fc6a25460` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/scenes.css` | `72e1e16e57f5` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/surfaces.css` | `0b2f7af39ad6` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/css/tokens.css` | `31e9770fc711` | web/style.css | PARZIALE | Riferimento CSS conservato; la GUI corrente usa stile e widget Qt |
+| `src/Orbis.Stream.App/wwwroot/js/composer.js` | `19b109c44fef` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; web/app.js | PARZIALE | Interazioni trasferite in Qt; JavaScript conservato come riferimento |
+| `src/Orbis.Stream.App/wwwroot/js/scenes.js` | `e783d7c11821` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; web/app.js | PARZIALE | Interazioni trasferite in Qt; JavaScript conservato come riferimento |
+| `src/Orbis.Stream.App/wwwroot/js/site.js` | `02d513390548` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; web/app.js | PARZIALE | Interazioni trasferite in Qt; JavaScript conservato come riferimento |
 | `src/Orbis.Stream.Core/Configuration/OrbisRuntimeOptions.cs` | `8c7b25ccd306` | src/main.cpp | PARZIALE | Opzioni runtime da confrontare |
 | `src/Orbis.Stream.Core/Contracts/LocalDateTimeConverter.cs` | `2ec0b5a48275` | src/server.cpp; src/core.cpp | PARZIALE | Contratto HTTP Linux ancora diverso |
 | `src/Orbis.Stream.Core/Contracts/Requests.cs` | `c5399c9fa182` | src/server.cpp; src/core.cpp | PARZIALE | Contratto HTTP Linux ancora diverso |
@@ -74,12 +74,12 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `src/Orbis.Stream.Core/Http/ExceptionHandlingMiddleware.cs` | `f9c7f1f40991` | src/server.cpp | PARZIALE | Errori e formato risposte da confrontare |
 | `src/Orbis.Stream.Core/Http/OrbisExceptions.cs` | `2d55ba10bbc4` | src/server.cpp | PARZIALE | Errori e formato risposte da confrontare |
 | `src/Orbis.Stream.Core/Http/ResponseFactory.cs` | `6cb62c591818` | src/server.cpp | PARZIALE | Errori e formato risposte da confrontare |
-| `src/Orbis.Stream.Core/I18n/Localizer.cs` | `1d9a0a0888db` | web/app.js; web/resources/ui | PARZIALE | Cataloghi presenti, controlli Linux non tutti tradotti |
-| `src/Orbis.Stream.Core/I18n/ManualText.cs` | `dda99dc08a71` | web/app.js; web/resources/ui | PARZIALE | Cataloghi presenti, controlli Linux non tutti tradotti |
-| `src/Orbis.Stream.Core/I18n/MessageCatalog.cs` | `88fe4c10f7b6` | web/app.js; web/resources/ui | PARZIALE | Cataloghi presenti, controlli Linux non tutti tradotti |
-| `src/Orbis.Stream.Core/I18n/MessageFormatter.cs` | `7470194897ea` | web/app.js; web/resources/ui | PARZIALE | Cataloghi presenti, controlli Linux non tutti tradotti |
-| `src/Orbis.Stream.Core/I18n/PropertiesBundle.cs` | `0957396c7870` | web/app.js; web/resources/ui | PARZIALE | Cataloghi presenti, controlli Linux non tutti tradotti |
-| `src/Orbis.Stream.Core/I18n/UiText.cs` | `89e5578cee3f` | web/app.js; web/resources/ui | PARZIALE | Cataloghi presenti, controlli Linux non tutti tradotti |
+| `src/Orbis.Stream.Core/I18n/Localizer.cs` | `1d9a0a0888db` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
+| `src/Orbis.Stream.Core/I18n/ManualText.cs` | `dda99dc08a71` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
+| `src/Orbis.Stream.Core/I18n/MessageCatalog.cs` | `88fe4c10f7b6` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
+| `src/Orbis.Stream.Core/I18n/MessageFormatter.cs` | `7470194897ea` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
+| `src/Orbis.Stream.Core/I18n/PropertiesBundle.cs` | `0957396c7870` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
+| `src/Orbis.Stream.Core/I18n/UiText.cs` | `89e5578cee3f` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
 | `src/Orbis.Stream.Core/Logging/FileLoggerProvider.cs` | `6856ecbe669a` | — | MANCANTE | Logger applicativo e rotazione mancanti |
 | `src/Orbis.Stream.Core/Messages/messages_ar.properties` | `616d6796a11d` | web/resources/messages/messages_ar.properties | COPIATO | Byte identici all'inventario |
 | `src/Orbis.Stream.Core/Messages/messages_da.properties` | `98df690ee0cd` | web/resources/messages/messages_da.properties | COPIATO | Byte identici all'inventario |
@@ -104,42 +104,42 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `src/Orbis.Stream.Core/Messages/messages_zh.properties` | `3bbf0249be6f` | web/resources/messages/messages_zh.properties | COPIATO | Byte identici all'inventario |
 | `src/Orbis.Stream.Core/Orbis.Stream.Core.csproj` | `30e2f94d0e68` | CMakeLists.txt; VERSION | PARZIALE | Build e versione Linux indipendenti |
 | `src/Orbis.Stream.Core/Pages/Countdown.cshtml` | `c9e582af3286` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml` | `83ab73b6d3a6` | web/pages/MainChannelSetting.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml.cs` | `b761f6cd3c39` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml` | `83ab73b6d3a6` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainChannelSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml.cs` | `b761f6cd3c39` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/MainLayout.cshtml` | `77af0c2dc526` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/MainLayout.cshtml.cs` | `f8644bb17f1d` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml` | `6654595ff035` | web/pages/MainLayoutList.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml.cs` | `9a3a894cb7f3` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainLive.cshtml` | `5a44642050fb` | web/pages/MainLive.html; web/app.js; src/live_rows.cpp | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainLayout.cshtml.cs` | `f8644bb17f1d` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml` | `6654595ff035` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLayoutList.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml.cs` | `9a3a894cb7f3` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainLive.cshtml` | `5a44642050fb` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLive.html; web/app.js; src/live_rows.cpp | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainLive.cshtml.cs` | `cf634e9e752f` | src/live_rows.cpp; src/server.cpp; web/app.js | PARZIALE | Righe/snapshot e wizard portati; locking video e notifiche push Windows ancora diversi |
-| `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml` | `27ae35160bb1` | web/pages/MainLiveHistory.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml` | `27ae35160bb1` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLiveHistory.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml.cs` | `aceaf8a6bdbb` | src/history_cleanup_service.cpp; src/server.cpp; web/app.js | PARZIALE | Filtri e pulizia portati; modello dati e scene temporanee ancora diversi |
-| `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml` | `d293f2ca8f85` | web/pages/MainLiveMenu.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml.cs` | `5e73dc0c7384` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml` | `d293f2ca8f85` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLiveMenu.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml.cs` | `5e73dc0c7384` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/MainManual.cshtml` | `9fa8f58b6e70` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/MainMenu.cshtml` | `9aa25a715fc1` | web/pages/MainMenu.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainPreview.cshtml` | `6142924a2887` | web/pages/MainPreview.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainPreview.cshtml.cs` | `b87290dd2698` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainSetting.cshtml` | `d4626e99d286` | web/pages/MainSetting.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainMenu.cshtml` | `9aa25a715fc1` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainMenu.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainPreview.cshtml` | `6142924a2887` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainPreview.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainPreview.cshtml.cs` | `b87290dd2698` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainSetting.cshtml` | `d4626e99d286` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainTaskManager.cshtml` | `13d638252bd6` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/MainTaskManager.cshtml.cs` | `f582840e9851` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml` | `5ee7df24533b` | web/pages/MainVideoSetting.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml.cs` | `aeaf82f7b750` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
-| `src/Orbis.Stream.Core/Pages/OrbisPageModel.cs` | `b48f328ee53b` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
-| `src/Orbis.Stream.Core/Pages/PageHelpers.cs` | `146998a41524` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainTaskManager.cshtml.cs` | `f582840e9851` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
+| `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml` | `5ee7df24533b` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainVideoSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml.cs` | `aeaf82f7b750` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
+| `src/Orbis.Stream.Core/Pages/OrbisPageModel.cs` | `b48f328ee53b` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
+| `src/Orbis.Stream.Core/Pages/PageHelpers.cs` | `146998a41524` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/Shared/_Layout.cshtml` | `72527945fbd5` | web/index.html; web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/Shared/_Pager.cshtml` | `d36587b61f29` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/Shared/_SceneDeckIcon.cshtml` | `1a4cbf0f3cc3` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/Shared/_SpotIcon.cshtml` | `61a95cdcab2c` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/Shared/_VideoSettingFields.cshtml` | `9664431a7b86` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/VideoSettingForm.cs` | `d26c40454b8d` | web/app.js; src/server.cpp | PARZIALE | Flusso e validazioni della pagina da confrontare |
+| `src/Orbis.Stream.Core/Pages/VideoSettingForm.cs` | `d26c40454b8d` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/_AppStats.cshtml` | `a954523575b3` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/_LiveRows.cshtml` | `f9d8f113f68f` | web/pages/_LiveRows.html; web/app.js; src/live_rows.cpp | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
+| `src/Orbis.Stream.Core/Pages/_LiveRows.cshtml` | `f9d8f113f68f` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_LiveRows.html; web/app.js; src/live_rows.cpp | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/_PlaylistVideos.cshtml` | `73902cf7a839` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_SceneComposer.cshtml` | `07b1dfe98aab` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_SceneDeck.cshtml` | `49272363885d` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/_StartWizardConfiguration.cshtml` | `8a482a25af62` | web/pages/_StartWizardConfiguration.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
-| `src/Orbis.Stream.Core/Pages/_StartWizardSetting.cshtml` | `45eb916bc80a` | web/pages/_StartWizardSetting.html; web/app.js | PARZIALE | Struttura e percorso ripresi; grafica e dettagli da confrontare |
+| `src/Orbis.Stream.Core/Pages/_StartWizardConfiguration.cshtml` | `8a482a25af62` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_StartWizardConfiguration.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/_StartWizardSetting.cshtml` | `45eb916bc80a` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_StartWizardSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/_Stats.cshtml` | `e9a874b1645f` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_SystemInfo.cshtml` | `dffad664bd3d` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_ViewImports.cshtml` | `47666ab1e2ad` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
