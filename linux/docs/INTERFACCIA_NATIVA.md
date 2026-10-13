@@ -13,6 +13,7 @@
 ## Traduzioni
 
 - Tutti i 21 cataloghi originali `web/resources/ui/ui.*.json` sono riusati byte per byte; ciascuno contiene 439 chiavi.
+- Le nuove diciture specifiche delle operazioni native (import/export configurazione, ripetizione playlist, video successivo, libreria video, modifica e altre azioni) sono in `native_i18n.cpp`, in italiano e inglese; nelle altre lingue queste sole diciture usano l'inglese.
 - Il primo avvio sceglie la lingua del sistema se disponibile, altrimenti inglese. Il selettore mostra autonimi e salva la scelta nelle preferenze SQLite.
 - Cambio lingua immediato; arabo RTL e formattazione QLocale di numeri e date. Le lingue artificiali mantengono i cataloghi Windows.
 - Qt usa anche le traduzioni standard `qtbase_<lingua>.qm` per i propri dialoghi. Dove Qt non offre un catalogo, i pulsanti principali usano le chiavi Windows.
@@ -26,6 +27,13 @@
 - `core` e `integration`: SQLite, scene, pulizia, timestamp FLV, autentificazione dell’API headless e streaming reale continuano a usare le prove precedenti.
 - `package_smoke.py`: verifica versione, avvio Qt e API/streaming dal `.deb` estratto senza installazione globale.
 - `native-window.png` nella cartella di build è una cattura dei widget reali, non un mockup.
+- `native-live.png`, `native-wizard.png` e `native-composer.png` documentano anche gestione live, scelta del profilo e modifica del layout. I test controllano che le schede non si sovrappongano a 960×640 e che i comandi dell'anteprima vuota siano disabilitati.
+
+## Riferimento grafico e comandi
+
+Il confronto con `guida-2.pdf` e con le pagine del checkout `lazy-stream-windows` mantiene la sequenza profilo → canale → composizione/cartella. La dashboard riprende le sezioni e le descrizioni di `MainMenu.cshtml`; navigazione e accento blu seguono le schermate della guida. `MainLive` usa un avvio principale, un avvio playlist distinto, filtri etichettati e uno stato vuoto. Le azioni più frequenti delle righe sono visibili; il menu aggiuntivo conserva duplicazione, attivazione, collegamento profilo, riavvio ed eliminazione.
+
+Il compositore riprende da `_SceneComposer.cshtml` la separazione tra sorgenti/sagome, canvas e livelli. Le sagome restano selezionabili dal canvas e dalla lista; il pulsante finale indica se salva un layout oppure avvia la diretta. Il pannello scena mostra pulsanti in griglia, ripresa della live e spiegazione delle scorciatoie. Sono widget Qt: le immagini del manuale Windows restano un riferimento, non una certificazione di parità grafica o funzionale completa.
 
 ## Differenze ancora da trasferire o verificare
 
