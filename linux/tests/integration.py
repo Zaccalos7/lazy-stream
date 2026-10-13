@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the real server, real FFmpeg relay and persisted session state."""
 import json
+import io
 import os
 import pathlib
 import re
@@ -39,8 +40,15 @@ def main():
                     headers['Content-Type']='application/json'
                     body=json.dumps(body).encode()
                 req = urllib.request.Request(base+'/api/'+path, data=body, headers=headers, method=method)
-                with urllib.request.urlopen(req, timeout=20) as r:
-                    return json.load(r)
+                try:
+                    with urllib.request.urlopen(req, timeout=20) as r:
+                        return json.load(r)
+                except urllib.error.HTTPError as error:
+                    # Keep the original HTTPError for rejection tests, but expose the backend reason on failures.
+                    payload = error.read()
+                    diagnostic = urllib.error.HTTPError(error.url, error.code, error.msg, error.headers, io.BytesIO(payload))
+                    diagnostic.add_note(payload.decode(errors='replace'))
+                    raise diagnostic from None
             for _ in range(60):
                 try:
                     api('state')

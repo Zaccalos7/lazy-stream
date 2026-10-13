@@ -108,12 +108,12 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
     if path in MISSING:
         return "—", "MANCANTE", MISSING[path]
     if path.endswith(".css"):
-        return "web/style.css", "PARZIALE", "Stile/struttura da confrontare selettore per selettore"
+        return "web/style.css", "PARZIALE", "Riferimento CSS conservato; la GUI corrente usa stile e widget Qt"
     if path.endswith(".js"):
-        return "web/app.js", "PARZIALE", "Interazioni da confrontare funzione per funzione"
+        return "src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; web/app.js", "PARZIALE", "Interazioni trasferite in Qt; JavaScript conservato come riferimento"
     if path.endswith(".cshtml"):
         if name in HTML_TARGETS:
-            return HTML_TARGETS[name], "PARZIALE", "Struttura e percorso ripresi; grafica e dettagli da confrontare"
+            return "src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; " + HTML_TARGETS[name], "PARZIALE", "Flusso trasferito in widget Qt; HTML conservato come riferimento"
         target = "web/index.html; web/app.js" if "/Shared/_Layout" in path else "web/app.js"
         return target, "PARZIALE", "Pagina Razor da riprodurre nel client Linux"
     if "/Pages/" in path and path.endswith(".cs"):
@@ -121,7 +121,7 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
             return "src/live_rows.cpp; src/server.cpp; web/app.js", "PARZIALE", "Righe/snapshot e wizard portati; locking video e notifiche push Windows ancora diversi"
         if name == "MainLiveHistory.cshtml":
             return "src/history_cleanup_service.cpp; src/server.cpp; web/app.js", "PARZIALE", "Filtri e pulizia portati; modello dati e scene temporanee ancora diversi"
-        return "web/app.js; src/server.cpp", "PARZIALE", "Flusso e validazioni della pagina da confrontare"
+        return "src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp", "PARZIALE", "Flusso trasferito in Qt; validazioni da confrontare"
     if "/Services/" in path and path.endswith(".cs"):
         if name == "SceneService":
             return SERVICE_TARGETS[name], "PARZIALE", "CheckSlots/CheckLayout e protezione storico portati; contratto e repository ancora diversi"
@@ -139,7 +139,7 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
     if "/Http/" in path and path.endswith(".cs"):
         return "src/server.cpp", "PARZIALE", "Errori e formato risposte da confrontare"
     if "/I18n/" in path and path.endswith(".cs"):
-        return "web/app.js; web/resources/ui", "PARZIALE", "Cataloghi presenti, controlli Linux non tutti tradotti"
+        return "src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp", "PARZIALE", "21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata"
     if "/SystemInfo/" in path and path.endswith(".cs"):
         return "src/metrics.cpp; src/core.cpp", "PARZIALE", "Metriche con contatori specifici di Linux"
     if "/Configuration/" in path and path.endswith(".cs"):
@@ -147,7 +147,7 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
     if "/Contracts/" in path and path.endswith(".cs"):
         return "src/server.cpp; src/core.cpp", "PARZIALE", "Contratto HTTP Linux ancora diverso"
     if "/Orbis.Stream.App/" in path and path.endswith(".cs"):
-        return "src/main.cpp; web/index.html", "PARZIALE", "Shell Linux usa browser locale"
+        return "src/main.cpp; src/native_window.cpp", "PARZIALE", "Shell Qt nativa predefinita; API solo in headless"
     if "/Orbis.Stream.Tests/" in path and path.endswith(".cs"):
         target = TEST_TARGETS.get(name)
         return (target, "PARZIALE", "Casi Windows da trasferire") if target else (

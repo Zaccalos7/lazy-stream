@@ -30,6 +30,7 @@ def main() -> None:
             binary_version = subprocess.check_output([str(app), "--version"], text=True).strip()
             if binary_version != package_version:
                 raise RuntimeError("Package and executable versions differ")
+        subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("native_launch.py")), str(app)], check=True, timeout=30)
         subprocess.run(
             [sys.executable, str(pathlib.Path(__file__).with_name("integration.py")), str(app)],
             check=True,
