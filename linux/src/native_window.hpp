@@ -107,4 +107,5 @@ class NativeWindow : public QMainWindow {
 };
 
 int runNativeApp(int argc, char** argv, Studio& studio, const fs::path& resources);
+bool activateNativeApp(char** argv, const fs::path& root);
 } // namespace orbis

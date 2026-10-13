@@ -1,7 +1,9 @@
 #include "core.hpp"
 #include "native_window.hpp"
 #include "version.hpp"
+#include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
@@ -92,8 +94,23 @@ int main(int argc, char** argv) {
         }
         orbis::fs::create_directories(root);
         int lock = open((root / "instance.lock").c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
-        if (lock < 0 || flock(lock, LOCK_EX | LOCK_NB))
-            throw std::runtime_error("Questa cartella dati è già aperta da un'altra istanza");
+        if (lock < 0)
+            throw std::runtime_error(
+                std::string("Impossibile aprire il blocco della cartella dati: ") +
+                std::strerror(errno));
+        if (flock(lock, LOCK_EX | LOCK_NB)) {
+            const int error = errno;
+            close(lock);
+            if (error != EWOULDBLOCK && error != EAGAIN)
+                throw std::runtime_error(std::string("Impossibile bloccare la cartella dati: ") +
+                                         std::strerror(error));
+            if (!headless && orbis::activateNativeApp(argv, root))
+                return 0;
+            throw std::runtime_error(
+                "Questa cartella dati è già aperta da un'altra istanza. "
+                "L'istanza attiva non risponde al richiamo della finestra "
+                "(potrebbe essere una versione precedente o in modalità headless).");
+        }
         orbis::Studio studio(root);
         if (!headless)
             return orbis::runNativeApp(argc, argv, studio, web / "resources");

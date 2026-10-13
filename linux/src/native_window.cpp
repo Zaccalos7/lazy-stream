@@ -7,9 +7,12 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QDir>
+#include <QElapsedTimer>
 #include <QFileDialog>
 #include <QFrame>
 #include <QFutureWatcher>
@@ -18,6 +21,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -27,6 +32,7 @@
 #include <QSettings>
 #include <QStatusBar>
 #include <QTableWidget>
+#include <QThread>
 #include <QThreadPool>
 #include <QTimer>
 #include <QToolButton>
@@ -42,6 +48,14 @@ struct JobResult {
     Json value;
     std::string error;
 };
+
+// Il percorso canonico identifica la cartella anche quando il lancio usa un link simbolico.
+QString activationSocket(const fs::path& root) {
+    const auto canonical = QString::fromStdString(fs::canonical(root).string()).toUtf8();
+    const auto hash = QCryptographicHash::hash(canonical, QCryptographicHash::Sha256).toHex();
+    return QDir::tempPath() + "/orbis-" + QString::number(getuid()) + "-" +
+           QString::fromLatin1(hash.left(32));
+}
 
 QString s(const Json& value) {
     return QString::fromStdString(value.str());
@@ -1092,7 +1106,32 @@ void NativeWindow::buildSettings() {
     });
 }
 
-// L'avvio standard crea QApplication; l'API legacy resta solo nella modalità headless esplicita.
+// Il secondo processo attende un riscontro senza aprire il database o inizializzare la GUI.
+bool activateNativeApp(char** argv, const fs::path& root) {
+    int argc = 1;
+    QCoreApplication app(argc, argv);
+    QElapsedTimer deadline;
+    deadline.start();
+    while (deadline.elapsed() < 4000) {
+        QLocalSocket socket;
+        socket.connectToServer(activationSocket(root));
+        if (socket.waitForConnected(200)) {
+            QByteArray reply;
+            while (deadline.elapsed() < 4000) {
+                if (socket.bytesAvailable() || socket.waitForReadyRead(200))
+                    reply += socket.readAll();
+                if (reply == "activated\n")
+                    return true;
+                if (socket.state() == QLocalSocket::UnconnectedState)
+                    break;
+            }
+        }
+        QThread::msleep(50);
+    }
+    return false;
+}
+
+// L'avvio standard crea QApplication; il socket locale permette di richiamare la stessa finestra.
 int runNativeApp(int /*argc*/, char** argv, Studio& studio, const fs::path& resources) {
     // Le opzioni del motore sono già state lette; Qt riceve solo il nome eseguibile.
     int qtArgc = 1;
@@ -1100,6 +1139,31 @@ int runNativeApp(int /*argc*/, char** argv, Studio& studio, const fs::path& reso
     app.setApplicationName("OrbisStream");
     app.setOrganizationName("OrbisStream");
     NativeWindow window(studio, resources);
+    QLocalServer activation;
+    activation.setSocketOptions(QLocalServer::UserAccessOption);
+    const auto socketName = activationSocket(studio.store.root);
+    // Solo il proprietario del flock arriva qui: un socket residuo non è un'istanza attiva.
+    QLocalServer::removeServer(socketName);
+    if (!activation.listen(socketName))
+        throw std::runtime_error("Impossibile attivare il richiamo della finestra: " +
+                                 activation.errorString().toStdString());
+    QObject::connect(&activation, &QLocalServer::newConnection, &window, [&] {
+        while (auto socket = activation.nextPendingConnection()) {
+            if (window.isMinimized())
+                window.setWindowState(window.windowState() & ~Qt::WindowMinimized);
+            window.show();
+            window.raise();
+            window.activateWindow();
+            if (auto modal = QApplication::activeModalWidget()) {
+                modal->raise();
+                modal->activateWindow();
+            }
+            QApplication::alert(&window);
+            QObject::connect(socket, &QLocalSocket::disconnected, socket, &QObject::deleteLater);
+            socket->write("activated\n");
+            socket->disconnectFromServer();
+        }
+    });
     QTimer shutdownTimer;
     QObject::connect(&shutdownTimer, &QTimer::timeout, &app, [&] {
         sigset_t set;
