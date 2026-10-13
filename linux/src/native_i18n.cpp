@@ -49,8 +49,21 @@ void NativeTranslations::setLanguage(const QString& language) {
         qApp->setLayoutDirection(language == "ar" ? Qt::RightToLeft : Qt::LeftToRight);
 }
 
-// Tutti i testi della UI sono chiavi originali; i test controllano che esistano in ogni catalogo.
+// I testi condivisi usano i cataloghi originali; le sole operazioni native hanno diciture dedicate.
 QString NativeTranslations::text(const char* key) const {
+    // Le operazioni native aggiuntive non alterano i cataloghi Windows importati.
+    // Per le lingue prive di queste nuove diciture viene usato l'inglese.
+    static const QMap<QString, QPair<QString, QString>> native = {
+        {"nativeActions", {"More actions", "Altre azioni"}},
+        {"nativeExport", {"Export configuration…", "Esporta configurazione…"}},
+        {"nativeImport", {"Import configuration…", "Importa configurazione…"}},
+        {"nativeNextVideo", {"Next video", "Video successivo"}},
+        {"nativeLoop", {"Repeat playlist at the end", "Ripeti la playlist alla fine"}},
+        {"nativePlaylistLibrary", {"Video library", "Libreria video"}},
+        {"nativeEdit", {"Edit", "Modifica"}}};
+    const auto extra = native.constFind(QString::fromUtf8(key));
+    if (extra != native.cend())
+        return selected == "it" ? extra->second : extra->first;
     const auto value = catalog.value(QString::fromUtf8(key));
     if (!value.isString())
         throw std::runtime_error(std::string("Missing translation: ") + key);

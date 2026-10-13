@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMediaPlayer>
+#include <QScrollArea>
 #include <QTableWidget>
 #include <QTcpServer>
 #include <QTemporaryDir>
@@ -58,6 +59,38 @@ class NativeTests : public QObject {
         QVERIFY(window.grab().save(ORBIS_TEST_SCREENSHOT));
         auto preferences = studio.store.get("preferences", 1);
         QCOMPARE(preferences.get("language").str(), std::string("it"));
+    }
+
+    // Le schede devono restare intere e i comandi senza sessione non devono inviare richieste.
+    void readableCardsAndEmptyPreview() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("it");
+        window.resize(960, 640);
+        window.show();
+        QApplication::processEvents();
+        for (auto card : window.findChildren<QPushButton*>()) {
+            if (!card->property("card").toBool())
+                continue;
+            QVERIFY(card->parentWidget()->rect().contains(card->geometry()));
+            for (auto label : card->findChildren<QLabel*>())
+                QVERIFY(card->rect().contains(label->geometry()));
+        }
+        window.navigate("preview");
+        QApplication::processEvents();
+        auto stop = window.findChild<QPushButton*>("stopLiveIconLabel");
+        QVERIFY(stop);
+        QVERIFY(!stop->isEnabled());
+        QVERIFY(window.findChild<QPushButton*>("startLiveButton")->isEnabled());
+        window.navigate("live");
+        QApplication::processEvents();
+        QVERIFY(window.findChild<QLabel*>("emptyState")->isVisible());
+        QVERIFY(!window.findChild<QTableWidget*>("recordsTable")->isVisible());
+        window.resize(1380, 900);
+        QApplication::processEvents();
+        QVERIFY(window.grab().save(
+            QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-live")));
     }
 
     void nativeChannelAndProfileForms() {
@@ -155,6 +188,12 @@ class NativeTests : public QObject {
         QTimer::singleShot(0, &window, [&] {
             auto wizard = qobject_cast<QWizard*>(QApplication::activeModalWidget());
             QVERIFY(wizard);
+            auto profiles = wizard->findChild<QListWidget*>("wizardProfile");
+            QVERIFY(profiles);
+            QVERIFY(profiles->currentItem());
+            QVERIFY(profiles->currentItem()->text().contains("kbps"));
+            QVERIFY(wizard->grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-wizard")));
             wizard->next();
             wizard->next();
             wizard->findChild<QLineEdit*>("wizardFolder")
@@ -231,14 +270,22 @@ class NativeTests : public QObject {
             QVERIFY(dialog);
             auto canvas = dialog->findChild<QGraphicsView*>("sceneCanvas");
             QVERIFY(canvas);
+            QTimer::singleShot(10000, dialog, &QDialog::reject);
+            auto commit = dialog->findChild<QPushButton*>("commitScene");
+            QVERIFY(commit);
+            QCOMPARE(commit->text(), QString("Save layout"));
             QTest::mouseClick(dialog->findChild<QPushButton*>("addSlot"), Qt::LeftButton);
+            QApplication::processEvents();
+            auto layers = dialog->findChild<QListWidget*>("sceneLayers");
+            QVERIFY(layers);
+            QTRY_COMPARE(layers->count(), 1);
             dialog->findChild<QDoubleSpinBox*>("source_width")->setValue(640);
             dialog->findChild<QDoubleSpinBox*>("source_height")->setValue(360);
             dialog->findChild<QDoubleSpinBox*>("source_x")->setValue(30);
             dialog->findChild<QDoubleSpinBox*>("source_y")->setValue(20);
-            QTest::mouseClick(
-                dialog->findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Save),
-                Qt::LeftButton);
+            QVERIFY(dialog->grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-composer")));
+            QTest::mouseClick(commit, Qt::LeftButton);
         });
         window.editScene(layout);
         auto saved = studio.store.list("scenes");

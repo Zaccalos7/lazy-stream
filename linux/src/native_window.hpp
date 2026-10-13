@@ -41,6 +41,7 @@ class NativeWindow : public QMainWindow {
     QList<QShortcut*> deckShortcuts;
     int currentPage = 0, pageSize = 20;
     QLabel* pageLabel = nullptr;
+    QLabel* emptyState = nullptr;
     bool sampling = false;
     QStringList navigationKeys;
     QStringList navigationPages;
@@ -83,6 +84,7 @@ class NativeWindow : public QMainWindow {
     void addAction(const char* key, const std::function<void()>& action, QWidget* parent = nullptr);
     QTableWidget* makeTable(const QStringList& headers);
     void addPager(int size);
+    void addDestinationCards(const QList<QStringList>& entries);
     void updatePreview();
 
   protected:
