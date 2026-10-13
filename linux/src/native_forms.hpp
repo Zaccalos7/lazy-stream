@@ -6,8 +6,11 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScreen>
+#include <QScrollArea>
 #include <QVBoxLayout>
 
 namespace orbis {
@@ -25,10 +28,26 @@ class NativeForm : public QDialog {
     explicit NativeForm(QWidget* parent, QString title, Json original = Json{})
         : QDialog(parent), original(original.clone()) {
         setWindowTitle(title);
-        setMinimumWidth(480);
+        setMinimumWidth(560);
         layout = new QVBoxLayout(this);
-        form = new QFormLayout;
-        layout->addLayout(form);
+        layout->setContentsMargins(24, 24, 24, 24);
+        layout->setSpacing(18);
+        auto heading = new QLabel(title, this);
+        heading->setObjectName("heroTitle");
+        heading->setWordWrap(true);
+        layout->addWidget(heading);
+        auto scroll = new QScrollArea(this);
+        scroll->setWidgetResizable(true);
+        auto fieldsContainer = new QWidget(scroll);
+        form = new QFormLayout(fieldsContainer);
+        form->setContentsMargins(0, 0, 10, 0);
+        form->setHorizontalSpacing(20);
+        form->setVerticalSpacing(10);
+        form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+        form->setRowWrapPolicy(QFormLayout::WrapLongRows);
+        scroll->setWidget(fieldsContainer);
+        layout->addWidget(scroll, 1);
+        resize(680, qMin(800, screen()->availableGeometry().height() - 80));
         buttons = new QDialogButtonBox(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
         layout->addWidget(buttons);
         connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
