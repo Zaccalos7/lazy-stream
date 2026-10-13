@@ -19,6 +19,8 @@ bash scripts/build-linux.sh
 
 Il programma apre l’app nativa. Dopo l’installazione è disponibile anche nel menu applicazioni come **OrbisStream**.
 
+Chiudere la finestra principale termina l'applicazione, comprese le sessioni FFmpeg e i lavori in background. Se una diretta è attiva viene chiesta conferma. La chiusura non lascia l'app in esecuzione nell'area di notifica; i lavori già avviati vengono attesi prima di liberare la cartella dati.
+
 Un secondo avvio sulla stessa cartella dati richiama la finestra già aperta tramite un socket locale, senza aprire un secondo database. Il gestore finestre può limitare il passaggio in primo piano; l'app richiede anche una notifica di attenzione. Per usare questa funzione, anche l'istanza già avviata deve essere aggiornata: una vecchia versione o un processo headless mantiene il blocco e viene segnalato senza interromperlo.
 
 L’interfaccia desktop usa un tema scuro uniforme, icone disegnate da Qt, navigazione laterale e una dashboard con avvio rapido, numero di dirette e canali, CPU e memoria aggiornati dal motore. Tabelle, menu e dialoghi condividono lo stesso stile. Il tema è implementato in `src/native_theme.cpp` e la composizione della finestra in `src/native_window.cpp`, entrambi in C++20 con Qt 6 Widgets.

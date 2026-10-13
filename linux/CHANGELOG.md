@@ -1,5 +1,11 @@
 # Cronologia del port Linux
 
+## 0.0.8 — 2026-10-13
+
+- La chiusura confermata della finestra principale termina esplicitamente l'app anche con finestre secondarie aperte.
+- Le sessioni vengono arrestate dopo l'attesa dei lavori pendenti, includendo eventuali dirette avviate da quei lavori durante l'uscita.
+- Test di chiusura con una seconda finestra e una trasmissione reale: verifica uscita del ciclo Qt e terminazione di producer e publisher FFmpeg.
+
 ## 0.0.5 — 2026-10-12
 
 - Avvio grafico predefinito riscritto in C++/Qt 6 Widgets: nessun browser, WebView o listener HTTP. `--headless` mantiene l’API per test e automazioni.

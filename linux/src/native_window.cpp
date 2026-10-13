@@ -161,6 +161,8 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
 // I lavori Qt devono terminare prima che vengano distrutti Studio e SQLite.
 NativeWindow::~NativeWindow() {
     QThreadPool::globalInstance()->waitForDone();
+    // Un lavoro già avviato può creare una sessione: fermarla dopo aver atteso i worker.
+    studio.stopAll();
     qApp->removeTranslator(&translations);
 }
 
@@ -175,8 +177,13 @@ void NativeWindow::closeEvent(QCloseEvent* event) {
     }
     if (running && !confirm("stopLive"))
         event->ignore();
-    else
+    else {
         event->accept();
+        for (auto timer : findChildren<QTimer*>())
+            timer->stop();
+        // La finestra principale governa la vita dell'app anche con player o dialoghi aperti.
+        QCoreApplication::quit();
+    }
 }
 
 QString NativeWindow::t(const char* key) const {
@@ -1177,7 +1184,8 @@ int runNativeApp(int /*argc*/, char** argv, Studio& studio, const fs::path& reso
     shutdownTimer.start(100);
     window.show();
     const int result = app.exec();
-    studio.stopAll();
+    activation.close();
+    // NativeWindow attende i lavori pendenti e arresta tutte le sessioni nel distruttore.
     return result;
 }
 } // namespace orbis
