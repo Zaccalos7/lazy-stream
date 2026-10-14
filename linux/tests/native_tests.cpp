@@ -94,11 +94,21 @@ class NativeTests : public QObject {
             QCOMPARE(window.findChild<QWidget*>("sidebar")->width(), 50);
             QVERIFY(nav->item(0)->text().isEmpty());
             QVERIFY(!nav->item(0)->toolTip().isEmpty());
+            const auto grids = window.findChildren<QWidget*>("dashboardGrid");
+            for (auto grid : grids)
+                for (auto card :
+                     grid->findChildren<QPushButton*>(QString(), Qt::FindDirectChildrenOnly))
+                    QTRY_VERIFY(grid->rect().contains(card->geometry()));
+            for (int i = 1; i < grids.size(); ++i)
+                QTRY_VERIFY(grids[i]->y() > grids[i - 1]->geometry().bottom());
             QVERIFY(window.grab().save(
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-sidebar-compact")));
             window.resize(1380, 900);
             QApplication::processEvents();
             QCOMPARE(window.findChild<QWidget*>("sidebar")->width(), 228);
+            auto about = window.findChild<QPushButton*>("sidebarAbout");
+            for (auto label : about->findChildren<QLabel*>())
+                QTRY_VERIFY(about->rect().contains(label->geometry()));
             QVERIFY(window.grab().save(
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-sidebar")));
             window.findChild<QToolButton*>("sidebarToggle")->click();

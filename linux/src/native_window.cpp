@@ -35,6 +35,7 @@
 #include <QSettings>
 #include <QStatusBar>
 #include <QStyle>
+#include <QStylePainter>
 #include <QTableWidget>
 #include <QThread>
 #include <QThreadPool>
@@ -49,6 +50,22 @@
 
 namespace orbis {
 namespace {
+class SidebarLanguagePicker : public QComboBox {
+  protected:
+    void paintEvent(QPaintEvent*) override {
+        QStyleOptionComboBox option;
+        initStyleOption(&option);
+        if (property("compact").toBool())
+            option.currentText.clear();
+        QStylePainter painter(this);
+        painter.drawComplexControl(QStyle::CC_ComboBox, option);
+        painter.drawControl(QStyle::CE_ComboBoxLabel, option);
+    }
+
+  public:
+    explicit SidebarLanguagePicker(QWidget* parent) : QComboBox(parent) {}
+};
+
 struct JobResult {
     Json value;
     std::string error;
@@ -210,7 +227,7 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
         connect(choice, &QToolButton::clicked, this, [this, theme] { setTheme(theme); });
     }
     side->addWidget(themes);
-    languagePicker = new QComboBox(sidebar);
+    languagePicker = new SidebarLanguagePicker(sidebar);
     languagePicker->setObjectName("languagePicker");
     const QMap<QString, QString> flags = {{"en", "gb"}, {"zh", "cn"}, {"el", "gr"}, {"ja", "jp"},
                                           {"ko", "kr"}, {"hi", "in"}, {"da", "dk"}, {"fil", "ph"}};
@@ -324,6 +341,7 @@ void NativeWindow::updateSidebar() {
                                                   : 16);
     findChild<QLabel*>("sidebarBrand")->setVisible(!small);
     findChild<QLabel*>("sidebarLogo")->setVisible(!sidebarClosed);
+    title->setFixedHeight(sidebarClosed ? 28 : compact ? 78 : 48);
     navigation->setVisible(!sidebarClosed);
     for (int i = 0; i < navigation->count(); ++i) {
         auto item = navigation->item(i);
@@ -334,6 +352,8 @@ void NativeWindow::updateSidebar() {
     languagePicker->setToolTip(NativeTranslations::languageName(translations.language()));
     languagePicker->setProperty("compact", compact);
     auto about = findChild<QPushButton*>("sidebarAbout");
+    about->setFixedHeight(small ? 32 : 50);
+    about->layout()->setContentsMargins(small ? 6 : 10, small ? 8 : 10, small ? 6 : 10, 6);
     about->setVisible(!sidebarClosed);
     about->setAccessibleName(t("about"));
     about->setToolTip(t("about"));

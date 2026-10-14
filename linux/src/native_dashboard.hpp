@@ -69,7 +69,11 @@ class DashboardGrid : public QWidget {
   protected:
     void resizeEvent(QResizeEvent* event) override {
         QWidget::resizeEvent(event);
-        setMinimumHeight(arrange(event->size().width(), true));
+        const int needed = arrange(event->size().width(), true);
+        if (minimumHeight() != needed || maximumHeight() != needed) {
+            setFixedHeight(needed);
+            updateGeometry();
+        }
     }
 
   public:
