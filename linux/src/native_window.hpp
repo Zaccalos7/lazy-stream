@@ -42,12 +42,16 @@ class NativeWindow : public QMainWindow {
     QLabel* pageLabel = nullptr;
     QLabel* emptyState = nullptr;
     bool sampling = false;
+    bool sidebarClosed = false;
     QStringList navigationKeys;
     QStringList navigationPages;
     QString t(const char* key) const;
     void rebuild();
     void refreshRows();
     void buildDashboard();
+    void buildLiveMenu();
+    void updateSidebar();
+    void showAbout();
     void buildChannels();
     void buildProfiles();
     void buildLive(bool history);
@@ -91,6 +95,7 @@ class NativeWindow : public QMainWindow {
 
   protected:
     void closeEvent(QCloseEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
   public:
     NativeWindow(Studio& studio, fs::path resources);

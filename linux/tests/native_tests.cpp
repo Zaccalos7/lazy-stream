@@ -37,6 +37,83 @@ class NativeTests : public QObject {
         openedUrl = url;
     }
 
+    void sidebarMatchesWindows() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        {
+            NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+            window.setLanguage("en");
+            window.show();
+            QApplication::processEvents();
+            auto nav = window.findChild<QListWidget*>("navigation");
+            QCOMPARE(nav->count(), 7);
+            const QStringList paths = {"/orbis/mainMenu",        "/orbis/mainLiveMenu",
+                                       "/orbis/mainPreview",     "/orbis/mainLayoutList",
+                                       "/orbis/mainTaskManager", "/orbis/manual",
+                                       "/orbis/mainSetting"};
+            NativeTranslations translations(ORBIS_TEST_RESOURCES "/ui");
+            translations.setLanguage("en");
+            const QStringList titles = {"dashboard",   "Live",   "preview", "layouts",
+                                        "taskManager", "manual", "settings"};
+            for (int i = 0; i < nav->count(); ++i) {
+                QCOMPARE(nav->item(i)->data(Qt::UserRole).toString(), paths[i]);
+                QTest::mouseClick(nav->viewport(), Qt::LeftButton, Qt::NoModifier,
+                                  nav->visualItemRect(nav->item(i)).center());
+                QCOMPARE(window.findChild<QLabel*>("pageTitle")->text(),
+                         i == 1 ? QString("Live")
+                                : translations.text(titles[i].toUtf8().constData()));
+                QCOMPARE(nav->currentRow(), i);
+            }
+            window.navigate("live");
+            QCOMPARE(nav->currentRow(), 1);
+            QTest::mouseClick(nav->viewport(), Qt::LeftButton, Qt::NoModifier,
+                              nav->visualItemRect(nav->item(1)).center());
+            QCOMPARE(window.findChild<QLabel*>("pageTitle")->text(), QString("Live"));
+            for (const auto& key : {"liveManagement", "preview", "layouts", "liveHistory"})
+                QVERIFY(window.findChild<QPushButton*>(key));
+            window.findChild<QPushButton*>("liveHistory")->click();
+            QCOMPARE(nav->currentRow(), 1);
+            window.navigate("profiles");
+            QCOMPARE(nav->currentRow(), 6);
+            auto languages = window.findChild<QComboBox*>("languagePicker");
+            for (int i = 0; i < languages->count(); ++i)
+                QVERIFY2(!languages->itemIcon(i).pixmap(22, 15).isNull(),
+                         qPrintable(languages->itemData(i).toString()));
+            QVERIFY(!window.findChild<QLabel*>("sidebarLogo")->pixmap().isNull());
+            QTimer::singleShot(0, &window, [&] {
+                auto about = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+                QVERIFY(about);
+                QCOMPARE(about->objectName(), QString("aboutDialog"));
+                QVERIFY(about->findChild<QPushButton*>("aboutLinkedIn"));
+                about->findChild<QPushButton*>("closeAbout")->click();
+            });
+            window.findChild<QPushButton*>("sidebarAbout")->click();
+            window.navigate("dashboard");
+            window.resize(780, 900);
+            QApplication::processEvents();
+            QCOMPARE(window.findChild<QWidget*>("sidebar")->width(), 50);
+            QVERIFY(nav->item(0)->text().isEmpty());
+            QVERIFY(!nav->item(0)->toolTip().isEmpty());
+            QVERIFY(window.grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-sidebar-compact")));
+            window.resize(1380, 900);
+            QApplication::processEvents();
+            QCOMPARE(window.findChild<QWidget*>("sidebar")->width(), 228);
+            QVERIFY(window.grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-sidebar")));
+            window.findChild<QToolButton*>("sidebarToggle")->click();
+            QVERIFY(!nav->isVisible());
+            window.navigate("layouts");
+            QVERIFY(!nav->isVisible());
+        }
+        NativeWindow reopened(studio, ORBIS_TEST_RESOURCES);
+        reopened.show();
+        QApplication::processEvents();
+        QVERIFY(!reopened.findChild<QListWidget*>("navigation")->isVisible());
+        reopened.findChild<QToolButton*>("sidebarToggle")->click();
+        QVERIFY(reopened.findChild<QListWidget*>("navigation")->isVisible());
+    }
+
     void dashboardMatchesWindows() {
         QTemporaryDir directory;
         Studio studio(directory.path().toStdString());

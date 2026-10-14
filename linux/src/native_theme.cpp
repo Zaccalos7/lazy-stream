@@ -334,7 +334,28 @@ QIcon studioIcon(const QString& name, const QColor& color) {
         p.setRenderHint(QPainter::Antialiasing);
         p.setPen(QPen(ink, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         const QColor inkFill = ink;
-        if (name == "dashboard") {
+        if (name == "menu") {
+            for (int y : {6, 12, 18})
+                p.drawLine(3, y, 21, y);
+        } else if (name == "home") {
+            QPolygonF roof;
+            roof << QPointF(2, 11) << QPointF(12, 2) << QPointF(22, 11);
+            p.drawPolyline(roof);
+            QPainterPath house;
+            house.moveTo(5, 9);
+            house.lineTo(5, 21);
+            house.lineTo(10, 21);
+            house.lineTo(10, 14);
+            house.lineTo(14, 14);
+            house.lineTo(14, 21);
+            house.lineTo(19, 21);
+            house.lineTo(19, 9);
+            p.drawPath(house);
+        } else if (name == "info") {
+            p.drawEllipse(QRectF(3, 3, 18, 18));
+            p.drawPoint(12, 7);
+            p.drawLine(12, 11, 12, 17);
+        } else if (name == "dashboard") {
             for (int x : {4, 14})
                 for (int y : {4, 14})
                     p.drawRoundedRect(QRectF(x, y, 6, 6), 1.4, 1.4);
@@ -764,6 +785,30 @@ void applyNativeTheme(const QString& theme) {
                            light ? "#0f000000" : "#14ffffff", light ? "#007aff" : "#0a84ff",
                            light ? "#1f000000" : "#29ffffff", light ? "#f5f5f8" : "#323234",
                            light ? "#0068d9" : "#0970d9", light ? "#6e6e73" : "#98989d");
+    stylesheet += QString(R"(
+        QWidget#sidebar { background: %1; border: 1px solid %2; border-radius: 12px; }
+        QWidget#sidebar[closed="true"] { background: transparent; border: none; }
+        QLabel#sidebarBrand { font-size: 14px; font-weight: 600; }
+        QLabel#sidebarLogo { background: %3; border-radius: 10px; }
+        QToolButton#sidebarToggle { border: none; background: transparent; padding: 0; border-radius: 6px; }
+        QToolButton#sidebarToggle:hover { background: %2; }
+        QListWidget#navigation { border: none; padding: 0; margin: 0; font-size: 13px; }
+        QListWidget#navigation::item { height: 32px; padding: 0 10px; margin: 0 0 3px; border-radius: 6px; color: %4; }
+        QListWidget#navigation::item:selected { background: %3; color: white; font-weight: 600; }
+        QListWidget#navigation::item:hover:!selected { background: %2; }
+        QWidget#sidebar[compact="true"] QListWidget#navigation::item { padding: 0 10px; }
+        QComboBox#languagePicker { background: transparent; border: none; padding: 0 10px; font-size: 13px; color: %4; }
+        QComboBox#languagePicker:hover { background: %2; }
+        QComboBox#languagePicker[compact="true"] { padding: 0 5px; }
+        QComboBox#languagePicker[compact="true"]::drop-down { width: 0; }
+        QComboBox#languagePicker QAbstractItemView { min-width: 185px; }
+        QPushButton#sidebarAbout { background: transparent; border: none; border-top: 1px solid %2; border-radius: 6px; padding: 0; }
+        QPushButton#sidebarAbout:hover { background: %2; }
+        QLabel#sidebarVersion { font-size: 11px; font-weight: 600; color: %4; }
+        QLabel#sidebarAuthor { font-size: 10px; color: %4; }
+    )")
+                      .arg(light ? "#ffffff" : "#262628", light ? "#0f000000" : "#14ffffff",
+                           light ? "#007aff" : "#0a84ff", light ? "#6e6e73" : "#98989d");
     qApp->setStyleSheet(stylesheet);
 }
 } // namespace orbis

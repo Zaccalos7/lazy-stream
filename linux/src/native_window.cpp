@@ -30,9 +30,11 @@
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QScrollArea>
 #include <QSettings>
 #include <QStatusBar>
+#include <QStyle>
 #include <QTableWidget>
 #include <QThread>
 #include <QThreadPool>
@@ -120,7 +122,7 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     setObjectName("nativeWindow");
     setWindowTitle(QString("OrbisStream · %1").arg(ORBIS_VERSION));
     resize(1380, 900);
-    setMinimumSize(960, 640);
+    setMinimumSize(640, 640);
     setWindowIcon(studioIcon("live"));
     auto preferences = studio.store.list("preferences");
     QString saved;
@@ -134,33 +136,60 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     qApp->installTranslator(&translations);
     auto central = new QWidget(this);
     auto horizontal = new QHBoxLayout(central);
-    horizontal->setContentsMargins(0, 0, 0, 0);
-    horizontal->setSpacing(0);
+    horizontal->setContentsMargins(12, 12, 12, 12);
+    horizontal->setSpacing(12);
     auto sidebar = new QWidget(central);
     sidebar->setObjectName("sidebar");
-    sidebar->setFixedWidth(252);
+    sidebar->setFixedWidth(228);
+    sidebarClosed = appearance.value("sidebarClosed", false).toBool();
     auto side = new QVBoxLayout(sidebar);
-    side->setContentsMargins(16, 24, 16, 18);
-    side->setSpacing(12);
-    auto brandRow = new QHBoxLayout;
-    auto mark = new QLabel("O", sidebar);
-    mark->setObjectName("brandMark");
+    side->setContentsMargins(8, 14, 8, 14);
+    side->setSpacing(3);
+    auto brandRow = new QWidget(sidebar);
+    brandRow->setObjectName("sidebarTitle");
+    auto brandLayout = new QHBoxLayout(brandRow);
+    brandLayout->setContentsMargins(8, 4, 8, 16);
+    brandLayout->setSpacing(10);
+    auto toggle = new QToolButton(brandRow);
+    toggle->setObjectName("sidebarToggle");
+    toggle->setIcon(studioIcon("menu"));
+    toggle->setFixedSize(24, 28);
+    toggle->setToolTip("Toggle Sidebar");
+    toggle->setAccessibleName("Toggle Sidebar");
+    toggle->setCheckable(true);
+    toggle->setChecked(!sidebarClosed);
+    connect(toggle, &QToolButton::clicked, this, [this] {
+        sidebarClosed = !sidebarClosed;
+        QSettings appearance(
+            QString::fromStdString((this->studio.store.root / "appearance.ini").string()),
+            QSettings::IniFormat);
+        appearance.setValue("sidebarClosed", sidebarClosed);
+        updateSidebar();
+    });
+    brandLayout->addWidget(toggle);
+    auto mark = new QLabel(brandRow);
+    mark->setObjectName("sidebarLogo");
+    mark->setPixmap(
+        QIcon(QString::fromStdString((this->resources / "favicon.png").string())).pixmap(20, 20));
     mark->setAlignment(Qt::AlignCenter);
-    mark->setFixedSize(42, 42);
-    brandRow->addWidget(mark);
-    auto brand = new QLabel("OrbisStream", sidebar);
-    brand->setObjectName("brand");
-    brandRow->addWidget(brand, 1);
-    side->addLayout(brandRow);
-    side->addSpacing(12);
+    mark->setFixedSize(28, 28);
+    brandLayout->addWidget(mark);
+    auto brand = new QLabel("Orbis Stream", brandRow);
+    brand->setObjectName("sidebarBrand");
+    brandLayout->addWidget(brand, 1);
+    side->addWidget(brandRow);
     navigation = new QListWidget(sidebar);
     navigation->setObjectName("navigation");
-    navigation->setIconSize(QSize(22, 22));
+    navigation->setIconSize(QSize(15, 15));
+    navigation->setSpacing(0);
+    navigation->setFixedHeight(7 * 35);
     navigation->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    navigationKeys = {"dashboard",   "liveManagement", "preview", "layouts",
-                      "taskManager", "settings",       "manual"};
-    navigationPages = {"dashboard", "live", "preview", "layouts", "activity", "settings", "manual"};
-    side->addWidget(navigation, 1);
+    navigationKeys = {"dashboard",   "live",   "livePreviewTitle", "layouts",
+                      "taskManager", "manual", "settings"};
+    navigationPages = {"dashboard", "liveMenu", "preview", "layouts",
+                       "activity",  "manual",   "settings"};
+    side->addWidget(navigation);
+    side->addStretch();
     auto themes = new QWidget(sidebar);
     themes->setObjectName("themeSelector");
     auto themeRow = new QHBoxLayout(themes);
@@ -170,6 +199,7 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
         auto choice = new QToolButton(themes);
         choice->setObjectName("theme_" + theme);
         choice->setProperty("themeChoice", true);
+        choice->setFixedHeight(24);
         choice->setCheckable(true);
         choice->setChecked(qApp->property("orbisTheme").toString() == theme);
         choice->setIcon(studioIcon(theme));
@@ -182,14 +212,45 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     side->addWidget(themes);
     languagePicker = new QComboBox(sidebar);
     languagePicker->setObjectName("languagePicker");
-    for (const auto& language : translations.languages())
-        languagePicker->addItem(NativeTranslations::languageName(language), language);
+    const QMap<QString, QString> flags = {{"en", "gb"}, {"zh", "cn"}, {"el", "gr"}, {"ja", "jp"},
+                                          {"ko", "kr"}, {"hi", "in"}, {"da", "dk"}, {"fil", "ph"}};
+    languagePicker->setIconSize(QSize(22, 15));
+    for (const auto& language : translations.languages()) {
+        auto file = flags.value(language, language) + ".png";
+        languagePicker->addItem(
+            QIcon(QString::fromStdString((this->resources / "flags").string()) + "/" + file),
+            NativeTranslations::languageName(language), language);
+    }
     languagePicker->setCurrentIndex(languagePicker->findData(translations.language()));
-    languagePicker->setAccessibleName(t("settings"));
+    languagePicker->setAccessibleName("Language");
+    languagePicker->setFixedHeight(30);
     side->addWidget(languagePicker);
-    auto version = new QLabel(QString("OrbisStream  /  %1").arg(ORBIS_VERSION), sidebar);
-    version->setObjectName("muted");
-    side->addWidget(version);
+    auto about = new QPushButton(sidebar);
+    about->setObjectName("sidebarAbout");
+    about->setCursor(Qt::PointingHandCursor);
+    about->setAccessibleName(t("about"));
+    about->setToolTip(t("about"));
+    auto aboutRow = new QHBoxLayout(about);
+    aboutRow->setContentsMargins(10, 10, 10, 6);
+    aboutRow->setSpacing(10);
+    auto info = new QLabel(about);
+    info->setObjectName("sidebarInfoIcon");
+    info->setPixmap(studioIcon("info").pixmap(15, 15));
+    aboutRow->addWidget(info);
+    auto aboutText = new QVBoxLayout;
+    aboutText->setSpacing(2);
+    auto version = new QLabel(QString("Orbis Stream %1").arg(ORBIS_VERSION), about);
+    version->setObjectName("sidebarVersion");
+    aboutText->addWidget(version);
+    auto author = new QLabel(about);
+    author->setObjectName("sidebarAuthor");
+    author->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    aboutText->addWidget(author);
+    aboutRow->addLayout(aboutText, 1);
+    for (auto label : {info, version, author})
+        label->setAttribute(Qt::WA_TransparentForMouseEvents);
+    side->addWidget(about);
+    connect(about, &QPushButton::clicked, this, &NativeWindow::showAbout);
     horizontal->addWidget(sidebar);
     auto scroll = new QScrollArea(central);
     scroll->setWidgetResizable(true);
@@ -202,10 +263,13 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     scroll->setWidget(body);
     horizontal->addWidget(scroll, 1);
     setCentralWidget(central);
-    connect(navigation, &QListWidget::currentRowChanged, this, [this](int row) {
+    auto openNavigation = [this](QListWidgetItem* item) {
+        const int row = navigation->row(item);
         if (row >= 0 && row < navigationPages.size())
             navigate(navigationPages.at(row));
-    });
+    };
+    connect(navigation, &QListWidget::itemClicked, this, openNavigation);
+    connect(navigation, &QListWidget::itemActivated, this, openNavigation);
     connect(languagePicker, &QComboBox::currentIndexChanged, this,
             [this] { run([this] { setLanguage(languagePicker->currentData().toString()); }); });
     auto timer = new QTimer(this);
@@ -226,6 +290,111 @@ NativeWindow::~NativeWindow() {
     // Un lavoro già avviato può creare una sessione: fermarla dopo aver atteso i worker.
     studio.stopAll();
     qApp->removeTranslator(&translations);
+}
+
+void NativeWindow::resizeEvent(QResizeEvent* event) {
+    QMainWindow::resizeEvent(event);
+    if (navigation && languagePicker && body)
+        updateSidebar();
+}
+
+// Stesse modalità della shell Windows: aperta, stretta sotto 800px, oppure chiusa
+// esplicitamente. La chiusura manuale resta memorizzata anche al cambio di pagina.
+void NativeWindow::updateSidebar() {
+    auto sidebar = findChild<QWidget*>("sidebar");
+    const bool compact = width() <= 800;
+    const bool small = compact || sidebarClosed;
+    sidebar->setProperty("closed", sidebarClosed);
+    sidebar->setProperty("compact", compact);
+    sidebar->setFixedWidth(sidebarClosed ? 34 : compact ? 50 : 228);
+    sidebar->layout()->setContentsMargins(sidebarClosed ? 0
+                                          : compact     ? 4
+                                                        : 8,
+                                          compact ? 10 : 14,
+                                          sidebarClosed ? 0
+                                          : compact     ? 4
+                                                        : 8,
+                                          14);
+    auto title = findChild<QWidget*>("sidebarTitle");
+    auto titleLayout = qobject_cast<QBoxLayout*>(title->layout());
+    titleLayout->setDirection(small ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
+    titleLayout->setContentsMargins(small ? 0 : 8, small ? 0 : 4, small ? 0 : 8,
+                                    sidebarClosed ? 0
+                                    : compact     ? 12
+                                                  : 16);
+    findChild<QLabel*>("sidebarBrand")->setVisible(!small);
+    findChild<QLabel*>("sidebarLogo")->setVisible(!sidebarClosed);
+    navigation->setVisible(!sidebarClosed);
+    for (int i = 0; i < navigation->count(); ++i) {
+        auto item = navigation->item(i);
+        item->setText(compact ? QString{} : item->toolTip());
+    }
+    findChild<QWidget*>("themeSelector")->setVisible(!small);
+    languagePicker->setVisible(!sidebarClosed);
+    languagePicker->setToolTip(NativeTranslations::languageName(translations.language()));
+    languagePicker->setProperty("compact", compact);
+    auto about = findChild<QPushButton*>("sidebarAbout");
+    about->setVisible(!sidebarClosed);
+    about->setAccessibleName(t("about"));
+    about->setToolTip(t("about"));
+    auto author = findChild<QLabel*>("sidebarAuthor");
+    author->setText(t("aboutAuthor") + " Marco Amleto Guarino");
+    author->setToolTip(author->text());
+    author->setVisible(!small);
+    findChild<QLabel*>("sidebarVersion")->setVisible(!small);
+    findChild<QLabel*>("sidebarInfoIcon")->setPixmap(studioIcon("info").pixmap(15, 15));
+    auto toggle = findChild<QToolButton*>("sidebarToggle");
+    toggle->setIcon(studioIcon("menu"));
+    toggle->setChecked(!sidebarClosed);
+    toggle->setProperty("expanded", !sidebarClosed);
+    auto outer = qobject_cast<QHBoxLayout*>(centralWidget()->layout());
+    outer->setContentsMargins(compact ? 6 : 12, compact ? 6 : 12, compact ? 6 : 12,
+                              compact ? 6 : 12);
+    outer->setSpacing(compact ? 6 : 12);
+    for (auto widget : sidebar->findChildren<QWidget*>()) {
+        widget->style()->unpolish(widget);
+        widget->style()->polish(widget);
+    }
+    sidebar->style()->unpolish(sidebar);
+    sidebar->style()->polish(sidebar);
+    sidebar->update();
+}
+
+void NativeWindow::showAbout() {
+    QDialog dialog(this);
+    dialog.setObjectName("aboutDialog");
+    dialog.setWindowTitle(t("about"));
+    auto column = new QVBoxLayout(&dialog);
+    column->setContentsMargins(28, 24, 28, 24);
+    column->setSpacing(16);
+    auto logo = new QLabel(&dialog);
+    logo->setPixmap(
+        QIcon(QString::fromStdString((resources / "favicon.png").string())).pixmap(72, 72));
+    column->addWidget(logo, 0, Qt::AlignHCenter);
+    auto name = new QLabel("Orbis Stream", &dialog);
+    name->setObjectName("cardTitle");
+    column->addWidget(name, 0, Qt::AlignHCenter);
+    column->addWidget(new QLabel(t("aboutVersion") + "  " + ORBIS_VERSION, &dialog));
+    column->addWidget(new QLabel(t("aboutAuthor") + "  Marco Amleto Guarino", &dialog));
+    auto linkedin = new QPushButton(t("aboutLinkedIn"), &dialog);
+    linkedin->setObjectName("aboutLinkedIn");
+    connect(linkedin, &QPushButton::clicked, &dialog, [] {
+        QDesktopServices::openUrl(QUrl("https://www.linkedin.com/in/marco-amleto-guarino/"));
+    });
+    column->addWidget(linkedin);
+    auto close = new QPushButton(t("close"), &dialog);
+    close->setObjectName("closeAbout");
+    close->setProperty("primary", true);
+    connect(close, &QPushButton::clicked, &dialog, &QDialog::accept);
+    column->addWidget(close, 0, Qt::AlignRight);
+    dialog.exec();
+}
+
+void NativeWindow::buildLiveMenu() {
+    addDestinationCards({{"liveManagement", "live", "liveManagementDescription"},
+                         {"preview", "preview", "previewDescription"},
+                         {"layouts", "layouts", "layoutsDescription"},
+                         {"liveHistory", "history", "liveHistoryDescription"}});
 }
 
 // La chiusura dalla finestra chiede conferma se interromperebbe una trasmissione.
@@ -312,21 +481,33 @@ void NativeWindow::rebuild() {
     navigation->blockSignals(true);
     navigation->clear();
     for (int i = 0; i < navigationKeys.size(); ++i) {
-        const auto label = t(navigationKeys.at(i).toUtf8().constData());
-        auto icon = studioIcon(navigationPages.at(i));
-        icon.addPixmap(studioIcon(navigationPages.at(i), Qt::white).pixmap(22, 22),
-                       QIcon::Selected);
+        const auto label = navigationPages.at(i) == "liveMenu"
+                               ? QString("Live")
+                               : t(navigationKeys.at(i).toUtf8().constData());
+        const QStringList glyphs = {"home",     "video",  "screen",  "layouts",
+                                    "activity", "manual", "settings"};
+        auto icon = studioIcon(glyphs.at(i));
+        icon.addPixmap(studioIcon(glyphs.at(i), Qt::white).pixmap(15, 15), QIcon::Selected);
         auto item = new QListWidgetItem(icon, label, navigation);
         item->setToolTip(label);
+        item->setData(Qt::AccessibleTextRole, label);
+        const QStringList paths = {"/orbis/mainMenu",        "/orbis/mainLiveMenu",
+                                   "/orbis/mainPreview",     "/orbis/mainLayoutList",
+                                   "/orbis/mainTaskManager", "/orbis/manual",
+                                   "/orbis/mainSetting"};
+        item->setData(Qt::UserRole, paths.at(i));
+        item->setSizeHint(QSize(0, 35));
     }
     int selected = navigationPages.indexOf(page);
     if (selected < 0)
-        selected = navigationPages.indexOf(
-            page == "scenes"                                               ? "layouts"
-            : page == "playlist" || page == "buttons" || page == "history" ? "live"
-                                                                           : "settings");
+        selected = navigationPages.indexOf(page == "scenes" || page == "overlays" ? "layouts"
+                                           : page == "live" || page == "playlist" ||
+                                                   page == "buttons" || page == "history"
+                                               ? "liveMenu"
+                                               : "settings");
     navigation->setCurrentRow(selected);
     navigation->blockSignals(false);
+    updateSidebar();
     const QMap<QString, const char*> titles = {
         {"dashboard", "dashboard"},    {"live", "liveManagement"},
         {"history", "liveHistory"},    {"preview", "preview"},
@@ -336,7 +517,7 @@ void NativeWindow::rebuild() {
         {"profiles", "videoSettings"}, {"playlist", "nativePlaylistLibrary"},
         {"overlays", "overlays"},      {"buttons", "sceneDeck"},
         {"scene-media", "sceneMedia"}};
-    auto title = new QLabel(t(titles.value(page, "dashboard")), body);
+    auto title = new QLabel(page == "liveMenu" ? "Live" : t(titles.value(page, "dashboard")), body);
     title->setObjectName("pageTitle");
     auto heading = new QFrame(body);
     heading->setObjectName("pageHeading");
@@ -347,6 +528,7 @@ void NativeWindow::rebuild() {
     const QMap<QString, const char*> descriptions = {
         {"dashboard", "dashboardDescription"},
         {"live", "liveManagementDescription"},
+        {"liveMenu", "liveManagementDescription"},
         {"history", "liveHistoryDescription"},
         {"preview", "previewDescription"},
         {"layouts", "layoutsDescription"},
@@ -364,7 +546,7 @@ void NativeWindow::rebuild() {
         headingText->addWidget(description);
     }
     headingLayout->addLayout(headingText, 1);
-    if (page == "live" || page == "preview") {
+    if (page == "live" || page == "preview" || page == "liveMenu") {
         auto actions = new QWidget(heading);
         auto row = new QHBoxLayout(actions);
         row->setContentsMargins(12, 0, 0, 0);
@@ -388,7 +570,8 @@ void NativeWindow::rebuild() {
                     break;
                 }
         }
-        addAction("startPlaylistButton", [this] { startWizard(true); }, actions, "playlist");
+        if (page != "liveMenu")
+            addAction("startPlaylistButton", [this] { startWizard(true); }, actions, "playlist");
         addAction("startLiveButton", [this] { startWizard(); }, actions, "play");
         headingLayout->addWidget(actions);
     }
@@ -416,9 +599,21 @@ void NativeWindow::rebuild() {
         coffee->setMaximumWidth(300);
         headingLayout->addWidget(coffee);
     }
+    if (page == "liveMenu" || page == "settings") {
+        auto back = new QToolButton(heading);
+        back->setObjectName("menuBack");
+        back->setProperty("rowAction", true);
+        back->setIcon(studioIcon("back"));
+        back->setToolTip(t("back"));
+        back->setAccessibleName(t("back"));
+        connect(back, &QToolButton::clicked, this, [this] { navigate("dashboard"); });
+        headingLayout->insertWidget(0, back);
+    }
     bodyLayout->addWidget(heading);
     if (page == "dashboard")
         buildDashboard();
+    else if (page == "liveMenu")
+        buildLiveMenu();
     else if (page == "channels")
         buildChannels();
     else if (page == "profiles")
@@ -788,7 +983,7 @@ void NativeWindow::buildScenes(bool layouts) {
         back->setFixedSize(32, 32);
         back->setToolTip(t("back"));
         back->setAccessibleName(t("back"));
-        connect(back, &QToolButton::clicked, this, [this] { navigate("live"); });
+        connect(back, &QToolButton::clicked, this, [this] { navigate("liveMenu"); });
         row->insertWidget(0, back);
         actions = new QWidget(heading);
         auto actionRow = new QHBoxLayout(actions);
