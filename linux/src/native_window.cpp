@@ -1,6 +1,7 @@
 #include "native_window.hpp"
 #include "history_cleanup_service.hpp"
 #include "live_rows.hpp"
+#include "native_dashboard.hpp"
 #include "native_theme.hpp"
 #include "scene_service.hpp"
 #include "version.hpp"
@@ -113,7 +114,9 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     : studio(studio), resources(std::move(resources)),
       translations(QString::fromStdString((this->resources / "ui").string())),
       proxies(studio.store.root / "proxies") {
-    applyNativeTheme();
+    QSettings appearance(QString::fromStdString((studio.store.root / "appearance.ini").string()),
+                         QSettings::IniFormat);
+    applyNativeTheme(appearance.value("theme", "dark").toString());
     setObjectName("nativeWindow");
     setWindowTitle(QString("OrbisStream · %1").arg(ORBIS_VERSION));
     resize(1380, 900);
@@ -158,6 +161,25 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
                       "taskManager", "settings",       "manual"};
     navigationPages = {"dashboard", "live", "preview", "layouts", "activity", "settings", "manual"};
     side->addWidget(navigation, 1);
+    auto themes = new QWidget(sidebar);
+    themes->setObjectName("themeSelector");
+    auto themeRow = new QHBoxLayout(themes);
+    themeRow->setContentsMargins(3, 3, 3, 3);
+    themeRow->setSpacing(2);
+    for (const auto& theme : {QString("light"), QString("dark")}) {
+        auto choice = new QToolButton(themes);
+        choice->setObjectName("theme_" + theme);
+        choice->setProperty("themeChoice", true);
+        choice->setCheckable(true);
+        choice->setChecked(qApp->property("orbisTheme").toString() == theme);
+        choice->setIcon(studioIcon(theme));
+        choice->setToolTip(theme == "light" ? "Light Theme" : "Dark Theme");
+        choice->setAccessibleName(choice->toolTip());
+        choice->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        themeRow->addWidget(choice);
+        connect(choice, &QToolButton::clicked, this, [this, theme] { setTheme(theme); });
+    }
+    side->addWidget(themes);
     languagePicker = new QComboBox(sidebar);
     languagePicker->setObjectName("languagePicker");
     for (const auto& language : translations.languages())
@@ -257,12 +279,30 @@ void NativeWindow::navigate(const QString& key) {
 
 // Ricostruisce solo quando cambia pagina o lingua; il campionamento periodico aggiorna le righe
 // esistenti.
+void NativeWindow::setTheme(const QString& theme) {
+    if (theme != "light" && theme != "dark")
+        return;
+    QSettings appearance(QString::fromStdString((studio.store.root / "appearance.ini").string()),
+                         QSettings::IniFormat);
+    appearance.setValue("theme", theme);
+    applyNativeTheme(theme);
+    for (const auto& name : {QString("light"), QString("dark")}) {
+        auto choice = findChild<QToolButton*>("theme_" + name);
+        choice->setChecked(theme == name);
+        choice->setIcon(studioIcon(name));
+    }
+    rebuild();
+}
+
 void NativeWindow::rebuild() {
+    bodyLayout->setContentsMargins(page == "dashboard" ? QMargins(14, 2, 14, 36)
+                                                       : QMargins(32, 26, 32, 26));
+    bodyLayout->setSpacing(page == "dashboard" ? 0 : 18);
+    body->setProperty("dashboard", page == "dashboard");
     table = nullptr;
     search = nullptr;
     channelFilter = statusFilter = platformFilter = livePicker = nullptr;
     preview = previewFacts = cleanupLabel = pageLabel = emptyState = nullptr;
-    liveCount = channelCount = cpuValue = memoryValue = dashboardStatus = nullptr;
     cleanupBar = nullptr;
     while (auto item = bodyLayout->takeAt(0)) {
         if (item->widget())
@@ -273,7 +313,10 @@ void NativeWindow::rebuild() {
     navigation->clear();
     for (int i = 0; i < navigationKeys.size(); ++i) {
         const auto label = t(navigationKeys.at(i).toUtf8().constData());
-        auto item = new QListWidgetItem(studioIcon(navigationPages.at(i)), label, navigation);
+        auto icon = studioIcon(navigationPages.at(i));
+        icon.addPixmap(studioIcon(navigationPages.at(i), Qt::white).pixmap(22, 22),
+                       QIcon::Selected);
+        auto item = new QListWidgetItem(icon, label, navigation);
         item->setToolTip(label);
     }
     int selected = navigationPages.indexOf(page);
@@ -348,6 +391,30 @@ void NativeWindow::rebuild() {
         addAction("startPlaylistButton", [this] { startWizard(true); }, actions, "playlist");
         addAction("startLiveButton", [this] { startWizard(); }, actions, "play");
         headingLayout->addWidget(actions);
+    }
+    if (page == "dashboard") {
+        headingLayout->setContentsMargins(20, 12, 20, 12);
+        headingLayout->setSpacing(14);
+        headingText->setSpacing(3);
+        title->setProperty("dashboardTitle", true);
+        auto coffee = new QWidget(heading);
+        auto column = new QVBoxLayout(coffee);
+        column->setContentsMargins(0, 0, 0, 0);
+        column->setSpacing(6);
+        auto donate = new CoffeeButton(
+            QString::fromUtf8("🦦  ") + t("payMeAWeasel") + QString::fromUtf8("  ☕"), coffee);
+        donate->setAccessibleName(t("payMeAWeasel"));
+        donate->setProperty("url", "https://buymeacoffee.com/zaccalos");
+        connect(donate, &QPushButton::clicked, this,
+                [] { QDesktopServices::openUrl(QUrl("https://buymeacoffee.com/zaccalos")); });
+        column->addWidget(donate, 0, Qt::AlignRight);
+        auto note = new QLabel(t("coffeeForPerla"), coffee);
+        note->setObjectName("coffeePerla");
+        note->setWordWrap(true);
+        note->setAlignment(Qt::AlignRight);
+        column->addWidget(note);
+        coffee->setMaximumWidth(300);
+        headingLayout->addWidget(coffee);
     }
     bodyLayout->addWidget(heading);
     if (page == "dashboard")
@@ -609,89 +676,72 @@ void NativeWindow::addDestinationCards(const QList<QStringList>& entries) {
     bodyLayout->addWidget(destinations);
 }
 
-// La dashboard mette prima gli accessi descritti dal manuale, poi i contatori della macchina.
+// Stesse sezioni, destinazioni e ordine di Pages/MainMenu.cshtml.
 void NativeWindow::buildDashboard() {
-    auto section = [this](const char* key) {
-        auto label = new QLabel(t(key), body);
-        label->setObjectName("sectionLabel");
-        bodyLayout->addWidget(label);
+    auto section = [this](const char* key, const QList<QStringList>& entries) {
+        bodyLayout->addSpacing(22);
+        auto heading = new QWidget(body);
+        auto row = new QHBoxLayout(heading);
+        row->setContentsMargins(0, 0, 0, 0);
+        row->setSpacing(8);
+        auto accent = new QLabel(heading);
+        accent->setObjectName("dashboardSectionAccent");
+        accent->setFixedSize(3, 12);
+        row->addWidget(accent);
+        auto title = new QLabel(t(key), heading);
+        title->setObjectName("dashboardSectionTitle");
+        row->addWidget(title, 1);
+        bodyLayout->addWidget(heading);
+        bodyLayout->addSpacing(10);
+        auto grid = new DashboardGrid(body);
+        grid->setProperty("section", key);
+        for (const auto& entry : entries) {
+            auto card = new DashboardTile(grid);
+            card->setObjectName(entry[0]);
+            card->setProperty("dashboardTile", true);
+            card->setCursor(Qt::PointingHandCursor);
+            card->setAccessibleName(t(entry[0].toUtf8().constData()));
+            card->setAccessibleDescription(t(entry[2].toUtf8().constData()));
+            auto content = new QVBoxLayout(card);
+            content->setContentsMargins(20, 20, 20, 20);
+            content->setSpacing(0);
+            auto icon = new QLabel(card);
+            icon->setObjectName("dashboardTileIcon");
+            icon->setFixedSize(40, 40);
+            icon->setAlignment(Qt::AlignCenter);
+            icon->setPixmap(studioIcon(entry[3], Qt::white).pixmap(18, 18));
+            content->addWidget(icon);
+            content->addSpacing(12);
+            auto title = new QLabel(t(entry[0].toUtf8().constData()), card);
+            title->setObjectName("dashboardTileTitle");
+            title->setWordWrap(true);
+            content->addWidget(title);
+            content->addSpacing(3);
+            auto description = new QLabel(t(entry[2].toUtf8().constData()), card);
+            description->setObjectName("dashboardTileDescription");
+            description->setWordWrap(true);
+            content->addWidget(description);
+            content->addStretch();
+            for (auto label : {icon, title, description})
+                label->setAttribute(Qt::WA_TransparentForMouseEvents);
+            card->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+            connect(card, &QPushButton::clicked, this,
+                    [this, target = entry[1]] { navigate(target); });
+            grid->addCard(card);
+        }
+        bodyLayout->addWidget(grid);
     };
-    section("dashboardSectionLive");
-    addDestinationCards({{"liveManagement", "live", "liveManagementDescription"},
-                         {"preview", "preview", "previewDescription"},
-                         {"layouts", "layouts", "layoutsDescription"},
-                         {"liveHistory", "history", "liveHistoryDescription"}});
-    section("dashboardSectionSettings");
-    addDestinationCards({{"videoAndAudio", "profiles", "additionalVideoOptionsDescription"},
-                         {"channelSettings", "channels", "channelSettingsDescription"}});
-    section("dashboardSectionSystem");
-    addDestinationCards({{"taskManager", "activity", "taskManagerDescription"},
-                         {"manual", "manual", "manualDescription"}});
-
-    auto metrics = new QWidget(body);
-    auto metricGrid = new QGridLayout(metrics);
-    metricGrid->setContentsMargins(0, 0, 0, 0);
-    metricGrid->setSpacing(12);
-    auto metric = [&](int column, const char* key, const QString& icon) {
-        auto card = new QFrame(metrics);
-        card->setObjectName("card");
-        auto layout = new QVBoxLayout(card);
-        layout->setContentsMargins(18, 18, 18, 18);
-        layout->setSpacing(12);
-        auto heading = new QHBoxLayout;
-        auto label = new QLabel(t(key), card);
-        label->setWordWrap(true);
-        label->setObjectName("muted");
-        heading->addWidget(label, 1);
-        auto symbol = new QLabel(card);
-        symbol->setPixmap(studioIcon(icon).pixmap(22, 22));
-        heading->addWidget(symbol);
-        layout->addLayout(heading);
-        auto value = new QLabel("—", card);
-        value->setObjectName("metricValue");
-        layout->addWidget(value);
-        metricGrid->addWidget(card, 0, column);
-        metricGrid->setColumnStretch(column, 1);
-        return value;
-    };
-    liveCount = metric(0, "liveStatusLive", "live");
-    channelCount = metric(1, "channel", "channels");
-    cpuValue = metric(2, "cpu", "activity");
-    memoryValue = metric(3, "ramUsed", "profiles");
-    bodyLayout->addWidget(metrics);
-
-    auto statusRow = new QWidget(body);
-    auto statusLayout = new QHBoxLayout(statusRow);
-    statusLayout->setContentsMargins(0, 2, 0, 2);
-    auto statusTitle = new QLabel(t("liveStatus"), statusRow);
-    statusTitle->setObjectName("sectionLabel");
-    statusLayout->addWidget(statusTitle);
-    statusLayout->addStretch();
-    dashboardStatus = new QLabel(t("loading"), statusRow);
-    dashboardStatus->setObjectName("statusPill");
-    statusLayout->addWidget(dashboardStatus);
-    bodyLayout->addWidget(statusRow);
-
-    updateDashboard();
-}
-
-// I valori assenti rimangono trattini fino al primo campione; le dirette concluse non sono contate.
-void NativeWindow::updateDashboard() {
-    if (!liveCount || !state.has("live"))
-        return;
-    int running = 0;
-    const auto live = state.get("live");
-    for (size_t i = 0; i < live.size(); ++i) {
-        const auto status = live.at(i).get("status").str();
-        if (status == "LIVE" || status == "STARTING" || status == "RECONNECTING")
-            ++running;
-    }
-    liveCount->setText(QLocale().toString(running));
-    channelCount->setText(QLocale().toString(qlonglong(state.get("channels").size())));
-    cpuValue->setText(formatMetric(state.get("metrics").get("cpu").num(-1), "%"));
-    memoryValue->setText(formatMetric(state.get("metrics").get("ram").num(-1), "%"));
-    dashboardStatus->setText(running ? t("liveStatusLive") + " · " + QLocale().toString(running)
-                                     : t("noLiveRunning"));
+    section("dashboardSectionLive",
+            {{"liveManagement", "live", "liveManagementDescription", "video"},
+             {"preview", "preview", "previewDescription", "screen"},
+             {"layouts", "layouts", "layoutsDescription", "layouts"},
+             {"liveHistory", "history", "liveHistoryDescription", "history"}});
+    section("dashboardSectionSettings",
+            {{"videoAndAudio", "profiles", "additionalVideoOptionsDescription", "video"},
+             {"channelSettings", "channels", "channelSettingsDescription", "channelSettings"}});
+    section("dashboardSectionSystem",
+            {{"taskManager", "activity", "taskManagerDescription", "activity"}});
+    section("manual", {{"manualTitle", "manual", "manualDescription", "manual"}});
 }
 
 // Filtri e ricerca restano fuori dalle righe per conservare il focus durante il campionamento.
@@ -847,7 +897,7 @@ void NativeWindow::refreshLayouts() {
             action->setObjectName(key);
             action->setProperty("rowAction", true);
             action->setIcon(
-                studioIcon(remove ? "delete" : "edit", QColor(remove ? "#ff453a" : "#f5f5f7")));
+                studioIcon(remove ? "delete" : "edit", remove ? QColor("#ff453a") : QColor()));
             action->setFixedSize(32, 32);
             action->setToolTip(t(key));
             action->setAccessibleName(t(key));
@@ -995,7 +1045,6 @@ void NativeWindow::refreshRows() {
         return;
     }
     if (page == "dashboard") {
-        updateDashboard();
         return;
     }
     if (page == "preview") {
@@ -1643,18 +1692,26 @@ void NativeWindow::buildMetrics() {
         QString id, title, value;
         int percentage;
     };
+
     std::vector<MetricItem> items;
 
-    items.push_back({"cpu", t("cpu"), formatMetric(values.get("cpu").num(-1), "%"), int(values.get("cpu").num(-1))});
-    items.push_back({"ram", t("ramUsed"), formatMetric(values.get("ram").num(-1), "%"), int(values.get("ram").num(-1))});
-    items.push_back({"swap", "SWAP", formatMetric(values.get("swap").num(-1), "%"), int(values.get("swap").num(-1))});
+    items.push_back({"cpu", t("cpu"), formatMetric(values.get("cpu").num(-1), "%"),
+                     int(values.get("cpu").num(-1))});
+    items.push_back({"ram", t("ramUsed"), formatMetric(values.get("ram").num(-1), "%"),
+                     int(values.get("ram").num(-1))});
+    items.push_back({"swap", "SWAP", formatMetric(values.get("swap").num(-1), "%"),
+                     int(values.get("swap").num(-1))});
     items.push_back({"network", "Network",
-                     "↓ " + formatMetric(values.get("networkRx").num(-1) / 1024.0, " KiB/s") + "\n↑ " +
-                     formatMetric(values.get("networkTx").num(-1) / 1024.0, " KiB/s"), -1});
-    items.push_back({"disk", t("diskFree"), formatMetric(values.get("diskAvailable").num(-1) / 1073741824.0, " GiB"), -1});
+                     "↓ " + formatMetric(values.get("networkRx").num(-1) / 1024.0, " KiB/s") +
+                         "\n↑ " + formatMetric(values.get("networkTx").num(-1) / 1024.0, " KiB/s"),
+                     -1});
+    items.push_back({"disk", t("diskFree"),
+                     formatMetric(values.get("diskAvailable").num(-1) / 1073741824.0, " GiB"), -1});
     items.push_back({"uptime", t("uptime"), formatMetric(values.get("uptime").num(-1), " s"), -1});
-    items.push_back({"appUsage", t("appUsage"), formatMetric(process.get("cpu").num(-1), "%") + "\n" +
-                     formatMetric(process.get("rssBytes").num(-1) / 1048576.0, " MiB"), int(process.get("cpu").num(-1))});
+    items.push_back({"appUsage", t("appUsage"),
+                     formatMetric(process.get("cpu").num(-1), "%") + "\n" +
+                         formatMetric(process.get("rssBytes").num(-1) / 1048576.0, " MiB"),
+                     int(process.get("cpu").num(-1))});
 
     auto temperatures = values.get("temperatures");
     for (size_t i = 0; i < temperatures.size(); ++i)
@@ -1666,10 +1723,12 @@ void NativeWindow::buildMetrics() {
         for (auto key : {"producerMetrics", "publisherMetrics"}) {
             auto metrics = live.at(i).get(key);
             if (metrics.has("pid"))
-                items.push_back({"ffmpeg_" + QString::number(metrics.get("pid").num()),
-                                 "FFmpeg · PID " + QString::number(metrics.get("pid").num()),
-                                 formatMetric(metrics.get("cpu").num(-1), "%") + "\n" +
-                                 formatMetric(metrics.get("rssBytes").num(-1) / 1048576.0, " MiB"), int(metrics.get("cpu").num(-1))});
+                items.push_back(
+                    {"ffmpeg_" + QString::number(metrics.get("pid").num()),
+                     "FFmpeg · PID " + QString::number(metrics.get("pid").num()),
+                     formatMetric(metrics.get("cpu").num(-1), "%") + "\n" +
+                         formatMetric(metrics.get("rssBytes").num(-1) / 1048576.0, " MiB"),
+                     int(metrics.get("cpu").num(-1))});
         }
 
     QSet<QString> activeIds;
@@ -1706,8 +1765,10 @@ void NativeWindow::buildMetrics() {
             // Se esiste, aggiorniamo i dati senza ricreare il widget
             auto labels = card->findChildren<QLabel*>();
             for (auto label : labels) {
-                if (label->objectName() == "muted") label->setText(item.title);
-                else if (label->objectName() == "metricValue") label->setText(item.value);
+                if (label->objectName() == "muted")
+                    label->setText(item.title);
+                else if (label->objectName() == "metricValue")
+                    label->setText(item.value);
             }
             // Riposizioniamo nella griglia per evitare buchi se qualche widget viene rimosso
             grid->addWidget(card, index / 3, index % 3);
@@ -1727,7 +1788,8 @@ void NativeWindow::buildMetrics() {
     }
 
     // Nascondi le card che non sono più attive per questa passata
-    auto cards = container->findChildren<QFrame*>(QRegularExpression(".*"), Qt::FindDirectChildrenOnly);
+    auto cards =
+        container->findChildren<QFrame*>(QRegularExpression(".*"), Qt::FindDirectChildrenOnly);
     for (auto card : cards) {
         if (!activeIds.contains(card->objectName())) {
             card->setVisible(false);

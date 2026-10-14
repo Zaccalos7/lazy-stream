@@ -4,6 +4,7 @@
 #include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
+#include <QDesktopServices>
 #include <QDialogButtonBox>
 #include <QGraphicsView>
 #include <QImage>
@@ -29,7 +30,91 @@ using namespace orbis;
 // I test attraversano widget, cambi lingua e dialoghi reali, senza il server HTTP.
 class NativeTests : public QObject {
     Q_OBJECT
+    QUrl openedUrl;
   private slots:
+
+    void captureUrl(const QUrl& url) {
+        openedUrl = url;
+    }
+
+    void dashboardMatchesWindows() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        {
+            NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+            window.setLanguage("en");
+            window.show();
+            for (int width : {960, 1200, 1500}) {
+                window.resize(width, 1000);
+                QApplication::processEvents();
+                const auto grids = window.findChildren<QWidget*>("dashboardGrid");
+                QCOMPARE(grids.size(), 4);
+                const QList<int> counts = {4, 2, 1, 1};
+                for (int index = 0; index < grids.size(); ++index) {
+                    auto grid = grids[index];
+                    auto cards =
+                        grid->findChildren<QPushButton*>(QString(), Qt::FindDirectChildrenOnly);
+                    QCOMPARE(cards.size(), counts[index]);
+                    for (auto card : cards) {
+                        QVERIFY(grid->rect().contains(card->geometry()));
+                        for (auto label : card->findChildren<QLabel*>())
+                            QVERIFY2(card->rect().contains(label->geometry()),
+                                     qPrintable(label->text()));
+                    }
+                }
+                auto live = window.findChild<QPushButton*>("liveManagement");
+                auto history = window.findChild<QPushButton*>("liveHistory");
+                QCOMPARE(history->y() == live->y(), width == 1500);
+            }
+            window.resize(1380, 1000);
+            QApplication::processEvents();
+            QVERIFY(window.grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-dashboard-dark")));
+            QVERIFY(!window.findChild<QLabel*>("metricValue"));
+            QDesktopServices::setUrlHandler("https", this, "captureUrl");
+            window.findChild<QPushButton*>("coffeeBanner")->click();
+            QDesktopServices::unsetUrlHandler("https");
+            QCOMPARE(openedUrl, QUrl("https://buymeacoffee.com/zaccalos"));
+            const QList<QPair<QString, QString>> routes = {
+                {"liveManagement", "Live Stream Management"},
+                {"preview", "Preview"},
+                {"layouts", "Layouts"},
+                {"liveHistory", "Live History"},
+                {"videoAndAudio", "Video settings"},
+                {"channelSettings", "Channel Settings"},
+                {"taskManager", "Task Manager"},
+                {"manualTitle", "User Guide"}};
+            NativeTranslations text(ORBIS_TEST_RESOURCES "/ui");
+            text.setLanguage("en");
+            const QStringList titleKeys = {"liveManagement", "preview",       "layouts",
+                                           "liveHistory",    "videoSettings", "channelSettings",
+                                           "taskManager",    "manual"};
+            for (int i = 0; i < routes.size(); ++i) {
+                window.navigate("dashboard");
+                window.findChild<QPushButton*>(routes[i].first)->click();
+                QCOMPARE(window.findChild<QLabel*>("pageTitle")->text(),
+                         text.text(titleKeys[i].toUtf8().constData()));
+            }
+            window.navigate("dashboard");
+            window.findChild<QToolButton*>("theme_light")->click();
+            QCOMPARE(qApp->palette().color(QPalette::Window), QColor("#f4f4f7"));
+            QVERIFY(window.findChild<QToolButton*>("theme_light")->isChecked());
+            QVERIFY(!window.findChild<QToolButton*>("theme_dark")->isChecked());
+            QApplication::processEvents();
+            QVERIFY(window.grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-dashboard-light")));
+            window.setLanguage("ar");
+            QApplication::processEvents();
+            auto first = window.findChild<QPushButton*>("liveManagement");
+            auto second = window.findChild<QPushButton*>("preview");
+            QVERIFY(first->x() > second->x());
+        }
+        NativeWindow reopened(studio, ORBIS_TEST_RESOURCES);
+        QVERIFY(reopened.findChild<QToolButton*>("theme_light")->isChecked());
+        QCOMPARE(qApp->property("orbisTheme").toString(), QString("light"));
+        reopened.setTheme("dark");
+        QCOMPARE(qApp->palette().color(QPalette::Window), QColor("#1a1a1c"));
+    }
 
     void catalogsAndNativeNavigation() {
         QTemporaryDir directory;

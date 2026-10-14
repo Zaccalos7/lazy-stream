@@ -33,8 +33,6 @@ class NativeWindow : public QMainWindow {
     QComboBox *channelFilter = nullptr, *statusFilter = nullptr, *platformFilter = nullptr,
               *livePicker = nullptr;
     QLabel *preview = nullptr, *previewFacts = nullptr, *cleanupLabel = nullptr;
-    QLabel *liveCount = nullptr, *channelCount = nullptr, *cpuValue = nullptr,
-           *memoryValue = nullptr, *dashboardStatus = nullptr;
     QProgressBar* cleanupBar = nullptr;
     long watched = 0;
     long armedDeck = 0;
@@ -50,7 +48,6 @@ class NativeWindow : public QMainWindow {
     void rebuild();
     void refreshRows();
     void buildDashboard();
-    void updateDashboard();
     void buildChannels();
     void buildProfiles();
     void buildLive(bool history);
@@ -101,6 +98,7 @@ class NativeWindow : public QMainWindow {
     void navigate(const QString& key);
     void sample();
     void setLanguage(const QString& language);
+    void setTheme(const QString& theme);
 
     QString language() const {
         return translations.language();

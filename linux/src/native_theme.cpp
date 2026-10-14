@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
+#include <QRegularExpression>
 #include <QStyleFactory>
 #include <QTransform>
 #include <algorithm>
@@ -323,7 +324,7 @@ const char* const playMark = "M8 5v14l11-7z";
 
 // Le icone sono vettoriali e rasterizzate anche a 2x per gli schermi ad alta densità.
 QIcon studioIcon(const QString& name, const QColor& color) {
-    const QColor ink = color.isValid() ? color : QColor("#c4c4cc");
+    const QColor ink = color.isValid() ? color : qApp->palette().color(QPalette::WindowText);
     QIcon icon;
     for (int scale : {1, 2, 3}) {
         QPixmap pixmap(24 * scale, 24 * scale);
@@ -337,7 +338,30 @@ QIcon studioIcon(const QString& name, const QColor& color) {
             for (int x : {4, 14})
                 for (int y : {4, 14})
                     p.drawRoundedRect(QRectF(x, y, 6, 6), 1.4, 1.4);
-        } else if (name == "live" || name == "channels") {
+        } else if (name == "light") {
+            p.drawEllipse(QPointF(12, 12), 4, 4);
+            for (int i = 0; i < 8; ++i) {
+                const double angle = i * pi / 4;
+                p.drawLine(QPointF(12 + 7 * std::cos(angle), 12 + 7 * std::sin(angle)),
+                           QPointF(12 + 10 * std::cos(angle), 12 + 10 * std::sin(angle)));
+            }
+        } else if (name == "dark") {
+            QPainterPath moon;
+            moon.moveTo(16, 3);
+            moon.cubicTo(3, 0, 0, 18, 12, 21);
+            moon.cubicTo(17, 22, 21, 18, 21, 14);
+            moon.cubicTo(12, 18, 7, 8, 16, 3);
+            p.drawPath(moon);
+        } else if (name == "video") {
+            p.drawRect(QRectF(3, 6, 12, 12));
+            QPolygonF camera;
+            camera << QPointF(15, 10) << QPointF(21, 6) << QPointF(21, 18) << QPointF(15, 14);
+            p.drawPolyline(camera);
+        } else if (name == "screen") {
+            p.drawRect(QRectF(2, 4, 20, 14));
+            p.drawLine(12, 18, 12, 21);
+            p.drawLine(7, 21, 17, 21);
+        } else if (name == "channelSettings" || name == "live" || name == "channels") {
             p.drawEllipse(QPointF(12, 12), 2, 2);
             p.drawArc(QRectF(6, 6, 12, 12), -55 * 16, 110 * 16);
             p.drawArc(QRectF(6, 6, 12, 12), 125 * 16, 110 * 16);
@@ -560,7 +584,9 @@ QIcon platformMark(const QString& platform) {
 }
 
 // La palette copre anche i controlli nativi non stilizzati e i dialoghi modali.
-void applyNativeTheme() {
+void applyNativeTheme(const QString& theme) {
+    const bool light = theme == "light";
+    qApp->setProperty("orbisTheme", light ? "light" : "dark");
     qApp->setStyle(QStyleFactory::create("Fusion"));
     QPalette palette;
     palette.setColor(QPalette::Window, QColor("#1a1a1c"));
@@ -577,6 +603,18 @@ void applyNativeTheme() {
     palette.setColor(QPalette::Link, QColor("#9db8ff"));
     palette.setColor(QPalette::Disabled, QPalette::Text, QColor("#738198"));
     palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor("#738198"));
+    if (light) {
+        palette.setColor(QPalette::Window, QColor("#f4f4f7"));
+        palette.setColor(QPalette::WindowText, QColor("#1d1d1f"));
+        palette.setColor(QPalette::Base, Qt::white);
+        palette.setColor(QPalette::AlternateBase, QColor("#fafafa"));
+        palette.setColor(QPalette::Text, QColor("#1d1d1f"));
+        palette.setColor(QPalette::Button, Qt::white);
+        palette.setColor(QPalette::ButtonText, QColor("#1d1d1f"));
+        palette.setColor(QPalette::ToolTipBase, Qt::white);
+        palette.setColor(QPalette::ToolTipText, QColor("#1d1d1f"));
+        palette.setColor(QPalette::Link, QColor("#007aff"));
+    }
     qApp->setPalette(palette);
     auto font = qApp->font();
     font.setPointSize(10);
@@ -676,6 +714,56 @@ void applyNativeTheme() {
         QToolButton[mark="true"] { background: transparent; border: none; padding: 2px; border-radius: 6px; }
         QToolButton[mark="true"]:hover { background: #14ffffff; }
     )");
+    // Colori del tema chiaro di tokens.css, sostituiti in un solo passaggio per non
+    // trasformare nuovamente i colori già risolti (e mantenere i colori dei marchi).
+    if (light) {
+        const QMap<QString, QString> colors = {
+            {"#1a1a1c", "#f4f4f7"},     {"#232325", "#eeeef1"},    {"#262628", "#ffffff"},
+            {"#2b2b2e", "#fafafa"},     {"#323234", "#ffffff"},    {"#3e3e42", "#f5f5f8"},
+            {"#414145", "#dedee2"},     {"#505055", "#d5d5da"},    {"#58585f", "#c5c5ca"},
+            {"#f5f5f7", "#1d1d1f"},     {"#f5f8ff", "#1d1d1f"},    {"#b2b2ba", "#6e6e73"},
+            {"#b9b9c0", "#6e6e73"},     {"#c4c4cc", "#6e6e73"},    {"#ffb0b8", "#c92b23"},
+            {"#ff453a", "#ff3b30"},     {"#30d158", "#248a3d"},    {"#ffd60a", "#945800"},
+            {"#98989d", "#6e6e73"},     {"#409cff", "#007aff"},    {"#1affffff", "#09000000"},
+            {"#33ffffff", "#12000000"}, {"#14ffffff", "#09000000"}};
+        const QRegularExpression hex("#[0-9a-fA-F]{6,8}\\b");
+        auto matches = hex.globalMatch(stylesheet);
+        QString resolved;
+        qsizetype offset = 0;
+        while (matches.hasNext()) {
+            auto match = matches.next();
+            resolved += stylesheet.mid(offset, match.capturedStart() - offset);
+            resolved += colors.value(match.captured().toLower(), match.captured());
+            offset = match.capturedEnd();
+        }
+        stylesheet = resolved + stylesheet.mid(offset);
+        stylesheet += "QToolTip { color: #1d1d1f; background: #ffffff; }";
+    }
+    // Dashboard: misure e token di base.css, surfaces.css e dashboard.css su Windows.
+    stylesheet += QString(R"(
+        QWidget#workspace[dashboard="true"] { background: %1; font-size: 13px; }
+        QWidget#workspace[dashboard="true"] QFrame#pageHeading { background: %2; border: 1px solid %3; }
+        QLabel#pageTitle[dashboardTitle="true"] { font-size: 24px; font-weight: 700; }
+        QLabel#dashboardSectionTitle { font-size: 13px; font-weight: 600; }
+        QLabel#dashboardSectionAccent { background: %4; border-radius: 1px; }
+        QPushButton[dashboardTile="true"] { background: %2; border: 1px solid %3; border-top: 3px solid %4; border-radius: 12px; padding: 0; text-align: left; }
+        QPushButton[dashboardTile="true"]:hover { border-color: %5; border-top-color: %4; }
+        QPushButton[dashboardTile="true"]:focus { border-color: %4; }
+        QPushButton[dashboardTile="true"]:pressed { background: %6; }
+        QLabel#dashboardTileIcon { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %4, stop:1 %7); border-radius: 10px; }
+        QLabel#dashboardTileTitle { font-size: 15px; font-weight: 600; background: transparent; }
+        QLabel#dashboardTileDescription { font-size: 12px; color: %8; background: transparent; }
+        QPushButton#coffeeBanner { border-radius: 16px; min-height: 20px; padding: 6px 14px; font-size: 13px; font-weight: 500; }
+        QPushButton#coffeeBanner:hover { border-color: #99ff9500; color: #e07b00; }
+        QLabel#coffeePerla { color: %8; font-size: 11px; }
+        QWidget#themeSelector { background: %6; border: 1px solid %3; border-radius: 8px; }
+        QToolButton[themeChoice="true"] { background: transparent; border: none; padding: 6px; }
+        QToolButton[themeChoice="true"]:checked { background: %2; border: 1px solid %5; }
+    )")
+                      .arg(light ? "#f4f4f7" : "#1a1a1c", light ? "#ffffff" : "#262628",
+                           light ? "#0f000000" : "#14ffffff", light ? "#007aff" : "#0a84ff",
+                           light ? "#1f000000" : "#29ffffff", light ? "#f5f5f8" : "#323234",
+                           light ? "#0068d9" : "#0970d9", light ? "#6e6e73" : "#98989d");
     qApp->setStyleSheet(stylesheet);
 }
 } // namespace orbis
