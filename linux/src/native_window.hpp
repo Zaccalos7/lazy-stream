@@ -40,6 +40,7 @@ class NativeWindow : public QMainWindow {
     long armedDeck = 0;
     QList<QShortcut*> deckShortcuts;
     int currentPage = 0, pageSize = 20;
+    int liveActionsWidth = 0;
     QLabel* pageLabel = nullptr;
     QLabel* emptyState = nullptr;
     bool sampling = false;
@@ -54,6 +55,7 @@ class NativeWindow : public QMainWindow {
     void buildProfiles();
     void buildLive(bool history);
     void buildScenes(bool layouts);
+    void refreshLayouts();
     void buildPreview();
     void buildPlaylist();
     void buildMedia(const QString& kind);
@@ -74,6 +76,8 @@ class NativeWindow : public QMainWindow {
     void showDeck(long id);
     void showSnapshot(const Json& object);
     void playFile(const QString& path);
+    void playSpot(long id);
+    void refreshLiveRow(int row, const Json& record);
     void exportData();
     void importData();
     void removeRecord(const QString& kind, long id);
@@ -81,7 +85,8 @@ class NativeWindow : public QMainWindow {
     void run(const std::function<void()>& action);
     void runAsync(std::function<Json()> job, std::function<void(Json)> finished = {});
     void showError(const std::exception& error);
-    void addAction(const char* key, const std::function<void()>& action, QWidget* parent = nullptr);
+    void addAction(const char* key, const std::function<void()>& action, QWidget* parent = nullptr,
+                   const QString& icon = {});
     QTableWidget* makeTable(const QStringList& headers);
     void addPager(int size);
     void addDestinationCards(const QList<QStringList>& entries);
