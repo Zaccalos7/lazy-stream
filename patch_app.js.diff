@@ -1,0 +1,86 @@
+<<<<<<< SEARCH
+$('#language').replaceChildren(
+  ...Object.entries(languages).map(([key, name]) => el('option', { value: key }, name)),
+);
+$('#language').value = language;
+/** Carica il dizionario selezionato con fallback, evitando che una lingua mancante impedisca l’avvio dell’interfaccia. */
+async function loadLanguage() {
+  try {
+    const r = await fetch('/resources/ui/ui.' + language + '.json');
+    bundle = await r.json();
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  } catch (e) {
+    bundle = {};
+  }
+}
+$('#language').onchange = () =>
+  action(async () => {
+    language = $('#language').value;
+    localStorage.setItem('orbis-language', language);
+    await loadLanguage();
+    render();
+  });
+=======
+const flags = {
+  it: 'it', en: 'gb', de: 'de', es: 'es', fr: 'fr',
+  pt: 'pt', ru: 'ru', zh: 'cn', ko: 'kr', ja: 'jp',
+  hi: 'in', ar: 'ar', ro: 'ro', da: 'dk', nl: 'nl',
+  fil: 'ph', tr: 'tr', la: 'la', tlh: 'tlh', hod: 'hod', el: 'gr'
+};
+
+$('#language-options').replaceChildren(
+  ...Object.entries(languages).map(([key, name]) => {
+    const opt = el('div', { class: 'custom-select-option', 'data-value': key },
+      el('img', { src: '/resources/flags/' + flags[key] + '.svg' }),
+      name
+    );
+    opt.onclick = (e) => {
+      e.stopPropagation();
+      $('#language-select').classList.remove('open');
+      if (language !== key) {
+        language = key;
+        localStorage.setItem('orbis-language', language);
+        updateLanguageUI();
+        action(async () => {
+          await loadLanguage();
+          render();
+        });
+      }
+    };
+    return opt;
+  })
+);
+
+function updateLanguageUI() {
+  $('#language-flag').src = '/resources/flags/' + (flags[language] || 'it') + '.svg';
+  $('#language-name').textContent = languages[language] || languages.it;
+  Array.from($('#language-options').children).forEach(opt => {
+    if (opt.getAttribute('data-value') === language) opt.classList.add('selected');
+    else opt.classList.remove('selected');
+  });
+}
+updateLanguageUI();
+
+$('#language-select').onclick = (e) => {
+  e.preventDefault();
+  $('#language-select').classList.toggle('open');
+};
+document.addEventListener('click', (e) => {
+  if (!$('#language-select').contains(e.target)) {
+    $('#language-select').classList.remove('open');
+  }
+});
+
+/** Carica il dizionario selezionato con fallback, evitando che una lingua mancante impedisca l’avvio dell’interfaccia. */
+async function loadLanguage() {
+  try {
+    const r = await fetch('/resources/ui/ui.' + language + '.json');
+    bundle = await r.json();
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  } catch (e) {
+    bundle = {};
+  }
+}
+>>>>>>> REPLACE
