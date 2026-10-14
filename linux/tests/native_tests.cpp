@@ -1,19 +1,24 @@
 #include "native_forms.hpp"
+#include "native_theme.hpp"
 #include "native_window.hpp"
 #include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
 #include <QDialogButtonBox>
 #include <QGraphicsView>
+#include <QImage>
 #include <QLabel>
 #include <QListWidget>
 #include <QMediaPlayer>
+#include <QMessageBox>
+#include <QPainter>
 #include <QScrollArea>
 #include <QTableWidget>
 #include <QTcpServer>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
+#include <QToolButton>
 #include <QVideoFrame>
 #include <QVideoSink>
 #include <QVideoWidget>
@@ -262,9 +267,15 @@ class NativeTests : public QObject {
         NativeWindow window(studio, ORBIS_TEST_RESOURCES);
         window.setLanguage("en");
         window.show();
-        Json layout;
-        layout.set("isLayout", true);
-        layout.set("name", "Qt layout");
+        window.navigate("layouts");
+        QApplication::processEvents();
+        QVERIFY(window.findChild<QFrame*>("layoutEmpty")->isVisible());
+        QVERIFY(!window.findChild<QTableWidget*>("recordsTable"));
+        QVERIFY(!window.findChild<QPushButton*>("sceneStrip"));
+        QVERIFY(!window.findChild<QPushButton*>("overlays"));
+        auto create = window.findChild<QPushButton*>("newLayout");
+        QVERIFY(create);
+        QVERIFY(window.findChild<QFrame*>("pageHeading")->isAncestorOf(create));
         QTimer::singleShot(0, &window, [&] {
             auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
             QVERIFY(dialog);
@@ -287,7 +298,7 @@ class NativeTests : public QObject {
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-composer")));
             QTest::mouseClick(commit, Qt::LeftButton);
         });
-        window.editScene(layout);
+        QTest::mouseClick(create, Qt::LeftButton);
         auto saved = studio.store.list("scenes");
         QCOMPARE(saved.size(), size_t(1));
         auto tile = saved.at(0).get("items").at(0);
@@ -296,6 +307,177 @@ class NativeTests : public QObject {
         QCOMPARE(tile.get("width").num(), 640.0);
         QCOMPARE(tile.get("height").num(), 360.0);
         QVERIFY(saved.at(0).get("isLayout").flag());
+        QApplication::processEvents();
+        QTRY_VERIFY(window.findChild<QFrame*>("layoutRow"));
+        auto row = window.findChild<QFrame*>("layoutRow");
+        QVERIFY(row);
+        QVERIFY(row->findChild<QToolButton*>("seeDetails"));
+        QVERIFY(row->findChild<QToolButton*>("delete"));
+        QTimer::singleShot(0, &window, [&] {
+            auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            QVERIFY(dialog->findChild<QGraphicsView*>("sceneCanvas"));
+            dialog->reject();
+        });
+        QTest::mouseClick(row->findChild<QToolButton*>("seeDetails"), Qt::LeftButton);
+        QVERIFY(window.grab().save(
+            QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-layouts")));
+        QTimer::singleShot(0, &window, [&] {
+            auto confirmation = qobject_cast<QMessageBox*>(QApplication::activeModalWidget());
+            QVERIFY(confirmation);
+            confirmation->button(QMessageBox::Yes)->click();
+        });
+        QTest::mouseClick(row->findChild<QToolButton*>("delete"), Qt::LeftButton);
+        QCOMPARE(studio.store.list("scenes").size(), size_t(0));
+        QApplication::processEvents();
+        QTRY_VERIFY(window.findChild<QFrame*>("layoutEmpty"));
+        QTRY_VERIFY(window.findChild<QFrame*>("layoutEmpty")->isVisible());
+        QTest::mouseClick(window.findChild<QToolButton*>("layoutBack"), Qt::LeftButton);
+        QVERIFY(window.findChild<QPushButton*>("startLiveButton"));
+    }
+
+    // La pagina Gestione Live segue MainLive: intestazioni, pillole e azioni come icone sempre
+    // visibili, con il marchio della piattaforma di ogni riga.
+    void liveRowsMatchMainLiveLayout() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        Json profile;
+        profile.set("id", 1.0);
+        profile.set("title", "1080p");
+        profile.set("videoWidth", 1920.0);
+        profile.set("videoHeight", 1080.0);
+        profile.set("isActive", true);
+        studio.store.save("profiles", profile, 1);
+        auto seed = [&](const char* channelName, const char* platform, const char* url) {
+            Json channel;
+            channel.set("channelName", channelName);
+            channel.set("platform", platform);
+            channel.set("streamUrl", url);
+            channel.set("profileId", 1.0);
+            channel.set("isActive", true);
+            studio.store.save("channels", channel);
+        };
+        seed("Marco Live", "Twitch", "rtmp://live.twitch.tv/app");
+        seed("OrbisTube", "YouTube", "rtmp://a.rtmp.youtube.com/live2");
+        seed("KickChannel", "Kick", "rtmp://fa723fc1b171.global-contribute.live-video.net/app");
+        auto push = [&](const Json& request, const char* status, double position,
+                        const char* channelName, const char* platform, const char* streamUrl) {
+            Json h;
+            h.set("status", status);
+            h.set("startedAt", std::string("2026-10-14T10:20:30"));
+            h.set("channelId", 1.0);
+            h.set("channelName", channelName);
+            h.set("platform", platform);
+            h.set("position", position);
+            auto r = request.clone();
+            r.set("profileId", 1.0);
+            r.set("channelName", channelName);
+            r.set("platform", platform);
+            r.set("streamUrl", streamUrl);
+            h.set("request", r);
+            studio.store.save("history", h);
+        };
+        auto files = [](std::initializer_list<const char*> paths) {
+            Json array = Json::array();
+            for (const char* path : paths)
+                array.push(Json::string(path));
+            Json request;
+            request.set("files", array);
+            return request;
+        };
+        push(files({"/videos/solo/single-live.mp4"}), "LIVE", 0, "Marco Live", "Twitch",
+             "rtmp://live.twitch.tv/app");
+        push(files({"/videos/show/ep1.mp4", "/videos/show/ep2.mp4", "/videos/show/ep3.mp4"}),
+             "ENDED", 1, "OrbisTube", "YouTube", "rtmp://a.rtmp.youtube.com/live2");
+        Json sceneRequest;
+        Json scene;
+        scene.set("name", "Studio scene");
+        Json items = Json::array();
+        for (int i = 0; i < 4; ++i) {
+            Json item;
+            item.set("sourceKind", "FILE");
+            item.set("sourceTarget", std::string("/videos/scene/src") + std::to_string(i) + ".mp4");
+            items.push(item);
+        }
+        scene.set("items", items);
+        sceneRequest.set("scene", scene);
+        push(sceneRequest, "STARTING", 0, "KickChannel", "Kick",
+             "rtmp://fa723fc1b171.global-contribute.live-video.net/app");
+
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.resize(1380, 800);
+        window.show();
+        window.navigate("live");
+        auto table = window.findChild<QTableWidget*>("recordsTable");
+        QVERIFY(table);
+        QTRY_COMPARE_WITH_TIMEOUT(table->rowCount(), 3, 5000);
+        // Le intestazioni sono quelle di MainLive, con la data senza i due punti finali.
+        QCOMPARE(table->columnCount(), 5);
+        QStringList headers;
+        for (int c = 0; c < table->columnCount(); ++c)
+            headers << table->horizontalHeaderItem(c)->text();
+        QCOMPARE(headers, QStringList({"Live Status", "Title", "Channel", "Start Date", ""}));
+        // Il marchio di ogni piattaforma nota si disegna davvero (percorsi SVG, non icone Qt).
+        for (auto name : {"twitch", "youtube", "kick", "facebook", "tiktok"}) {
+            QImage mark(24, 24, QImage::Format_ARGB32);
+            mark.fill(Qt::transparent);
+            QPainter painter(&mark);
+            platformMark(QString(name)).paint(&painter, 0, 0, 24, 24);
+            painter.end();
+            int filled = 0;
+            for (int y = 0; y < 24; ++y)
+                for (int x = 0; x < 24; ++x)
+                    if (qAlpha(mark.pixel(x, y)) > 0)
+                        ++filled;
+            QVERIFY2(filled > 100, qPrintable(QString("%1 mark empty").arg(name)));
+        }
+        auto rowFor = [&](const QString& channel) {
+            for (int r = 0; r < table->rowCount(); ++r)
+                if (table->item(r, 2)->text() == channel)
+                    return r;
+            return -1;
+        };
+        auto actionTooltips = [&](int row) {
+            QStringList text;
+            for (auto button : table->cellWidget(row, 4)->findChildren<QToolButton*>())
+                text << button->toolTip();
+            return text;
+        };
+        // La playlist di YouTube: pillola della posizione, cartella come provenienza, marchio suo.
+        auto playlist = rowFor("OrbisTube");
+        QVERIFY(playlist >= 0);
+        QCOMPARE(table->cellWidget(playlist, 1)->findChild<QLabel*>("rowTitle")->text(),
+                 QString("ep2.mp4"));
+        QCOMPARE(table->cellWidget(playlist, 1)->findChild<QLabel*>("rowCaption")->text(),
+                 QString("YouTube · /videos/show"));
+        QCOMPARE(actionTooltips(playlist),
+                 QStringList({"YouTube", "Playlist details", "Connect Video Setting",
+                              "Scene switch", "Delete playlist"}));
+        // La scena di Kick: il gettone delle sorgenti e la provenienza della prima sorgente.
+        auto sceneRow = rowFor("KickChannel");
+        QVERIFY(sceneRow >= 0);
+        QCOMPARE(table->cellWidget(sceneRow, 1)->findChild<QLabel*>("rowTitle")->text(),
+                 QString("Studio scene"));
+        QCOMPARE(table->cellWidget(sceneRow, 1)->findChild<QLabel*>("rowCaption")->text(),
+                 QString("Kick · src0.mp4"));
+        QCOMPARE(actionTooltips(sceneRow),
+                 QStringList({"Kick", "Scene details", "Connect Video Setting", "Scene switch",
+                              "Play Ad Spot", "Stop Live", "Start Live", "Restart Live",
+                              "Delete playlist"}));
+        // La diretta singola senza sessione: solo l'avvio è disponibile, stop e spot sono spenti.
+        auto single = rowFor("Marco Live");
+        QVERIFY(single >= 0);
+        QCOMPARE(actionTooltips(single),
+                 QStringList({"Twitch", "Connect Video Setting", "Scene switch", "Play Ad Spot",
+                              "Stop Live", "Start Live", "Restart Live", "Delete row"}));
+        auto actions = table->cellWidget(single, 4)->findChildren<QToolButton*>();
+        QCOMPARE(actions.size(), 8);
+        QVERIFY(!actions.at(3)->isEnabled());
+        QVERIFY(!actions.at(4)->isEnabled());
+        QVERIFY(actions.at(5)->isEnabled());
+        QVERIFY(window.grab().save(
+            QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-live-populated")));
     }
 };
 QTEST_MAIN(NativeTests)

@@ -16,6 +16,7 @@
 #include <QFileDialog>
 #include <QFrame>
 #include <QFutureWatcher>
+#include <QGraphicsOpacityEffect>
 #include <QGridLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -36,6 +37,7 @@
 #include <QThreadPool>
 #include <QTimer>
 #include <QToolButton>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QtConcurrent>
 #include <algorithm>
@@ -64,6 +66,45 @@ QString s(const Json& value) {
 // I contatori non disponibili restano distinti da uno zero misurato.
 QString formatMetric(double value, const QString& unit) {
     return value < 0 ? QString::fromUtf8("—") : QLocale().toString(value, 'f', 1) + unit;
+}
+
+// La pagina pubblica di una piattaforma, come la costruisce Windows (LiveLinkView.UrlOf): dove
+// porta il marchio della riga. Vuota per le piattaforme senza un indirizzo noto.
+QString liveUrlFor(const QString& known, const QString& channelName) {
+    const QString name = channelName.trimmed();
+    if (name.isEmpty())
+        return {};
+    const auto escaped = [](const QString& text) {
+        return QString::fromUtf8(QUrl::toPercentEncoding(text).constData());
+    };
+    const auto withoutAt = [](const QString& text) {
+        return text.startsWith('@') ? text.mid(1) : text;
+    };
+    if (known == "twitch")
+        return "https://www.twitch.tv/" + escaped(name);
+    if (known == "youtube") {
+        // Un canale per id si indirizza con il suo; un handle non è un indirizzo che Studio
+        // accetta, quindi si apre quello dell'account che sta trasmettendo.
+        const bool channelId = name.startsWith("UC") && name.size() == 24;
+        return "https://studio.youtube.com/channel/" + (channelId ? escaped(name) : QString("UC")) +
+               "/livestreaming";
+    }
+    if (known == "kick")
+        return "https://kick.com/" + escaped(name.toLower());
+    if (known == "facebook")
+        return "https://www.facebook.com/" + escaped(withoutAt(name));
+    if (known == "tiktok")
+        return "https://www.tiktok.com/@" + escaped(withoutAt(name)) + "/live";
+    return {};
+}
+
+// L'etichetta della piattaforma, come la mostra anche il suo marchio.
+QString platformLabel(const QString& known) {
+    if (known == "youtube")
+        return "YouTube";
+    if (known == "tiktok")
+        return "TikTok";
+    return known.left(1).toUpper() + known.mid(1);
 }
 } // namespace
 
@@ -284,8 +325,28 @@ void NativeWindow::rebuild() {
         auto actions = new QWidget(heading);
         auto row = new QHBoxLayout(actions);
         row->setContentsMargins(12, 0, 0, 0);
-        addAction("startPlaylistButton", [this] { startWizard(true); }, actions);
-        addAction("startLiveButton", [this] { startWizard(); }, actions);
+        // Come la pagina Windows: sblocca (solo con video bloccati), avvia playlist, avvia live.
+        if (page == "live") {
+            const auto videos = studio.store.list("videos");
+            for (size_t i = 0; i < videos.size(); ++i)
+                if (videos.at(i).get("isLocked").flag()) {
+                    addAction(
+                        "unLockVideo",
+                        [this] {
+                            const auto rows = studio.store.list("videos");
+                            for (size_t j = 0; j < rows.size(); ++j) {
+                                auto video = rows.at(j).clone();
+                                video.set("isLocked", false);
+                                studio.store.save("videos", video, video.get("id").num());
+                            }
+                            sample();
+                        },
+                        actions, "unlock");
+                    break;
+                }
+        }
+        addAction("startPlaylistButton", [this] { startWizard(true); }, actions, "playlist");
+        addAction("startLiveButton", [this] { startWizard(); }, actions, "play");
         headingLayout->addWidget(actions);
     }
     bodyLayout->addWidget(heading);
@@ -382,8 +443,8 @@ bool NativeWindow::confirm(const char* key, const QString& subject) {
 }
 
 // Crea controlli Qt, con chiave stabile anche nei test in lingue diverse.
-void NativeWindow::addAction(const char* key, const std::function<void()>& action,
-                             QWidget* parent) {
+void NativeWindow::addAction(const char* key, const std::function<void()>& action, QWidget* parent,
+                             const QString& icon) {
     auto button = new QPushButton(t(key), parent ? parent : body);
     button->setObjectName(key);
     button->setAccessibleName(button->text());
@@ -392,7 +453,9 @@ void NativeWindow::addAction(const char* key, const std::function<void()>& actio
     button->setProperty("primary", name.startsWith("add") || name == "startLiveButton" ||
                                        name == "newLayout" || name == "composeScene");
     button->setProperty("danger", name.contains("stop", Qt::CaseInsensitive) || name == "delete");
-    if (name.startsWith("add") || name == "newLayout")
+    if (!icon.isEmpty())
+        button->setIcon(studioIcon(icon));
+    else if (name.startsWith("add") || name == "newLayout")
         button->setIcon(studioIcon("plus"));
     else if (name.startsWith("start"))
         button->setIcon(studioIcon("play"));
@@ -662,19 +725,147 @@ void NativeWindow::buildProfiles() {
 // Layout e scene condividono l’editor ma restano distinti, perché solo i layout ammettono slot
 // vuoti.
 void NativeWindow::buildScenes(bool layouts) {
-    addAction(layouts ? "newLayout" : "composeScene", [this, layouts] {
-        Json scene;
-        scene.set("name", t(layouts ? "newLayout" : "composeScene").toStdString());
-        scene.set("width", 1280.0);
-        scene.set("height", 720.0);
-        scene.set("isLayout", layouts);
-        scene.set("items", Json::array());
-        editScene(scene);
-    });
+    QWidget* actions = nullptr;
+    if (layouts) {
+        auto heading = body->findChild<QFrame*>("pageHeading");
+        auto row = qobject_cast<QHBoxLayout*>(heading->layout());
+        row->setContentsMargins(20, 12, 20, 12);
+        row->setSpacing(16);
+        auto back = new QToolButton(heading);
+        back->setObjectName("layoutBack");
+        back->setProperty("rowAction", true);
+        back->setIcon(studioIcon("back"));
+        back->setFixedSize(32, 32);
+        back->setToolTip(t("back"));
+        back->setAccessibleName(t("back"));
+        connect(back, &QToolButton::clicked, this, [this] { navigate("live"); });
+        row->insertWidget(0, back);
+        actions = new QWidget(heading);
+        auto actionRow = new QHBoxLayout(actions);
+        actionRow->setContentsMargins(0, 0, 0, 0);
+        row->addWidget(actions);
+    }
+    addAction(
+        layouts ? "newLayout" : "composeScene",
+        [this, layouts] {
+            Json scene;
+            scene.set("name", t(layouts ? "newLayout" : "composeScene").toStdString());
+            scene.set("width", 1280.0);
+            scene.set("height", 720.0);
+            scene.set("isLayout", layouts);
+            scene.set("items", Json::array());
+            editScene(scene);
+        },
+        actions);
+    if (layouts) {
+        auto list = new QWidget(body);
+        list->setObjectName("layoutList");
+        auto rows = new QVBoxLayout(list);
+        rows->setContentsMargins(0, 0, 0, 0);
+        rows->setSpacing(8);
+        bodyLayout->addWidget(list);
+        return;
+    }
     addAction(layouts ? "sceneStrip" : "layouts",
               [this, layouts] { navigate(layouts ? "scenes" : "layouts"); });
     addAction("overlays", [this] { navigate("overlays"); });
     table = makeTable({t("title"), t("description"), t("resolution"), t("settings")});
+}
+
+// MainLayoutList: solo layout, con nome, descrizione e azioni visibili; nessuna tabella.
+void NativeWindow::refreshLayouts() {
+    auto list = body->findChild<QWidget*>("layoutList");
+    if (!list)
+        return;
+    auto records = Json::array();
+    auto scenes = state.get("scenes");
+    for (size_t i = 0; i < scenes.size(); ++i)
+        if (scenes.at(i).get("isLayout").flag())
+            records.push(scenes.at(i));
+    const auto signature = QString::fromStdString(records.dump());
+    if (list->property("records").toString() == signature)
+        return;
+    list->setProperty("records", signature);
+    auto rows = qobject_cast<QVBoxLayout*>(list->layout());
+    while (auto item = rows->takeAt(0)) {
+        if (item->widget()) {
+            item->widget()->hide();
+            item->widget()->setParent(nullptr);
+            item->widget()->deleteLater();
+        }
+        delete item;
+    }
+    if (!records.size()) {
+        auto empty = new QFrame(list);
+        empty->setObjectName("layoutEmpty");
+        auto column = new QVBoxLayout(empty);
+        column->setContentsMargins(16, 40, 16, 40);
+        column->setSpacing(10);
+        auto icon = new QLabel(empty);
+        icon->setObjectName("layoutEmptyIcon");
+        icon->setFixedSize(48, 48);
+        icon->setAlignment(Qt::AlignCenter);
+        icon->setPixmap(studioIcon("layouts").pixmap(22, 22));
+        column->addWidget(icon, 0, Qt::AlignHCenter);
+        auto label = new QLabel(t("noDataPresent"), empty);
+        label->setObjectName("muted");
+        label->setAlignment(Qt::AlignCenter);
+        column->addWidget(label);
+        rows->addWidget(empty);
+    }
+    for (size_t i = 0; i < records.size(); ++i) {
+        auto record = records.at(i);
+        auto card = new QFrame(list);
+        card->setObjectName("layoutRow");
+        auto row = new QHBoxLayout(card);
+        row->setContentsMargins(16, 12, 16, 12);
+        row->setSpacing(12);
+        card->setMinimumHeight(64);
+        auto icon = new QLabel(card);
+        icon->setObjectName("layoutLead");
+        icon->setFixedSize(36, 36);
+        icon->setAlignment(Qt::AlignCenter);
+        icon->setPixmap(studioIcon("layouts", QColor("#ffffff")).pixmap(18, 18));
+        row->addWidget(icon);
+        auto text = new QVBoxLayout;
+        text->setSpacing(2);
+        for (const auto& key : {"name", "description"}) {
+            const auto value = s(record.get(key));
+            if (value.trimmed().isEmpty())
+                continue;
+            auto label = new QLabel(value, card);
+            label->setTextFormat(Qt::PlainText);
+            label->setObjectName(QString(key) == "name" ? "rowTitle" : "muted");
+            label->setToolTip(value);
+            label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+            text->addWidget(label);
+        }
+        row->addLayout(text, 1);
+        for (auto key : {"seeDetails", "delete"}) {
+            const bool remove = QString(key) == "delete";
+            auto action = new QToolButton(card);
+            action->setObjectName(key);
+            action->setProperty("rowAction", true);
+            action->setIcon(
+                studioIcon(remove ? "delete" : "edit", QColor(remove ? "#ff453a" : "#f5f5f7")));
+            action->setFixedSize(32, 32);
+            action->setToolTip(t(key));
+            action->setAccessibleName(t(key));
+            connect(action, &QToolButton::clicked, this, [this, record, remove] {
+                run([&] {
+                    if (!remove) {
+                        editScene(record);
+                    } else if (confirm("deleteLayoutConfirm")) {
+                        const long id = record.get("id").num();
+                        ensureSceneCanDelete(studio.store, id);
+                        studio.store.remove("scenes", id);
+                    }
+                });
+            });
+            row->addWidget(action);
+        }
+        rows->addWidget(card);
+    }
 }
 
 // Mantiene filtri e pulizia del flusso originale, con pagine da dieci dirette o venti storici.
@@ -736,9 +927,12 @@ void NativeWindow::buildLive(bool history) {
     channelFilter = new QComboBox(filters);
     channelFilter->setObjectName("channelFilter");
     channelFilter->addItem("—", "");
-    search = new QLineEdit(filters);
-    search->setPlaceholderText(t("searchByTitle"));
-    search->setObjectName("search");
+    // La pagina Windows non ha una casella di ricerca: lo storico, che ne ha una, la conserva.
+    if (history) {
+        search = new QLineEdit(filters);
+        search->setPlaceholderText(t("searchByTitle"));
+        search->setObjectName("search");
+    }
     platformFilter = new QComboBox(filters);
     platformFilter->setObjectName("platformFilter");
     platformFilter->addItem("—", "");
@@ -749,10 +943,11 @@ void NativeWindow::buildLive(bool history) {
         refreshRows();
     });
     row->setContentsMargins(0, 0, 0, 0);
-    for (const auto& field : QList<QPair<const char*, QWidget*>>{{"liveStatus", statusFilter},
-                                                                 {"channel", channelFilter},
-                                                                 {"platform", platformFilter},
-                                                                 {"searchByTitle", search}}) {
+    auto fields = QList<QPair<const char*, QWidget*>>{
+        {"liveStatus", statusFilter}, {"channel", channelFilter}, {"platform", platformFilter}};
+    if (history)
+        fields.append({"searchByTitle", search});
+    for (const auto& field : fields) {
         auto column = new QVBoxLayout;
         auto label = new QLabel(t(field.first), filters);
         label->setObjectName("sectionLabel");
@@ -771,12 +966,21 @@ void NativeWindow::buildLive(bool history) {
         currentPage = 0;
         refreshRows();
     });
-    connect(search, &QLineEdit::textChanged, this, [this] {
-        currentPage = 0;
-        refreshRows();
-    });
-    table = makeTable(
-        {t("title"), t("liveStatus"), t("channel"), t("platform"), t("startDate"), t("settings")});
+    if (search)
+        connect(search, &QLineEdit::textChanged, this, [this] {
+            currentPage = 0;
+            refreshRows();
+        });
+    if (history)
+        table = makeTable({t("title"), t("liveStatus"), t("channel"), t("platform"), t("startDate"),
+                           t("settings")});
+    else {
+        // Come MainLive: stato, titolo, canale, data di avvio e le azioni, senza intestazione.
+        auto startDate = t("startDate");
+        while (startDate.endsWith(' ') || startDate.endsWith(':'))
+            startDate.chop(1);
+        table = makeTable({t("liveStatus"), t("title"), t("channel"), startDate, ""});
+    }
     addPager(history ? 20 : 10);
 }
 
@@ -786,6 +990,10 @@ void NativeWindow::refreshRows() {
     // Non distrugge menu o selettori mentre l’utente sta scegliendo un’azione.
     if (QApplication::activePopupWidget())
         return;
+    if (page == "layouts") {
+        refreshLayouts();
+        return;
+    }
     if (page == "dashboard") {
         updateDashboard();
         return;
@@ -877,10 +1085,19 @@ void NativeWindow::refreshRows() {
                            ? table->item(table->currentRow(), 0)->data(Qt::UserRole)
                            : QVariant{};
     table->setRowCount(0);
+    liveActionsWidth = 0;
     for (const auto& record : selected) {
         const long id = record.get("id").num();
         const int row = table->rowCount();
         table->insertRow(row);
+        // Gestione Live disegna ogni azione come icona visibile; le altre pagine conservano il
+        // menu compatto.
+        if (kind == "liveRows" && page == "live") {
+            refreshLiveRow(row, record);
+            if (oldId.toLongLong() == id)
+                table->selectRow(row);
+            continue;
+        }
         QStringList values;
         if (kind == "channels")
             values = {s(record.get("channelName")), s(record.get("platform")),
@@ -1033,9 +1250,22 @@ void NativeWindow::refreshRows() {
         if (oldId.toLongLong() == id)
             table->selectRow(row);
     }
-    // I comandi restano leggibili anche quando i dati richiedono lo scorrimento orizzontale.
-    table->horizontalHeader()->setSectionResizeMode(table->columnCount() - 1,
-                                                    QHeaderView::ResizeToContents);
+    // Le azioni della pagina live restano fuori dal menu e la colonna si adatta a tutte; le altre
+    // pagine lasciano che sia il contenuto a decidere.
+    if (kind == "liveRows" && page == "live") {
+        auto header = table->horizontalHeader();
+        header->setSectionResizeMode(0, QHeaderView::Interactive);
+        header->setSectionResizeMode(1, QHeaderView::Stretch);
+        header->setSectionResizeMode(2, QHeaderView::Interactive);
+        header->setSectionResizeMode(3, QHeaderView::Interactive);
+        header->setSectionResizeMode(4, QHeaderView::Fixed);
+        table->setColumnWidth(0, 130);
+        table->setColumnWidth(2, 150);
+        table->setColumnWidth(3, 175);
+        table->setColumnWidth(4, std::max(160, liveActionsWidth + 8));
+    } else
+        table->horizontalHeader()->setSectionResizeMode(table->columnCount() - 1,
+                                                        QHeaderView::ResizeToContents);
     if (cleanupLabel) {
         auto progress = state.get("cleanup");
         cleanupLabel->setText(
@@ -1044,6 +1274,253 @@ void NativeWindow::refreshRows() {
         cleanupBar->setMaximum(std::max(1, int(progress.get("totalVideos").num())));
         cleanupBar->setValue(progress.get("deletedVideos").num());
     }
+}
+
+// Una riga di Gestione Live come MainLive: stato in pillola, titolo con la provenienza, canale,
+// data di avvio e tutte le azioni visibili come icone, nell'ordine della pagina Windows.
+void NativeWindow::refreshLiveRow(int row, const Json& record) {
+    const long id = record.get("id").num();
+    const bool running = record.get("running").flag();
+    const bool isScene = record.get("isScene").flag();
+    const bool isPlaylist = record.get("isPlaylist").flag();
+    const bool hasDetails = record.get("total").num() > 1 || isScene;
+    const bool hasSetting = record.get("hasSetting").flag();
+    const std::string status = record.get("status").str();
+
+    const bool live = status == "LIVE" || status == "STARTING" || status == "RECONNECTING";
+    const char* statusKey = live                  ? "liveStatusLive"
+                            : status == "ENDED"   ? "liveStatusEnded"
+                            : status == "STOPPED" ? "liveStatusStopped"
+                            : status == "ERROR"   ? "liveStatusError"
+                                                  : "liveStatusOffline";
+    const char* statusToken = live                  ? "live"
+                              : status == "ENDED"   ? "ended"
+                              : status == "STOPPED" ? "stopped"
+                              : status == "ERROR"   ? "error"
+                                                    : "offline";
+
+    // Colonna 0: lo stato, come la pillola della pagina Windows.
+    auto statusCell = new QWidget(table);
+    auto statusRow = new QHBoxLayout(statusCell);
+    statusRow->setContentsMargins(8, 0, 8, 0);
+    auto badge = new QLabel(t(statusKey), statusCell);
+    badge->setProperty("badge", statusToken);
+    badge->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    statusRow->addWidget(badge);
+    statusRow->addStretch();
+    auto statusItem = new QTableWidgetItem;
+    statusItem->setData(Qt::UserRole, qlonglong(id));
+    table->setItem(row, 0, statusItem);
+    table->setCellWidget(row, 0, statusCell);
+
+    // Colonna 1: il titolo, il gettone della playlist o della scena e la provenienza.
+    const QString title = s(record.get("title"));
+    const QString platform = s(record.get("platform"));
+    const QString source = s(record.get("source"));
+    auto titleCell = new QWidget(table);
+    auto titleColumn = new QVBoxLayout(titleCell);
+    titleColumn->setContentsMargins(8, 4, 8, 4);
+    titleColumn->setSpacing(1);
+    auto titleTop = new QHBoxLayout;
+    titleTop->setContentsMargins(0, 0, 0, 0);
+    titleTop->setSpacing(6);
+    if (isPlaylist || isScene) {
+        auto token = new QLabel(titleCell);
+        token->setProperty("badge", "playlist");
+        token->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        if (isPlaylist)
+            token->setText(t("playlistPosition")
+                               .replace("{0}", QLocale().toString(record.get("position").num() + 1))
+                               .replace("{1}", QLocale().toString(record.get("total").num())));
+        else
+            token->setText(
+                t("sceneSources").replace("{0}", QLocale().toString(record.get("total").num())));
+        titleTop->addWidget(token);
+    }
+    auto strong = new QLabel(title, titleCell);
+    strong->setObjectName("rowTitle");
+    strong->setToolTip(title);
+    strong->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    strong->setAttribute(Qt::WA_TransparentForMouseEvents);
+    titleTop->addWidget(strong, 1);
+    titleColumn->addLayout(titleTop);
+    auto caption = new QLabel(
+        (platform.isEmpty() ? QString{} : platform + QString::fromUtf8(" · ")) + source, titleCell);
+    caption->setObjectName("rowCaption");
+    caption->setToolTip(source);
+    caption->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    caption->setAttribute(Qt::WA_TransparentForMouseEvents);
+    titleColumn->addWidget(caption);
+    auto titleItem = new QTableWidgetItem;
+    titleItem->setData(Qt::UserRole, qlonglong(id));
+    table->setItem(row, 1, titleItem);
+    table->setCellWidget(row, 1, titleCell);
+
+    // Colonna 2: il canale.
+    auto channelItem = new QTableWidgetItem(
+        s(record.get("channelName")).isEmpty() ? QString("N/A") : s(record.get("channelName")));
+    channelItem->setData(Qt::UserRole, qlonglong(id));
+    table->setItem(row, 2, channelItem);
+
+    // Colonna 3: la data di avvio, nello stesso formato della pagina Windows.
+    const auto startedAt = QDateTime::fromString(s(record.get("startedAt")), Qt::ISODate);
+    auto dateItem = new QTableWidgetItem(
+        startedAt.isValid() ? startedAt.toLocalTime().toString("dd/MM/yyyy HH:mm:ss")
+                            : QString("N/A"));
+    dateItem->setData(Qt::UserRole, qlonglong(id));
+    table->setItem(row, 3, dateItem);
+
+    // Colonna 4: le azioni, tutte visibili, nell'ordine di _LiveRows.cshtml.
+    auto actions = new QWidget(table);
+    auto actionsRow = new QHBoxLayout(actions);
+    actionsRow->setContentsMargins(2, 2, 2, 2);
+    actionsRow->setSpacing(2);
+    actionsRow->addStretch();
+    auto iconButton = [this, actions](const QString& icon, const char* key, const QColor& color,
+                                      bool enabled) {
+        auto button = new QToolButton(actions);
+        button->setProperty("rowAction", true);
+        button->setIcon(studioIcon(icon, color));
+        button->setIconSize(QSize(18, 18));
+        button->setAutoRaise(true);
+        button->setCursor(Qt::PointingHandCursor);
+        button->setToolTip(t(key));
+        button->setAccessibleName(t(key));
+        button->setEnabled(enabled);
+        // Un comando non disponibile resta in vista ma spento, come la pagina Windows.
+        if (!enabled) {
+            auto fade = new QGraphicsOpacityEffect(button);
+            fade->setOpacity(0.45);
+            button->setGraphicsEffect(fade);
+        }
+        return button;
+    };
+    // Riprendi diretta: solo quando in onda c'è un fermo immagine che resta.
+    if (record.get("takeoverHolds").flag()) {
+        auto button = new QToolButton(actions);
+        button->setProperty("rowAction", true);
+        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        button->setIcon(studioIcon("play"));
+        button->setIconSize(QSize(16, 16));
+        button->setAutoRaise(true);
+        button->setText(t("sceneResume"));
+        button->setCursor(Qt::PointingHandCursor);
+        button->setToolTip(t("sceneOnAirNow").replace("{0}", s(record.get("takeoverLabel"))));
+        button->setAccessibleName(t("sceneResume"));
+        connect(button, &QToolButton::clicked, this,
+                [this, id] { run([this, id] { liveCommand(id, "resume"); }); });
+        actionsRow->addWidget(button);
+    }
+    // Il marchio della piattaforma su cui la riga è in onda, che apre la sua pagina pubblica.
+    const QString known = s(record.get("platformKnown"));
+    if (!known.isEmpty()) {
+        auto button = new QToolButton(actions);
+        button->setProperty("mark", true);
+        button->setIcon(platformMark(known));
+        button->setIconSize(QSize(18, 18));
+        button->setAutoRaise(true);
+        button->setAccessibleName(platformLabel(known));
+        button->setToolTip(platformLabel(known));
+        const auto url = liveUrlFor(known, s(record.get("channelName")));
+        if (running && !url.isEmpty()) {
+            button->setCursor(Qt::PointingHandCursor);
+            connect(button, &QToolButton::clicked, this,
+                    [url] { QDesktopServices::openUrl(QUrl(url)); });
+        }
+        actionsRow->addWidget(button);
+    }
+    // Dettagli: le sorgenti della scena o i video della playlist.
+    if (hasDetails) {
+        auto button =
+            iconButton("playlist", isScene ? "sceneDetails" : "playlistDetails", {}, true);
+        connect(button, &QToolButton::clicked, this, [this, record] { showLiveDetails(record); });
+        actionsRow->addWidget(button);
+    }
+    // Collega una configurazione video: l'ingranaggio quando ce n'è già una, il collegamento quando
+    // manca.
+    if (hasSetting) {
+        auto button = iconButton("settings", "connectVideoSetting", {}, true);
+        connect(button, &QToolButton::clicked, this, [this, record] { linkProfile(record); });
+        actionsRow->addWidget(button);
+    } else {
+        auto button = new QToolButton(actions);
+        button->setProperty("rowAction", true);
+        button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        button->setIcon(studioIcon("link"));
+        button->setAutoRaise(true);
+        button->setText(t("connectVideoSetting"));
+        button->setCursor(Qt::PointingHandCursor);
+        button->setToolTip(t("connectVideoSetting"));
+        button->setAccessibleName(t("connectVideoSetting"));
+        connect(button, &QToolButton::clicked, this, [this, record] { linkProfile(record); });
+        actionsRow->addWidget(button);
+    }
+    // Il deck delle scene: gli stessi tasti per ogni diretta, premuti per questa.
+    {
+        auto button = iconButton("deck", "sceneDeckOpen", {}, true);
+        connect(button, &QToolButton::clicked, this, [this, id] { showDeck(id); });
+        actionsRow->addWidget(button);
+    }
+    // Anteprima, spot e comandi di regia solo per una diretta con un profilo collegato.
+    if (hasSetting && !isPlaylist) {
+        if (running) {
+            auto button = iconButton("preview", "preview", {}, true);
+            connect(button, &QToolButton::clicked, this, [this, id] {
+                watched = id;
+                navigate("preview");
+            });
+            actionsRow->addWidget(button);
+        }
+        auto spot = iconButton("spot", "playSpot", {}, running);
+        connect(spot, &QToolButton::clicked, this,
+                [this, id] { run([this, id] { playSpot(id); }); });
+        actionsRow->addWidget(spot);
+        auto stop = iconButton("stop", "stopLiveIconLabel", QColor("#ff453a"), running);
+        connect(stop, &QToolButton::clicked, this, [this, id] {
+            if (confirm("stopLive"))
+                runAsync([this, id] {
+                    studio.session(id)->stop();
+                    return Json{};
+                });
+        });
+        actionsRow->addWidget(stop);
+        auto start = iconButton("play", "startLiveIconLabel", QColor("#30d158"), !running);
+        connect(start, &QToolButton::clicked, this, [this, record] { replay(record); });
+        actionsRow->addWidget(start);
+        auto restart = iconButton("restart", "restartLiveIconLabel", QColor("#ffd60a"), true);
+        connect(restart, &QToolButton::clicked, this, [this, record] { replay(record, true); });
+        actionsRow->addWidget(restart);
+    }
+    // Elimina: l'intera playlist o la scena, oppure la sola riga.
+    {
+        auto button = iconButton("delete", hasDetails ? "deletePlaylist" : "deleteLiveRow",
+                                 QColor("#ff453a"), !running);
+        connect(button, &QToolButton::clicked, this, [this, id] { removeRecord("history", id); });
+        actionsRow->addWidget(button);
+    }
+    actions->adjustSize();
+    liveActionsWidth = std::max(liveActionsWidth, actions->sizeHint().width());
+    table->setCellWidget(row, 4, actions);
+    table->setRowHeight(row, 56);
+}
+
+// Uno spot è un file scelto al momento e accodato alla diretta, come il pulsante dell'anteprima.
+void NativeWindow::playSpot(long id) {
+    const auto file = QFileDialog::getOpenFileName(this, t("spotFile"));
+    if (file.isEmpty())
+        return;
+    Json parameters;
+    Json scene;
+    scene.set("name", t("playSpot").toStdString());
+    auto items = Json::array();
+    Json item;
+    item.set("sourceKind", "FILE");
+    item.set("sourceTarget", file.toStdString());
+    item.set("audioEnabled", true);
+    items.push(item);
+    scene.set("items", items);
+    parameters.set("scene", scene);
+    liveCommand(id, "spot", parameters);
 }
 
 // I controlli di regia operano sulla sessione scelta, mentre il frame viene letto direttamente dal
@@ -1075,23 +1552,7 @@ void NativeWindow::buildPreview() {
         h.set("request", Json{});
         linkProfile(h);
     });
-    addAction("playSpot", [this] {
-        const auto file = QFileDialog::getOpenFileName(this, t("spotFile"));
-        if (!file.isEmpty()) {
-            Json parameters;
-            Json scene;
-            scene.set("name", t("playSpot").toStdString());
-            auto items = Json::array();
-            Json item;
-            item.set("sourceKind", "FILE");
-            item.set("sourceTarget", file.toStdString());
-            item.set("audioEnabled", true);
-            items.push(item);
-            scene.set("items", items);
-            parameters.set("scene", scene);
-            liveCommand(watched, "spot", parameters);
-        }
-    });
+    addAction("playSpot", [this] { playSpot(watched); });
     addAction("nativeNextVideo", [this] { liveCommand(watched, "next"); });
     addAction("sceneResume", [this] { liveCommand(watched, "resume"); });
     addAction("liveOnPlatform", [this] {
