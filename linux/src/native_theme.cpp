@@ -334,7 +334,27 @@ QIcon studioIcon(const QString& name, const QColor& color) {
         p.setRenderHint(QPainter::Antialiasing);
         p.setPen(QPen(ink, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         const QColor inkFill = ink;
-        if (name == "menu") {
+        if (name == "save") {
+            p.drawRect(QRectF(4, 3, 16, 18));
+            p.drawRect(QRectF(8, 3, 8, 6));
+            p.drawRect(QRectF(7, 13, 10, 8));
+        } else if (name == "search") {
+            p.drawEllipse(QRectF(3, 3, 12, 12));
+            p.drawLine(13, 13, 21, 21);
+        } else if (name == "upload") {
+            p.drawLine(12, 17, 12, 3);
+            p.drawLine(7, 8, 12, 3);
+            p.drawLine(17, 8, 12, 3);
+            p.drawLine(4, 15, 4, 21);
+            p.drawLine(4, 21, 20, 21);
+            p.drawLine(20, 21, 20, 15);
+        } else if (name == "volume") {
+            QPolygonF speaker;
+            speaker << QPointF(3, 9) << QPointF(7, 9) << QPointF(12, 5) << QPointF(12, 19)
+                    << QPointF(7, 15) << QPointF(3, 15) << QPointF(3, 9);
+            p.drawPolyline(speaker);
+            p.drawArc(QRectF(10, 5, 12, 14), -65 * 16, 130 * 16);
+        } else if (name == "menu") {
             for (int y : {6, 12, 18})
                 p.drawLine(3, y, 21, y);
         } else if (name == "home") {
@@ -649,7 +669,7 @@ void applyNativeTheme(const QString& theme) {
         QLabel#brandMark { background: #007aff; border-radius: 12px; font-size: 23px; font-weight: 700; color: white; }
         QLabel#muted, QLabel#sectionLabel { color: #b2b2ba; }
         QLabel#sectionLabel { font-size: 11px; font-weight: 600; }
-        QLabel#pageTitle { font-size: 28px; font-weight: 700; }
+        QLabel#pageTitle { font-size: 24px; font-weight: 700; }
         QLabel#heroTitle { font-size: 24px; font-weight: 700; }
         QLabel#metricValue { font-size: 28px; font-weight: 600; }
         QLabel#statusPill { color: #92e4cf; background: #19382f; padding: 7px 12px; border-radius: 12px; }
@@ -659,6 +679,7 @@ void applyNativeTheme(const QString& theme) {
         QListWidget#navigation::item:selected { background: #007aff; color: #f4f7ff; }
         QFrame#hero { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #263759, stop:1 #1a253b); border: 1px solid #3b5075; border-radius: 16px; }
         QFrame#card { background: #262628; border: 1px solid #414145; border-radius: 12px; }
+        QFrame#previewParameters, QFrame#previewEmpty, QFrame#cleanupProgress { background: #262628; border: 1px solid #414145; border-radius: 12px; }
         QFrame#hero QLabel, QFrame#card QLabel { border: none; background: transparent; }
         QPushButton, QToolButton { background: #323234; border: 1px solid #505055; border-radius: 7px; padding: 9px 14px; }
         QPushButton:hover, QToolButton:hover { background: #3e3e42; border-color: #6587c4; }
@@ -721,6 +742,7 @@ void applyNativeTheme(const QString& theme) {
         QListWidget#wizardProfile::item:selected, QListWidget#wizardChannel::item:selected { background: #193f66; border: 2px solid #0a84ff; }
         QListWidget#wizardProfile::item:hover, QListWidget#wizardChannel::item:hover { border-color: #8d8d94; }
         QLabel[badge="live"] { color: #ffffff; background: #0a84ff; border-radius: 9px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+        QLabel[badge="connecting"] { color: #ffd60a; background: #26ffd60a; border-radius: 9px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
         QLabel[badge="ended"] { color: #30d158; background: #2630d158; border-radius: 9px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
         QLabel[badge="error"] { color: #ff453a; background: #26ff453a; border-radius: 9px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
         QLabel[badge="stopped"] { color: #ffd60a; background: #26ffd60a; border-radius: 9px; padding: 2px 8px; font-size: 10px; font-weight: 600; }

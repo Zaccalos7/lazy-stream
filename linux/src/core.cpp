@@ -280,7 +280,8 @@ Store::Store(fs::path path) : root(std::move(path)) {
     auto history = list("history");
     for (size_t i = 0; i < history.size(); ++i) {
         auto h = history.at(i);
-        if (h.get("status").str() == "LIVE" || h.get("status").str() == "STARTING") {
+        if (h.get("status").str() == "LIVE" || h.get("status").str() == "STARTING" ||
+            h.get("status").str() == "RECONNECTING") {
             h.set("status", "INTERRUPTED");
             h.set("endedAt", now());
             save("history", h, h.get("id").num());
@@ -419,7 +420,8 @@ bool Store::removeHistoryIfInactive(long id, const std::string& startedAt) {
         return false;
     auto item = Json::parse(reinterpret_cast<const char*>(sqlite3_column_text(q.p, 0)));
     auto status = item.get("status").str();
-    if (status == "LIVE" || status == "STARTING" || item.get("startedAt").str() != startedAt)
+    if (status == "LIVE" || status == "STARTING" || status == "RECONNECTING" ||
+        item.get("startedAt").str() != startedAt)
         return false;
     remove("history", id);
     return true;
@@ -433,8 +435,8 @@ int Store::cleanup(int months, long channel) {
     for (size_t i = 0; i < a.size(); ++i) {
         auto v = a.at(i);
         auto status = v.get("status").str();
-        if (status != "LIVE" && status != "STARTING" && !v.get("startedAt").str().empty() &&
-            v.get("startedAt").str() < cutoff &&
+        if (status != "LIVE" && status != "STARTING" && status != "RECONNECTING" &&
+            !v.get("startedAt").str().empty() && v.get("startedAt").str() < cutoff &&
             (!channel || v.get("channelId").num() == channel) &&
             removeHistoryIfInactive(v.get("id").num(), v.get("startedAt").str())) {
             ++n;
@@ -512,6 +514,9 @@ void Process::start(const std::vector<std::string>& args, int input, const fs::p
     if (args.empty())
         throw std::runtime_error("Comando vuoto");
     stop();
+    // Un aggiornamento può sostituire il binario mentre l'app resta aperta: il link
+    // /proc conserva la directory anche quando il nome termina con " (deleted)".
+    auto runner = fs::read_symlink("/proc/self/exe").parent_path() / "orbis-stream-runner";
     int fds[2]{-1, -1};
     if (pipeOutput && pipe2(fds, O_CLOEXEC))
         throw std::runtime_error("pipe fallita");
@@ -537,7 +542,6 @@ void Process::start(const std::vector<std::string>& args, int input, const fs::p
     sigset_t empty;
     sigemptyset(&empty);
     posix_spawnattr_setsigmask(&attr, &empty);
-    auto runner = fs::canonical("/proc/self/exe").parent_path() / "orbis-stream-runner";
     std::string executable = runner.string(), parent = std::to_string(getpid());
     std::vector<char*> argv = {executable.data(), parent.data()};
     for (auto& a : args)

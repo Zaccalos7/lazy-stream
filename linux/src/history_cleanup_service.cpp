@@ -99,8 +99,8 @@ void LiveHistoryCleanupService::run(int months, long channel, std::stop_token st
         for (size_t i = 0; i < history.size(); ++i) {
             auto item = history.at(i);
             auto status = item.get("status").str();
-            if (status == "LIVE" || status == "STARTING" || item.get("startedAt").str().empty() ||
-                item.get("startedAt").str() >= cutoff ||
+            if (status == "LIVE" || status == "STARTING" || status == "RECONNECTING" ||
+                item.get("startedAt").str().empty() || item.get("startedAt").str() >= cutoff ||
                 (channel && item.get("channelId").num() != channel))
                 continue;
             candidates.push_back(item);

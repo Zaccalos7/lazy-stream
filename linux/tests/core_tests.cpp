@@ -275,6 +275,10 @@ int main() {
             const auto liveId = store.save("history", live);
             live.set("status", "STARTING");
             store.save("history", live);
+            live.set("status", "RECONNECTING");
+            const auto reconnectingId = store.save("history", live);
+            expect(!store.removeHistoryIfInactive(reconnectingId, old.get("startedAt").str()),
+                   "cleanup protects reconnecting status");
             auto fresh = old.clone();
             fresh.set("startedAt", now());
             store.save("history", fresh);
@@ -293,8 +297,15 @@ int main() {
                        progress.get("deletedVideos").num() == 3 &&
                        progress.get("totalVideos").num() == 3,
                    "cleanup counts playlist and scene snapshots");
-            expect(store.list("history").size() == 4,
+            expect(store.list("history").size() == 5,
                    "cleanup preserves active, fresh and other channel history");
+        }
+        {
+            Store recovered(dir / "cleanup");
+            const auto history = recovered.list("history");
+            for (size_t i = 0; i < history.size(); ++i)
+                expect(history.at(i).get("status").str() != "RECONNECTING",
+                       "reconnecting history recovered after restart");
         }
         for (const auto [folder, schema] : {
                  std::pair{"foreign", "CREATE TABLE setting(id INTEGER); PRAGMA user_version=1"},

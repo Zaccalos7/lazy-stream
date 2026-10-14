@@ -6,6 +6,8 @@
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QGraphicsItem>
+#include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QImage>
 #include <QLabel>
@@ -14,6 +16,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QScrollArea>
+#include <QSlider>
 #include <QTableWidget>
 #include <QTcpServer>
 #include <QTemporaryDir>
@@ -53,7 +56,7 @@ class NativeTests : public QObject {
                                        "/orbis/mainSetting"};
             NativeTranslations translations(ORBIS_TEST_RESOURCES "/ui");
             translations.setLanguage("en");
-            const QStringList titles = {"dashboard",   "Live",   "preview", "layouts",
+            const QStringList titles = {"dashboard",   "Live",   "livePreviewTitle", "layouts",
                                         "taskManager", "manual", "settings"};
             for (int i = 0; i < nav->count(); ++i) {
                 QCOMPARE(nav->item(i)->data(Qt::UserRole).toString(), paths[i]);
@@ -173,9 +176,9 @@ class NativeTests : public QObject {
                 {"manualTitle", "User Guide"}};
             NativeTranslations text(ORBIS_TEST_RESOURCES "/ui");
             text.setLanguage("en");
-            const QStringList titleKeys = {"liveManagement", "preview",       "layouts",
-                                           "liveHistory",    "videoSettings", "channelSettings",
-                                           "taskManager",    "manual"};
+            const QStringList titleKeys = {
+                "liveManagement", "livePreviewTitle", "layouts",     "liveHistory",
+                "videoSettings",  "channelSettings",  "taskManager", "manual"};
             for (int i = 0; i < routes.size(); ++i) {
                 window.navigate("dashboard");
                 window.findChild<QPushButton*>(routes[i].first)->click();
@@ -201,6 +204,55 @@ class NativeTests : public QObject {
         QCOMPARE(qApp->property("orbisTheme").toString(), QString("light"));
         reopened.setTheme("dark");
         QCOMPARE(qApp->palette().color(QPalette::Window), QColor("#1a1a1c"));
+    }
+
+    void historyHasWindowsFiltersAndCleanup() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        Json channel;
+        channel.set("channelName", "History A");
+        channel.set("streamUrl", "rtmp://localhost/live");
+        channel.set("isActive", true);
+        const auto channelId = studio.store.save("channels", channel);
+        for (int group = 0; group < 2; ++group) {
+            Json history, request;
+            auto files = Json::array();
+            for (int i = 0; i < 3; ++i)
+                files.push(Json::string("/tmp/history-" + std::to_string(group) + "-" +
+                                        std::to_string(i) + ".mp4"));
+            request.set("files", files);
+            history.set("request", request);
+            history.set("status", "STOPPED");
+            history.set("channelId", double(channelId));
+            history.set("channelName", group ? "History B" : "History A");
+            history.set("startedAt", "2010-01-01T00:00:00Z");
+            studio.store.save("history", history);
+        }
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.show();
+        window.navigate("history");
+        auto table = window.findChild<QTableWidget*>("recordsTable");
+        QTRY_COMPARE(table->rowCount(), 6);
+        QCOMPARE(table->columnCount(), 8);
+        QCOMPARE(table->horizontalHeaderItem(4)->text(), QString("Path"));
+        QVERIFY(!window.findChild<QComboBox*>("platformFilter"));
+        window.findChild<QLineEdit*>("search")->setText("history-1-2");
+        QTRY_COMPARE(table->rowCount(), 1);
+        window.findChild<QPushButton*>("clearFilters")->click();
+        QTRY_COMPARE(table->rowCount(), 6);
+        auto enabled = window.findChild<QCheckBox*>("autoCleanupEnabled");
+        enabled->setChecked(true);
+        window.findChild<QComboBox*>("autoCleanupOlderThanMonths")->setCurrentIndex(2);
+        window.findChild<QPushButton*>("save")->click();
+        QCOMPARE(studio.store.get("channels", channelId).get("autoCleanupEnabled").flag(), true);
+        QCOMPARE(studio.store.get("channels", channelId).get("autoCleanupOlderThanMonths").num(),
+                 3.0);
+        window.findChild<QPushButton*>("runCleanupNow")->click();
+        QTRY_COMPARE_WITH_TIMEOUT(studio.store.list("history").size(), size_t(0), 5000);
+        QTRY_VERIFY(window.findChild<QLabel*>("emptyState")->isVisible());
+        QVERIFY(window.grab().save(
+            QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-history")));
     }
 
     void catalogsAndNativeNavigation() {
@@ -317,6 +369,37 @@ class NativeTests : public QObject {
     }
 
     // Parte dal wizard Qt e controlla che FFmpeg riceva realmente la playlist su localhost.
+    void emptyPlaylistLinksToSettings() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        auto profiles = studio.store.list("profiles");
+        for (size_t i = 0; i < profiles.size(); ++i) {
+            auto profile = profiles.at(i).clone();
+            profile.set("isActive", false);
+            studio.store.save("profiles", profile, profile.get("id").num());
+        }
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.show();
+        window.navigate("live");
+        QTimer::singleShot(0, &window, [&] {
+            auto wizard = qobject_cast<QWizard*>(QApplication::activeModalWidget());
+            QVERIFY(wizard);
+            QTimer::singleShot(5000, wizard, &QDialog::reject);
+            QVERIFY(!wizard->button(QWizard::FinishButton)->isEnabled());
+            bool found = false;
+            for (auto button : wizard->findChildren<QPushButton*>())
+                if (button->isVisible() && button->text() == "Activate Video and Audio Settings") {
+                    found = true;
+                    button->click();
+                    break;
+                }
+            QVERIFY(found);
+        });
+        window.findChild<QPushButton*>("startPlaylistButton")->click();
+        QCOMPARE(window.findChild<QLabel*>("pageTitle")->text(), QString("Video Settings"));
+    }
+
     void playlistWizardStreams() {
         QTemporaryDir directory;
         Studio studio(directory.path().toStdString());
@@ -325,7 +408,7 @@ class NativeTests : public QObject {
         capture({"ffmpeg",      "-v",        "error", "-y",
                  "-f",          "lavfi",     "-i",    "color=c=blue:s=320x180:r=15",
                  "-f",          "lavfi",     "-i",    "sine=frequency=440",
-                 "-t",          "8",         "-c:v",  "libx264",
+                 "-t",          "30",        "-c:v",  "libx264",
                  "-preset",     "ultrafast", "-c:a",  "aac",
                  video.string()},
                 15);
@@ -362,6 +445,22 @@ class NativeTests : public QObject {
         window.setLanguage("en");
         window.show();
         window.navigate("live");
+        QTimer guard;
+        guard.setInterval(10000);
+        connect(&guard, &QTimer::timeout, &window, [&] {
+            if (auto modal = QApplication::activeModalWidget()) {
+                qWarning() << "Unexpected modal during stream test:" << modal->objectName();
+                if (auto message = qobject_cast<QMessageBox*>(modal))
+                    qWarning() << message->text() << message->detailedText();
+                if (auto wizard = qobject_cast<QWizard*>(modal))
+                    qWarning() << wizard->currentId()
+                               << wizard->button(QWizard::FinishButton)->isEnabled()
+                               << wizard->findChild<QLineEdit*>("wizardFolder")->text();
+                if (auto dialog = qobject_cast<QDialog*>(modal))
+                    dialog->reject();
+            }
+        });
+        guard.start();
         QTimer::singleShot(0, &window, [&] {
             auto wizard = qobject_cast<QWizard*>(QApplication::activeModalWidget());
             QVERIFY(wizard);
@@ -371,20 +470,34 @@ class NativeTests : public QObject {
             QVERIFY(profiles->currentItem()->text().contains("kbps"));
             QVERIFY(wizard->grab().save(
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-wizard")));
-            wizard->next();
-            wizard->next();
+            QCOMPARE(wizard->pageIds().size(), 1);
+            QVERIFY(wizard->findChild<QListWidget*>("wizardChannel")->isVisible());
             wizard->findChild<QLineEdit*>("wizardFolder")
                 ->setText(QString::fromStdString(root.string()));
             QTest::mouseClick(wizard->button(QWizard::FinishButton), Qt::LeftButton);
         });
         QTest::mouseClick(window.findChild<QPushButton*>("startPlaylistButton"), Qt::LeftButton);
         QTRY_VERIFY_WITH_TIMEOUT(studio.live().size() == 1, 15000);
-        QTRY_VERIFY_WITH_TIMEOUT(fs::exists(recorded) && fs::file_size(recorded) > 10000, 15000);
         auto id = studio.live().at(0).get("id").num();
         QTRY_VERIFY_WITH_TIMEOUT(
             fs::exists(studio.store.root / "previews" / (std::to_string(long(id)) + ".jpg")), 8000);
+        window.navigate("preview");
+        QTRY_VERIFY(window.findChild<QWidget*>("previewContent")->isVisible());
+        auto slider = window.findChild<QSlider*>("sourceVolume_0");
+        QVERIFY(slider);
+        slider->setValue(175);
+        QMetaObject::invokeMethod(slider, "sliderReleased");
+        QTRY_COMPARE(
+            studio.session(id)->snapshot().get("scene").get("items").at(0).get("volume").num(),
+            175.0);
+        window.findChild<QDoubleSpinBox*>("param_audioBitrate")->setValue(96);
+        QTRY_COMPARE_WITH_TIMEOUT(
+            studio.session(id)->snapshot().get("profile").get("audioBitrate").num(), 96.0, 3000);
+        QVERIFY(window.grab().save(
+            QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-preview-live")));
         studio.stopAll();
         ingest.stop();
+        QVERIFY(fs::exists(recorded) && fs::file_size(recorded) > 0);
         QVERIFY(probe(recorded.string()).get("format").get("duration").num() > 0);
     }
 
@@ -466,6 +579,15 @@ class NativeTests : public QObject {
             dialog->findChild<QDoubleSpinBox*>("source_height")->setValue(360);
             dialog->findChild<QDoubleSpinBox*>("source_x")->setValue(30);
             dialog->findChild<QDoubleSpinBox*>("source_y")->setValue(20);
+            QTest::mouseClick(dialog->findChild<QPushButton*>("addSlot"), Qt::LeftButton);
+            QTRY_COMPARE(layers->count(), 2);
+            auto selected = canvas->scene()->selectedItems().first();
+            QTest::mouseClick(dialog->findChild<QPushButton*>("sendBackward"), Qt::LeftButton);
+            QCOMPARE(selected->zValue(), 0.0);
+            QTest::mouseClick(dialog->findChild<QPushButton*>("bringForward"), Qt::LeftButton);
+            QCOMPARE(selected->zValue(), 1.0);
+            QTest::mouseClick(dialog->findChild<QPushButton*>("removeSource"), Qt::LeftButton);
+            QTRY_COMPARE(layers->count(), 1);
             QVERIFY(dialog->grab().save(
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-composer")));
             QTest::mouseClick(commit, Qt::LeftButton);

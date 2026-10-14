@@ -23,7 +23,16 @@ def main():
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
-        proc = subprocess.Popen([sys.argv[1], '--no-browser', '--data-dir', str(root/'data'), '--port', str(port)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # Un aggiornamento rimuove l'inode eseguito: i successivi FFprobe/FFmpeg
+        # devono ancora trovare il runner nella directory dell'app.
+        binary = pathlib.Path(sys.argv[1]).resolve()
+        running_binary = root/'orbis-stream'
+        shutil.copy2(binary, running_binary)
+        (root/'orbis-stream-runner').symlink_to(binary.with_name('orbis-stream-runner'))
+        resources = binary.parent.parent/'share/orbis-stream/web'
+        if not resources.is_dir():
+            resources = pathlib.Path(__file__).resolve().parent.parent/'web'
+        proc = subprocess.Popen([str(running_binary), '--no-browser', '--data-dir', str(root/'data'), '--port', str(port), '--web-root', str(resources)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:
             url = ''
             for _ in range(3):
@@ -33,6 +42,7 @@ def main():
                     break
             token = url.split('token=')[-1]
             assert len(token) == 64, 'startup token'
+            running_binary.unlink()
             base = f'http://127.0.0.1:{port}'
             def api(path, method='GET', body=None, auth=True):
                 headers = {'Authorization': 'Bearer '+token} if auth else {}
@@ -249,6 +259,35 @@ def main():
                 if ingest.poll() is None:
                     ingest.terminate()
                     ingest.wait(timeout=3)
+            # Una connessione TCP accettata senza handshake RTMP non è una live.
+            with socket.socket() as pending:
+                pending.bind(('127.0.0.1',0))
+                pending.listen(1)
+                pending.settimeout(5)
+                waiting=api('live/start','POST',{'files':[str(clip)],'profileId':profile,'loop':True,'streamUrl':f'rtmp://127.0.0.1:{pending.getsockname()[1]}/live','streamKey':'waiting-secret','reconnect':False})['id']
+                connection,_=pending.accept()
+                try:
+                    time.sleep(.7)
+                    connecting=next(s for s in api('live') if s['id']==waiting)
+                    assert connecting['status']=='STARTING' and connecting['outputKbps']==0, connecting
+                    api(f'live/{waiting}/stop','POST',{})
+                finally:
+                    connection.close()
+            # Gli errori del server devono essere leggibili senza esporre la chiave.
+            with socket.socket() as refused:
+                refused.bind(('127.0.0.1',0))
+                refused_port=refused.getsockname()[1]
+                failed=api('live/start','POST',{'files':[str(clip)],'profileId':profile,'streamUrl':f'rtmp://127.0.0.1:{refused_port}/live','streamKey':'private-stream-key','reconnect':False})['id']
+                statuses=[]
+                for _ in range(100):
+                    rejected=next(s for s in api('live') if s['id']==failed)
+                    statuses.append(rejected['status'])
+                    if rejected['status']=='ERROR':break
+                    time.sleep(.05)
+                assert rejected['status']=='ERROR' and 'Connection refused' in rejected['error'],rejected
+                assert 'LIVE' not in statuses and rejected['outputKbps']==0,rejected
+                assert 'private-stream-key' not in rejected['error'] and 'rtmp://' not in rejected['error'],rejected
+                assert api(f'history/{failed}')['error']==rejected['error']
             # Riavvia il server per esercitare lo scheduler reale senza aspettare un intervallo artificiale.
             scheduled_channel=api(f'channels/{channel}')
             api(f'channels/{channel}','PUT',{**scheduled_channel,'autoCleanupEnabled':True,'autoCleanupIntervalMonths':1,'autoCleanupOlderThanMonths':0,'lastCleanupEpoch':0})

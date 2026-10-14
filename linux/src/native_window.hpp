@@ -33,6 +33,10 @@ class NativeWindow : public QMainWindow {
     QComboBox *channelFilter = nullptr, *statusFilter = nullptr, *platformFilter = nullptr,
               *livePicker = nullptr;
     QLabel *preview = nullptr, *previewFacts = nullptr, *cleanupLabel = nullptr;
+    QWidget *previewContent = nullptr, *previewMixer = nullptr, *previewDeck = nullptr;
+    Json previewProfile;
+    long previewControlsFor = 0;
+    QTimer* previewParameterTimer = nullptr;
     QProgressBar* cleanupBar = nullptr;
     long watched = 0;
     long armedDeck = 0;
@@ -55,6 +59,10 @@ class NativeWindow : public QMainWindow {
     void buildChannels();
     void buildProfiles();
     void buildLive(bool history);
+    void refreshHistory();
+    void unlockVideos();
+    void applyPreviewParameters();
+    void populatePreviewControls(const Json& snapshot);
     void buildScenes(bool layouts);
     void refreshLayouts();
     void buildPreview();
@@ -91,6 +99,7 @@ class NativeWindow : public QMainWindow {
     QTableWidget* makeTable(const QStringList& headers);
     void addPager(int size);
     void addDestinationCards(const QList<QStringList>& entries);
+    void addDashboardCards(const QList<QStringList>& entries, const QString& section = {});
     void updatePreview();
 
   protected:

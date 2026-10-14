@@ -1,4 +1,5 @@
 #include "native_forms.hpp"
+#include "native_theme.hpp"
 #include "native_window.hpp"
 #include "scene_service.hpp"
 #include <QDragEnterEvent>
@@ -227,7 +228,13 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     mainLayout->addWidget(formScroll);
     workspace->setStretchFactor(0, 0);
     workspace->setStretchFactor(1, 1);
-    workspace->setSizes({280, 800});
+    auto layerScroll = new QScrollArea(workspace);
+    layerScroll->setWidgetResizable(true);
+    auto layerPanel = new QWidget(layerScroll);
+    layerPanel->setMinimumWidth(220);
+    auto layerColumn = new QVBoxLayout(layerPanel);
+    layerScroll->setWidget(layerPanel);
+    workspace->setSizes({260, 680, 220});
     auto sourceTitle = new QLabel(t(isLayout ? "slots" : "availableSources"), sourcePanel);
     sourceTitle->setObjectName("cardTitle");
     sourceLayout->addWidget(sourceTitle);
@@ -235,10 +242,46 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     explanation->setObjectName("muted");
     explanation->setWordWrap(true);
     sourceLayout->addWidget(explanation);
-    dialog.text("name", t(isLayout ? "layoutName" : "sceneName"));
+    auto name = dialog.text("name", t(isLayout ? "layoutName" : "sceneName"));
+    if (name->text().trimmed().isEmpty())
+        name->setText(t(isLayout ? "newLayout" : "newScene"));
     dialog.text("description", t("description"));
-    auto width = dialog.number("width", t("width"), 1280, 16, 7680),
-         height = dialog.number("height", t("height"), 720, 16, 7680);
+    auto width = dialog.number("width", t("width"), 1920, 16, 7680),
+         height = dialog.number("height", t("height"), 1080, 16, 7680);
+    auto bar = new QFrame(mainPanel);
+    bar->setObjectName("card");
+    auto barRow = new QHBoxLayout(bar);
+    auto layoutPicker = new QComboBox(bar);
+    layoutPicker->setObjectName("composerLayouts");
+    layoutPicker->addItem(t(isLayout ? "newLayout" : "noLayoutSelected"), 0);
+    auto layouts = studio.store.list("scenes");
+    for (size_t i = 0; i < layouts.size(); ++i)
+        if (layouts.at(i).get("isLayout").flag())
+            layoutPicker->addItem(QString::fromStdString(layouts.at(i).get("name").str()),
+                                  qlonglong(layouts.at(i).get("id").num()));
+    auto resolution = new QComboBox(bar);
+    resolution->setObjectName("composerResolution");
+    for (auto size : {"1280x720", "1920x1080", "2560x1440", "3840x2160", "720x1280", "1080x1920"})
+        resolution->addItem(size);
+    resolution->setCurrentText(QString::number(int(width->value())) + "x" +
+                               QString::number(int(height->value())));
+    for (auto entry :
+         QList<QPair<QString, QWidget*>>{{t("layout"), layoutPicker},
+                                         {t(isLayout ? "layoutName" : "sceneName"), name},
+                                         {t("resolution"), resolution}}) {
+        auto column = new QVBoxLayout;
+        column->addWidget(new QLabel(entry.first, bar));
+        column->addWidget(entry.second);
+        barRow->addLayout(column, entry.second == name ? 1 : 0);
+    }
+    mainLayout->removeWidget(formScroll);
+    formScroll->hide();
+    mainLayout->insertWidget(0, bar);
+    connect(resolution, &QComboBox::currentTextChanged, &dialog, [&](const QString& value) {
+        auto parts = value.split('x');
+        width->setValue(parts[0].toInt());
+        height->setValue(parts[1].toInt());
+    });
     auto graphics = new QGraphicsScene(&dialog);
     graphics->setSceneRect(0, 0, width->value(), height->value());
     auto view = new CanvasView(graphics, &dialog);
@@ -262,7 +305,7 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     auto items = scene.get("items");
     for (size_t i = 0; i < items.size(); ++i)
         addSource(items.at(i));
-    auto layerActions = new QWidget(mainPanel);
+    auto layerActions = new QWidget(layerPanel);
     auto layerRow = new QGridLayout(layerActions);
     layerRow->setContentsMargins(0, 0, 0, 0);
     auto action = [&](const char* key, std::function<void()> fn) {
@@ -272,17 +315,28 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         auto button = new QPushButton(t(key), layerAction ? layerActions : sourcePanel);
         button->setAutoDefault(false);
         button->setObjectName(key);
+        button->setIcon(studioIcon(name == "uploadOverlay"    ? "upload"
+                                   : name == "refreshSources" ? "restart"
+                                                              : "plus"));
         button->setCursor(Qt::PointingHandCursor);
         if (layerAction) {
+            button->setToolTip(t(key));
+            button->setAccessibleName(t(key));
+            button->setText({});
+            button->setIcon(studioIcon(name == "bringForward"   ? "next"
+                                       : name == "sendBackward" ? "back"
+                                       : name == "removeSource" ? "delete"
+                                                                : "screen"));
+            button->setFixedSize(36, 36);
             const int index = layerRow->count();
-            layerRow->addWidget(button, index / 2, index % 2);
+            layerRow->addWidget(button, index / 4, index % 4);
         } else if (!(isLayout && (name == "addVideoFile" || name == "sources")))
             sourceLayout->addWidget(button);
         else
             button->hide();
         connect(button, &QPushButton::clicked, &dialog, [&, fn] { run(fn); });
     };
-    auto addFile = [&](QString path, bool overlay) {
+    auto addFile = [&](QString path, bool overlay, bool place = true) {
         if (path.isEmpty())
             return;
         Json item;
@@ -297,6 +351,8 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             path = QString::fromStdString(target.string());
         }
         item.set("sourceTarget", path.toStdString());
+        if (!place)
+            return;
         item.set("label", fs::path(path.toStdString()).filename().string());
         item.set("audioEnabled", !overlay);
         if (overlay)
@@ -326,7 +382,7 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         addFile(QFileDialog::getOpenFileName(
                     &dialog, t("overlays"), {},
                     "Media (*.png *.jpg *.jpeg *.gif *.webp *.webm *.mov *.mp4)"),
-                true);
+                true, false);
     });
     action("addSlot", [&] {
         Json item;
@@ -335,19 +391,15 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         item.set("label", t("slot").toStdString());
         addSource(item);
     });
-    action("sources", [&] {
-        auto rows = sources();
-        NativeForm sourceDialog(&dialog, t("sources"));
-        QList<QPair<QString, Json>> entries;
-        for (size_t i = 0; i < rows.size(); ++i)
-            entries.append({QString::fromStdString(rows.at(i).get("label").str()), rows.at(i)});
-        if (entries.isEmpty())
-            throw std::runtime_error("Nessuna sorgente");
-        sourceDialog.choice("source", t("sources"), entries);
-        connect(sourceDialog.buttons, &QDialogButtonBox::accepted, &sourceDialog, &QDialog::accept);
-        if (sourceDialog.exec() != QDialog::Accepted)
-            return;
-        auto picked = sourceDialog.value().get("source");
+    auto addPickedSource = [&](Json picked) {
+        for (auto node : graphics->items())
+            if (auto tile = dynamic_cast<SourceTile*>(node);
+                tile && tile->source.get("sourceTarget").str() == picked.get("target").str() &&
+                tile->source.get("sourceKind").str() == picked.get("kind").str()) {
+                graphics->clearSelection();
+                tile->setSelected(true);
+                return;
+            }
         Json item;
         item.set("sourceKind", picked.get("kind"));
         item.set("sourceTarget", picked.get("target"));
@@ -364,6 +416,88 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             }
         }
         addSource(item);
+    };
+    auto catalog = new QWidget(sourcePanel);
+    auto catalogColumn = new QVBoxLayout(catalog);
+    catalogColumn->setContentsMargins(0, 0, 0, 0);
+    sourceLayout->insertWidget(2, catalog);
+    auto refreshCatalog = [&] {
+        while (auto row = catalogColumn->takeAt(0)) {
+            if (row->widget())
+                row->widget()->deleteLater();
+            delete row;
+        }
+        auto available = sources();
+        for (size_t i = 0; i < available.size(); ++i) {
+            auto picked = available.at(i);
+            auto button =
+                new QPushButton(QString::fromStdString(picked.get("label").str()), catalog);
+            button->setObjectName("catalogSource");
+            button->setIcon(
+                studioIcon(picked.get("kind").str() == "MICROPHONE" ? "volume" : "screen"));
+            connect(button, &QPushButton::clicked, &dialog,
+                    [&, picked] { run([&] { addPickedSource(picked); }); });
+            catalogColumn->addWidget(button);
+        }
+        if (!available.size())
+            catalogColumn->addWidget(new QLabel(t("sourcesEmptyAvailable"), catalog));
+    };
+    if (!isLayout) {
+        refreshCatalog();
+        action("refreshSources", refreshCatalog);
+    } else
+        catalog->hide();
+    auto overlayLibrary = new QListWidget(sourcePanel);
+    overlayLibrary->setObjectName("composerOverlays");
+    overlayLibrary->setViewMode(QListView::IconMode);
+    overlayLibrary->setIconSize(QSize(72, 48));
+    overlayLibrary->setMaximumHeight(180);
+    auto refreshOverlays = [&] {
+        overlayLibrary->clear();
+        auto root = studio.store.root / "overlays";
+        if (!fs::is_directory(root))
+            return;
+        for (const auto& file : fs::directory_iterator(root))
+            if (file.is_regular_file()) {
+                auto path = QString::fromStdString(file.path().string());
+                auto row = new QListWidgetItem(QIcon(path),
+                                               QString::fromStdString(file.path().stem().string()),
+                                               overlayLibrary);
+                row->setData(Qt::UserRole, path);
+            }
+    };
+    sourceLayout->addWidget(new QLabel(t("overlays"), sourcePanel));
+    sourceLayout->addWidget(overlayLibrary);
+    connect(overlayLibrary, &QListWidget::itemClicked, &dialog, [&](QListWidgetItem* row) {
+        Json item;
+        item.set("sourceKind", "OVERLAY");
+        item.set("sourceTarget", row->data(Qt::UserRole).toString().toStdString());
+        item.set("label", row->text().toStdString());
+        item.set("audioEnabled", false);
+        item.set("loop", true);
+        addSource(item);
+    });
+    auto overlayTimer = new QTimer(&dialog);
+    connect(overlayTimer, &QTimer::timeout, &dialog, refreshOverlays);
+    overlayTimer->start(1500);
+    refreshOverlays();
+    connect(layoutPicker, &QComboBox::currentIndexChanged, &dialog, [&] {
+        auto id = layoutPicker->currentData().toLongLong();
+        auto layout = id ? studio.store.get("scenes", id) : Json{};
+        graphics->clear();
+        width->setValue(layout.get("width").num(1920));
+        height->setValue(layout.get("height").num(1080));
+        if (isLayout) {
+            scene = layout;
+            scene.set("isLayout", true);
+            name->setText(
+                QString::fromStdString(layout.get("name").str(t("newLayout").toStdString())));
+        }
+        auto items = layout.get("items");
+        for (size_t i = 0; i < items.size(); ++i)
+            addSource(items.at(i));
+        resolution->setCurrentText(QString::number(int(width->value())) + "x" +
+                                   QString::number(int(height->value())));
     });
     auto inspector = new QWidget(&dialog);
     auto form = new QFormLayout(inspector);
@@ -392,7 +526,7 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         connect(spin, &QDoubleSpinBox::valueChanged, &dialog, [&, field](double value) {
             if (auto tile = selected()) {
                 if (field == std::string("volume"))
-                    tile->source.set("volume", value / 100);
+                    tile->source.set("volume", value);
                 else if (field == std::string("x") || field == std::string("y")) {
                     auto p = tile->pos();
                     if (field == std::string("x"))
@@ -424,7 +558,7 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             for (auto it = fields.begin(); it != fields.end(); ++it) {
                 it.value()->blockSignals(true);
                 it.value()->setValue(it.key() == "volume"
-                                         ? value.get("volume").num(1) * 100
+                                         ? value.get("volume").num(100)
                                          : value.get(it.key().toStdString()).num());
                 it.value()->blockSignals(false);
             }
@@ -435,14 +569,23 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     };
     connect(graphics, &QGraphicsScene::selectionChanged, &dialog, selectionChanged);
     selectionChanged();
-    action("bringForward", [&] {
-        if (auto tile = selected())
-            tile->setZValue(tile->zValue() + 1);
-    });
-    action("sendBackward", [&] {
-        if (auto tile = selected())
-            tile->setZValue(tile->zValue() - 1);
-    });
+    auto moveLayer = [&](int direction) {
+        auto tile = selected();
+        if (!tile)
+            return;
+        QList<SourceTile*> ordered;
+        for (auto node : graphics->items(Qt::AscendingOrder))
+            if (auto layer = dynamic_cast<SourceTile*>(node))
+                ordered.append(layer);
+        const int index = ordered.indexOf(tile), target = index + direction;
+        if (target < 0 || target >= ordered.size())
+            return;
+        ordered.swapItemsAt(index, target);
+        for (int i = 0; i < ordered.size(); ++i)
+            ordered[i]->setZValue(i);
+    };
+    action("bringForward", [&] { moveLayer(1); });
+    action("sendBackward", [&] { moveLayer(-1); });
     action("fillCanvas", [&] {
         if (auto tile = selected()) {
             tile->setRect(0, 0, width->value(), height->value());
@@ -454,15 +597,15 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         if (auto tile = selected())
             delete tile;
     });
-    auto layersTitle = new QLabel(t("layers") + " · " + t("layersHint"), mainPanel);
+    auto layersTitle = new QLabel(t("layers") + " · " + t("layersHint"), layerPanel);
     layersTitle->setWordWrap(true);
-    mainLayout->addWidget(layersTitle);
-    auto layers = new QListWidget(mainPanel);
+    layerColumn->addWidget(layersTitle);
+    auto layers = new QListWidget(layerPanel);
     layers->setObjectName("sceneLayers");
     layers->setAccessibleName(t("layers"));
-    layers->setMaximumHeight(110);
-    mainLayout->addWidget(layers);
-    mainLayout->addWidget(layerActions);
+    layers->setMinimumHeight(160);
+    layerColumn->addWidget(layers, 1);
+    layerColumn->addWidget(layerActions);
     auto refreshLayers = [&] {
         layers->blockSignals(true);
         layers->clear();
@@ -492,6 +635,22 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         }
     });
     refreshLayers();
+    if (!isLayout) {
+        auto used = new QListWidget(sourcePanel);
+        used->setObjectName("composerUsedSources");
+        used->setMaximumHeight(120);
+        sourceLayout->insertWidget(0, new QLabel(t("usedSources"), sourcePanel));
+        sourceLayout->insertWidget(1, used);
+        auto refreshUsed = [&, used] {
+            used->clear();
+            for (auto node : graphics->items(Qt::AscendingOrder))
+                if (auto tile = dynamic_cast<SourceTile*>(node);
+                    tile && !tile->source.get("sourceTarget").str().empty())
+                    used->addItem(QString::fromStdString(tile->source.get("label").str()));
+        };
+        connect(graphics, &QGraphicsScene::changed, &dialog, refreshUsed);
+        refreshUsed();
+    }
     auto fit = [&] {
         graphics->setSceneRect(0, 0, width->value(), height->value());
         view->fitInView(graphics->sceneRect(), Qt::KeepAspectRatio);

@@ -1,15 +1,23 @@
 #include "live_stream_keys.hpp"
 #include "native_forms.hpp"
+#include "native_theme.hpp"
 #include "native_window.hpp"
 #include "scene_service.hpp"
+#include <QApplication>
 #include <QFileDialog>
 #include <QGridLayout>
+#include <QHeaderView>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QPlainTextEdit>
+#include <QRadioButton>
 #include <QShortcut>
 #include <QSlider>
+#include <QStyle>
+#include <QStyledItemDelegate>
+#include <QTableWidget>
 #include <QTimer>
 #include <QUuid>
 #include <QWizard>
@@ -18,6 +26,136 @@
 
 namespace orbis {
 namespace {
+class ChoiceDelegate : public QStyledItemDelegate {
+  public:
+    explicit ChoiceDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+               const QModelIndex& index) const override {
+        QStyleOptionViewItem background(option);
+        initStyleOption(&background, index);
+        background.text.clear();
+        background.icon = {};
+        const auto style = background.widget ? background.widget->style() : QApplication::style();
+        style->drawControl(QStyle::CE_ItemViewItem, &background, painter, background.widget);
+    }
+};
+
+class HotkeyCapture : public QPushButton {
+  public:
+    std::function<void(QString)> captured;
+
+    explicit HotkeyCapture(const QString& text, QWidget* parent) : QPushButton(text, parent) {}
+
+  protected:
+    void keyPressEvent(QKeyEvent* event) override {
+        if (!property("capturing").toBool()) {
+            QPushButton::keyPressEvent(event);
+            return;
+        }
+        const int code = event->key();
+        if (code == Qt::Key_Escape) {
+            setProperty("capturing", false);
+            return;
+        }
+        QString key;
+        if (code >= Qt::Key_A && code <= Qt::Key_Z)
+            key = "Key" + QString(QChar(code));
+        else if (code >= Qt::Key_0 && code <= Qt::Key_9)
+            key = (event->modifiers().testFlag(Qt::KeypadModifier) ? "Numpad" : "Digit") +
+                  QString(QChar(code));
+        else if (code >= Qt::Key_F1 && code <= Qt::Key_F24)
+            key = "F" + QString::number(code - Qt::Key_F1 + 1);
+        else {
+            const QMap<int, QString> keys = {{Qt::Key_Left, "ArrowLeft"},
+                                             {Qt::Key_Right, "ArrowRight"},
+                                             {Qt::Key_Up, "ArrowUp"},
+                                             {Qt::Key_Down, "ArrowDown"},
+                                             {Qt::Key_Insert, "Insert"},
+                                             {Qt::Key_Delete, "Delete"},
+                                             {Qt::Key_Home, "Home"},
+                                             {Qt::Key_End, "End"},
+                                             {Qt::Key_PageUp, "PageUp"},
+                                             {Qt::Key_PageDown, "PageDown"},
+                                             {Qt::Key_QuoteLeft, "Backquote"},
+                                             {Qt::Key_Minus, "Minus"},
+                                             {Qt::Key_Equal, "Equal"},
+                                             {Qt::Key_BracketLeft, "BracketLeft"},
+                                             {Qt::Key_BracketRight, "BracketRight"},
+                                             {Qt::Key_Backslash, "Backslash"},
+                                             {Qt::Key_Semicolon, "Semicolon"},
+                                             {Qt::Key_Apostrophe, "Quote"},
+                                             {Qt::Key_Comma, "Comma"},
+                                             {Qt::Key_Period, "Period"},
+                                             {Qt::Key_Slash, "Slash"}};
+            key = keys.value(code);
+        }
+        if (key.isEmpty())
+            return;
+        QString prefix;
+        if (event->modifiers().testFlag(Qt::ControlModifier))
+            prefix += "Ctrl+";
+        if (event->modifiers().testFlag(Qt::AltModifier))
+            prefix += "Alt+";
+        if (event->modifiers().testFlag(Qt::ShiftModifier))
+            prefix += "Shift+";
+        setProperty("capturing", false);
+        if (captured)
+            captured(prefix + key);
+        event->accept();
+    }
+};
+
+class ChoiceWizardPage : public QWizardPage {
+  public:
+    std::function<bool()> complete;
+
+    bool isComplete() const override {
+        return complete ? complete() : true;
+    }
+
+    void refresh() {
+        emit completeChanged();
+    }
+};
+
+void decorateChoices(QListWidget* list) {
+    list->setItemDelegate(new ChoiceDelegate(list));
+    list->setWrapping(true);
+    list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    for (int i = 0; i < list->count(); ++i) {
+        auto item = list->item(i);
+        auto row = new QWidget(list);
+        row->setAttribute(Qt::WA_TransparentForMouseEvents);
+        auto layout = new QHBoxLayout(row);
+        layout->setContentsMargins(14, 12, 14, 12);
+        auto selected = new QRadioButton(row);
+        selected->setAutoExclusive(false);
+        selected->setChecked(list->currentRow() == i);
+        layout->addWidget(selected);
+        QObject::connect(list, &QListWidget::currentRowChanged, selected,
+                         [selected, i](int index) { selected->setChecked(index == i); });
+        auto icon = new QLabel(row);
+        icon->setPixmap(item->icon().pixmap(28, 28));
+        layout->addWidget(icon);
+        auto column = new QVBoxLayout;
+        const auto lines = item->text().split('\n');
+        auto title = new QLabel(lines.first(), row);
+        title->setWordWrap(true);
+        title->setTextFormat(Qt::PlainText);
+        auto detail = new QLabel(lines.mid(1).join(" · "), row);
+        detail->setWordWrap(true);
+        detail->setTextFormat(Qt::PlainText);
+        detail->setObjectName("muted");
+        column->addWidget(title);
+        column->addWidget(detail);
+        layout->addLayout(column, 1);
+        item->setForeground(QBrush(Qt::transparent));
+        item->setIcon({});
+        list->setItemWidget(item, row);
+    }
+}
+
 QString str(const Json& value) {
     return QString::fromStdString(value.str());
 }
@@ -186,28 +324,18 @@ void NativeWindow::editProfile(Json profile) {
 // La selezione impone due passaggi come Windows e non rende disponibili configurazioni disattivate.
 void NativeWindow::startWizard(bool playlist) {
     auto profiles = studio.store.list("profiles"), channels = studio.store.list("channels");
-    if (choices(profiles, "title", true).isEmpty()) {
-        QMessageBox::information(this, t("warning"), t("wizardNoActiveSettingsMessage"));
-        navigate("profiles");
-        return;
-    }
-    if (choices(channels, "channelName", true).isEmpty()) {
-        QMessageBox::information(this, t("warning"), t("wizardNoActiveConfigurationsMessage"));
-        navigate("channels");
-        return;
-    }
     QWizard wizard(this);
     wizard.setObjectName("startWizard");
     wizard.setWindowTitle(t(playlist ? "startPlaylistTitle" : "startNewLiveTitle"));
     wizard.setWizardStyle(QWizard::ModernStyle);
-    wizard.resize(800, 660);
+    wizard.resize(qMin(1280, width() - 40), qMin(820, height() - 40));
     wizard.setOption(QWizard::NoBackButtonOnStartPage);
     wizard.setButtonText(QWizard::NextButton, t("next"));
     wizard.setButtonText(QWizard::BackButton, t("back"));
     wizard.setButtonText(QWizard::CancelButton, t("cancel"));
     wizard.setButtonText(QWizard::FinishButton,
                          t(playlist ? "startPlaylistButton" : "composeNext"));
-    auto first = new QWizardPage;
+    auto first = new ChoiceWizardPage;
     first->setTitle(t("wizardStep1Title"));
     auto firstForm = new QFormLayout(first);
     auto profile = new QListWidget(first);
@@ -224,13 +352,36 @@ void NativeWindow::startWizard(bool playlist) {
                                 .arg(value.get("videoBitrate").num())
                                 .arg(str(value.get("videoCodecName")));
         auto item = new QListWidgetItem(entry.first + "\n" + detail, profile);
-        item->setSizeHint(QSize(0, 88));
+        item->setSizeHint(QSize(310, 96));
         item->setData(Qt::UserRole, entry.second.num());
     }
+    profile->setIconSize(QSize(28, 28));
+    profile->setViewMode(QListView::IconMode);
+    profile->setResizeMode(QListView::Adjust);
+    profile->setMovement(QListView::Static);
+    profile->setGridSize(QSize(330, 110));
+    profile->setSpacing(8);
+    for (int i = 0; i < profile->count(); ++i) {
+        auto record =
+            studio.store.get("profiles", profile->item(i)->data(Qt::UserRole).toLongLong());
+        profile->item(i)->setIcon(platformMark(str(record.get("defaultPlatformConfiguration"))));
+    }
     profile->setCurrentRow(0);
+    decorateChoices(profile);
+    first->complete = [profile] { return profile->currentItem() != nullptr; };
+    connect(profile, &QListWidget::currentRowChanged, first, &ChoiceWizardPage::refresh);
+    if (!profile->count()) {
+        firstForm->addRow(new QLabel(t("wizardNoActiveSettingsMessage"), first));
+        auto activate = new QPushButton(t("activateVideoAudioSettings"), first);
+        firstForm->addRow(activate);
+        connect(activate, &QPushButton::clicked, &wizard, [&] {
+            wizard.reject();
+            navigate("profiles");
+        });
+    }
     firstForm->addRow(profile);
     wizard.addPage(first);
-    auto second = new QWizardPage;
+    auto second = new ChoiceWizardPage;
     second->setTitle(t("wizardStep2Title"));
     auto secondForm = new QFormLayout(second);
     auto channel = new QListWidget(second);
@@ -240,27 +391,64 @@ void NativeWindow::startWizard(bool playlist) {
     channel->setTextElideMode(Qt::ElideNone);
     for (auto entry : choices(channels, "channelName", true)) {
         const auto value = studio.store.get("channels", entry.second.num());
-        auto item = new QListWidgetItem(entry.first + "\n" + str(value.get("platform")), channel);
-        item->setSizeHint(QSize(0, 88));
+        auto item = new QListWidgetItem(platformMark(str(value.get("platform"))),
+                                        entry.first + " · " + str(value.get("platform")) + "\n" +
+                                            str(value.get("streamUrl")),
+                                        channel);
+        item->setSizeHint(QSize(310, 96));
         item->setData(Qt::UserRole, entry.second.num());
     }
+    channel->setIconSize(QSize(28, 28));
+    channel->setViewMode(QListView::IconMode);
+    channel->setResizeMode(QListView::Adjust);
+    channel->setMovement(QListView::Static);
+    channel->setGridSize(QSize(330, 110));
+    channel->setSpacing(8);
     channel->setCurrentRow(0);
+    decorateChoices(channel);
+    second->complete = [channel] { return channel->currentItem() != nullptr; };
+    connect(channel, &QListWidget::currentRowChanged, second, &ChoiceWizardPage::refresh);
+    if (!channel->count()) {
+        secondForm->addRow(new QLabel(t("wizardNoActiveConfigurationsMessage"), second));
+        auto activate = new QPushButton(t("activeConfigurationLabel"), second);
+        secondForm->addRow(activate);
+        connect(activate, &QPushButton::clicked, &wizard, [&] {
+            wizard.reject();
+            navigate("channels");
+        });
+    }
     secondForm->addRow(channel);
     auto title = new QLineEdit(second);
     title->setObjectName("wizardTitle");
     title->setPlaceholderText(t("titlePlaceholder"));
-    secondForm->addRow(t("title"), title);
+    title->hide();
     auto key = new QLineEdit(second);
     key->setObjectName("wizardStreamKey");
     key->setEchoMode(QLineEdit::Password);
-    secondForm->addRow(t("tiktokKey"), key);
+    auto keyLabel = new QLabel(t("tiktokKey"), second);
+    secondForm->addRow(keyLabel, key);
+    auto reveal = new QPushButton(t("showStreamKey"), second);
+    reveal->setObjectName("revealStreamKey");
+    secondForm->addRow(reveal);
+    connect(reveal, &QPushButton::clicked, &wizard, [&] {
+        const bool show = key->echoMode() == QLineEdit::Password;
+        key->setEchoMode(show ? QLineEdit::Normal : QLineEdit::Password);
+        reveal->setText(t(show ? "hideStreamKey" : "showStreamKey"));
+    });
     auto changed = [&] {
+        if (!channel->currentItem()) {
+            key->hide();
+            reveal->hide();
+            keyLabel->hide();
+            return;
+        }
         auto c =
             studio.store.get("channels", channel->currentItem()->data(Qt::UserRole).toLongLong());
         const bool needsKey = asksForStreamKey(
             c.get("platform").str(), c.get("platformStreamName").str(), c.get("streamUrl").str());
         key->setVisible(needsKey);
-        secondForm->labelForField(key)->setVisible(needsKey);
+        reveal->setVisible(needsKey);
+        keyLabel->setVisible(needsKey);
     };
     connect(channel, &QListWidget::currentRowChanged, &wizard, changed);
     changed();
@@ -272,7 +460,7 @@ void NativeWindow::startWizard(bool playlist) {
     auto countdown = new QDoubleSpinBox(&wizard);
     countdown->setRange(0, 60);
     countdown->setDecimals(0);
-    countdown->setValue(3);
+    countdown->setValue(0);
     countdown->setObjectName("wizardCountdown");
     auto layoutPicker = new QComboBox(second);
     layoutPicker->addItem(t("blankLayout"), 0);
@@ -280,19 +468,48 @@ void NativeWindow::startWizard(bool playlist) {
     for (size_t i = 0; i < scenes.size(); ++i)
         if (scenes.at(i).get("isLayout").flag())
             layoutPicker->addItem(str(scenes.at(i).get("name")), scenes.at(i).get("id").num());
-    if (!playlist)
-        secondForm->addRow(t("selectLayout"), layoutPicker);
+    layoutPicker->hide();
     if (playlist) {
-        auto third = new QWizardPage;
-        third->setTitle(t("wizardStep3PlaylistTitle"));
+        auto third = new ChoiceWizardPage;
+        third->setTitle(t("startPlaylistTitle"));
         auto form = new QFormLayout(third);
         auto hint = new QLabel(
             t("playlistOnlyVideos") + " MP4, MKV, MOV, AVI, WebM, M4V, TS, FLV, MPEG, MPG.", third);
         hint->setWordWrap(true);
+        form->addRow(new QLabel(t("wizardStep1Title"), third));
+        form->addRow(profile);
+        profile->setMinimumHeight(220);
+        profile->setMaximumHeight(240);
+        if (!profile->count()) {
+            form->addRow(new QLabel(t("wizardNoActiveSettingsMessage"), third));
+            auto activate = new QPushButton(t("activateVideoAudioSettings"), third);
+            form->addRow(activate);
+            connect(activate, &QPushButton::clicked, &wizard, [&] {
+                wizard.reject();
+                navigate("profiles");
+            });
+        }
+        form->addRow(new QLabel(t("wizardStep2Title"), third));
+        form->addRow(channel);
+        channel->setMinimumHeight(120);
+        channel->setMaximumHeight(200);
+        if (!channel->count()) {
+            form->addRow(new QLabel(t("wizardNoActiveConfigurationsMessage"), third));
+            auto activate = new QPushButton(t("activeConfigurationLabel"), third);
+            form->addRow(activate);
+            connect(activate, &QPushButton::clicked, &wizard, [&] {
+                wizard.reject();
+                navigate("channels");
+            });
+        }
+        form->addRow(keyLabel, key);
+        form->addRow(reveal);
+        changed();
+
         form->addRow(hint);
         form->addRow(t("playlistFolder"), folder);
-        form->addRow(repeat);
-        form->addRow(t("upcomingLive") + " · " + t("sceneDurationSeconds"), countdown);
+        repeat->hide();
+        countdown->hide();
         auto choose = new QPushButton(t("playlistFolder") + "…", third);
         form->addRow(choose);
         connect(choose, &QPushButton::clicked, &wizard, [&] {
@@ -300,11 +517,31 @@ void NativeWindow::startWizard(bool playlist) {
             if (!path.isEmpty())
                 folder->setText(path);
         });
-        wizard.addPage(third);
+        wizard.removePage(0);
+        wizard.removePage(1);
+        const auto id = wizard.addPage(third);
+        wizard.setStartId(id);
+        profile->show();
+        channel->show();
+        const int columns = std::max(1, (wizard.width() - 60) / 330);
+        profile->setFixedHeight(
+            std::clamp(((profile->count() + columns - 1) / columns) * 110 + 12, 110, 240));
+        channel->setFixedHeight(
+            std::clamp(((channel->count() + columns - 1) / columns) * 110 + 12, 110, 200));
+        third->complete = [profile, channel, folder] {
+            return profile->currentItem() && channel->currentItem() &&
+                   !folder->text().trimmed().isEmpty();
+        };
+        connect(folder, &QLineEdit::textChanged, third, &ChoiceWizardPage::refresh);
     }
     // La conferma resta aperta finché i dati minimi sono validi, senza perdere la chiave
     // temporanea.
     disconnect(wizard.button(QWizard::FinishButton), nullptr, &wizard, nullptr);
+    for (auto which :
+         {QWizard::FinishButton, QWizard::NextButton, QWizard::BackButton, QWizard::CancelButton}) {
+        auto button = wizard.button(which);
+        button->setMinimumWidth(button->fontMetrics().horizontalAdvance(button->text()) + 40);
+    }
     connect(wizard.button(QWizard::FinishButton), &QAbstractButton::clicked, &wizard, [&] {
         run([&] {
             auto selectedChannel = studio.store.get(
@@ -319,65 +556,70 @@ void NativeWindow::startWizard(bool playlist) {
             wizard.accept();
         });
     });
-    if (wizard.exec() != QDialog::Accepted)
-        return;
-    Json request;
-    request.set("profileId", profile->currentItem()->data(Qt::UserRole).toDouble());
-    request.set("channelId", channel->currentItem()->data(Qt::UserRole).toDouble());
-    request.set("title", title->text().isEmpty() ? t("untitled").toStdString()
-                                                 : title->text().toStdString());
-    if (!key->text().isEmpty())
-        request.set("streamKey", key->text().toStdString());
-    if (playlist) {
-        request.set("loop", repeat->isChecked());
-        if (countdown->value() > 0) {
-            QDialog pending(this);
-            pending.setObjectName("streamCountdown");
-            pending.setWindowTitle(t("upcomingLive"));
-            auto layout = new QVBoxLayout(&pending);
-            auto label = new QLabel(&pending);
-            layout->addWidget(label);
-            auto cancel = new QDialogButtonBox(QDialogButtonBox::Cancel, &pending);
-            layout->addWidget(cancel);
-            connect(cancel, &QDialogButtonBox::rejected, &pending, &QDialog::reject);
-            int left = countdown->value();
-            label->setText(t("upcomingLive") + " · " + QLocale().toString(left) + " s");
-            QTimer timer;
-            connect(&timer, &QTimer::timeout, &pending, [&] {
-                if (--left <= 0)
-                    pending.accept();
-                else
-                    label->setText(t("upcomingLive") + " · " + QLocale().toString(left) + " s");
-            });
-            timer.start(1000);
-            if (pending.exec() != QDialog::Accepted)
-                return;
-        }
-        auto files = Json::array();
-        for (const auto& file : scanVideos(folder->text().toStdString()))
-            files.push(Json::string(file));
-        request.set("files", files);
-        runAsync([this, request] { return Json::number(studio.start(request)); },
-                 [this](Json id) {
-                     watched = id.num();
-                     navigate("preview");
-                 });
-    } else {
-        Json scene;
-        if (layoutPicker->currentData().toLongLong()) {
-            scene = studio.store.get("scenes", layoutPicker->currentData().toLongLong()).clone();
-            scene.set("id", 0.0);
-        }
-        scene.set("isLayout", false);
-        editScene(scene, [this, request](Json scene) mutable {
-            request.set("scene", scene);
+    bool sceneStarted = false;
+    do {
+        if (wizard.exec() != QDialog::Accepted)
+            return;
+        Json request;
+        request.set("profileId", profile->currentItem()->data(Qt::UserRole).toDouble());
+        request.set("channelId", channel->currentItem()->data(Qt::UserRole).toDouble());
+        request.set("title", title->text().isEmpty() ? t("untitled").toStdString()
+                                                     : title->text().toStdString());
+        if (!key->text().isEmpty())
+            request.set("streamKey", key->text().toStdString());
+        if (playlist) {
+            request.set("loop", repeat->isChecked());
+            if (countdown->value() > 0) {
+                QDialog pending(this);
+                pending.setObjectName("streamCountdown");
+                pending.setWindowTitle(t("upcomingLive"));
+                auto layout = new QVBoxLayout(&pending);
+                auto label = new QLabel(&pending);
+                layout->addWidget(label);
+                auto cancel = new QDialogButtonBox(QDialogButtonBox::Cancel, &pending);
+                layout->addWidget(cancel);
+                connect(cancel, &QDialogButtonBox::rejected, &pending, &QDialog::reject);
+                int left = countdown->value();
+                label->setText(t("upcomingLive") + " · " + QLocale().toString(left) + " s");
+                QTimer timer;
+                connect(&timer, &QTimer::timeout, &pending, [&] {
+                    if (--left <= 0)
+                        pending.accept();
+                    else
+                        label->setText(t("upcomingLive") + " · " + QLocale().toString(left) + " s");
+                });
+                timer.start(1000);
+                if (pending.exec() != QDialog::Accepted)
+                    return;
+            }
+            auto files = Json::array();
+            for (const auto& file : scanVideos(folder->text().toStdString()))
+                files.push(Json::string(file));
+            request.set("files", files);
             runAsync([this, request] { return Json::number(studio.start(request)); },
                      [this](Json id) {
                          watched = id.num();
-                         navigate("preview");
+                         navigate("live");
                      });
-        });
-    }
+        } else {
+            Json scene;
+            if (layoutPicker->currentData().toLongLong()) {
+                scene =
+                    studio.store.get("scenes", layoutPicker->currentData().toLongLong()).clone();
+                scene.set("id", 0.0);
+            }
+            scene.set("isLayout", false);
+            editScene(scene, [this, request, &sceneStarted](Json scene) mutable {
+                sceneStarted = true;
+                request.set("scene", scene);
+                runAsync([this, request] { return Json::number(studio.start(request)); },
+                         [this](Json id) {
+                             watched = id.num();
+                             navigate("live");
+                         });
+            });
+        }
+    } while (!playlist && !sceneStarted);
 }
 
 // Le scene del deck diventano gli stessi comandi takeover usati dall'API; il live non cambia
@@ -500,6 +742,13 @@ void NativeWindow::showLiveDetails(Json history) {
     const bool scene = history.get("request").has("scene");
     dialog.setWindowTitle(t(scene ? "sceneDetails" : "playlistDetails"));
     auto layout = new QVBoxLayout(&dialog);
+    if (!history.get("error").str().empty()) {
+        auto error = new QLabel(str(history.get("error")), &dialog);
+        error->setWordWrap(true);
+        error->setTextFormat(Qt::PlainText);
+        error->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        layout->addWidget(error);
+    }
     auto list = new QListWidget(&dialog);
     auto videos = history.get("request").get("files");
     if (!videos.isArray())
@@ -523,12 +772,21 @@ void NativeWindow::showLiveDetails(Json history) {
         if (list->currentRow() >= 0) {
             auto index = list->currentRow();
             dialog.accept();
-            replay(history, false, index);
+            if (auto session = studio.session(history.get("id").num());
+                session && !session->done()) {
+                if (confirm("playlistStartFromConfirm")) {
+                    Json command;
+                    command.set("index", double(index));
+                    liveCommand(history.get("id").num(), "jump", command);
+                }
+            } else
+                replay(history, true, index);
         }
     });
-    auto details = new QPushButton(t("seeDetails"), &dialog);
-    layout->addWidget(details);
-    connect(details, &QPushButton::clicked, &dialog, [&] { showSnapshot(history); });
+    auto close = new QPushButton(t("close"), &dialog);
+    close->setIcon(studioIcon("close"));
+    layout->addWidget(close);
+    connect(close, &QPushButton::clicked, &dialog, &QDialog::accept);
     dialog.resize(720, 500);
     dialog.exec();
 }
@@ -550,7 +808,7 @@ void NativeWindow::showMixer(long id) {
         auto horizontal = new QHBoxLayout(row);
         auto volume = new QSlider(Qt::Horizontal, row);
         volume->setRange(0, 200);
-        volume->setValue(items.at(i).get("volume").num(1) * 100);
+        volume->setValue(items.at(i).get("volume").num(100));
         auto mute = new QCheckBox(t("volumeMute"), row);
         mute->setChecked(!items.at(i).get("audioEnabled").flag(true));
         horizontal->addWidget(volume);
@@ -560,7 +818,7 @@ void NativeWindow::showMixer(long id) {
             run([&] {
                 Json command;
                 command.set("index", double(i));
-                command.set("volume", volume->value() / 100.0);
+                command.set("volume", double(volume->value()));
                 command.set("audioEnabled", !mute->isChecked());
                 liveCommand(id, "volume", command);
             });
@@ -603,11 +861,37 @@ void NativeWindow::showDeck(long id) {
         grid->addWidget(new QLabel(t("sceneEmpty"), deck), 0, 0);
     for (size_t i = 0; i < rows.size(); ++i) {
         auto button = rows.at(i);
+        auto card = new QWidget(deck);
+        auto cardColumn = new QVBoxLayout(card);
         auto push =
-            new QPushButton(str(button.get("label")) + "\n" + str(button.get("hotkey")), deck);
+            new QPushButton(str(button.get("label")) + "\n" + str(button.get("hotkey")), card);
+        push->setIcon(QIcon(QString::fromStdString(
+            (studio.store.root / "scene-media" / button.get("mediaName").str()).string())));
+        push->setIconSize(QSize(96, 64));
         push->setMinimumHeight(84);
         push->setCursor(Qt::PointingHandCursor);
-        grid->addWidget(push, int(i) / 3, int(i) % 3);
+        cardColumn->addWidget(push);
+        auto actions = new QHBoxLayout;
+        auto edit = new QPushButton(t("sceneEdit"), card);
+        edit->setIcon(studioIcon("edit"));
+        auto remove = new QPushButton(t("sceneDelete"), card);
+        remove->setIcon(studioIcon("delete"));
+        actions->addWidget(edit);
+        actions->addWidget(remove);
+        cardColumn->addLayout(actions);
+        connect(edit, &QPushButton::clicked, &dialog, [&, button] {
+            editButton(button);
+            dialog.accept();
+            QTimer::singleShot(0, this, [this, id] { showDeck(id); });
+        });
+        connect(remove, &QPushButton::clicked, &dialog, [&, button] {
+            if (confirm("sceneDeleteConfirm")) {
+                studio.store.remove("buttons", button.get("id").num());
+                dialog.accept();
+                QTimer::singleShot(0, this, [this, id] { showDeck(id); });
+            }
+        });
+        grid->addWidget(card, int(i) / 3, int(i) % 3);
         auto activate = [this, id, button] {
             if (confirm(button.get("displayMode").str() == "in_scene" ? "sceneConfirmInScene"
                                                                       : "sceneConfirm",
@@ -720,11 +1004,47 @@ void NativeWindow::editVideo(Json video) {
 // Sei posizioni e chiavi uniche mantengono il contratto del deck originale, inclusi gli overlay
 // temporizzati.
 void NativeWindow::editButton(Json button) {
+    if (!button.has("id")) {
+        auto all = studio.store.list("buttons");
+        int free = -1;
+        for (int slot = 0; slot < 6; ++slot) {
+            bool occupied = false;
+            for (size_t i = 0; i < all.size(); ++i)
+                if (all.at(i).get("position").num() == slot)
+                    occupied = true;
+            if (!occupied) {
+                free = slot;
+                break;
+            }
+        }
+        if (free < 0) {
+            QMessageBox::information(this, t("warning"), t("sceneLimit"));
+            return;
+        }
+        button.set("position", double(free));
+    }
     NativeForm dialog(this, t(button.has("id") ? "sceneEdit" : "sceneAdd"), button);
     dialog.text("label", t("sceneButtonName"));
-    dialog.number("position", t("scenePlacement"), 0, 0, 5);
+    auto position = dialog.number("position", t("scenePlacement"), 0, 0, 5);
+    position->hide();
+    dialog.form->labelForField(position)->hide();
     auto key = dialog.text("hotkey", t("sceneKey"));
-    key->setPlaceholderText("Ctrl+KeyB / F1");
+    key->setReadOnly(true);
+    auto capture = new HotkeyCapture(t("sceneKeySet"), &dialog);
+    capture->setObjectName("captureHotkey");
+    capture->captured = [&, capture](QString value) {
+        key->setText(value);
+        capture->setText(t("sceneKeySet"));
+    };
+    connect(capture, &QPushButton::clicked, &dialog, [&, capture] {
+        capture->setProperty("capturing", true);
+        capture->setText(t("sceneKeyPress"));
+        capture->setFocus();
+    });
+    dialog.form->addRow(capture);
+    auto clear = new QPushButton(t("sceneKeyClear"), &dialog);
+    connect(clear, &QPushButton::clicked, &dialog, [key] { key->clear(); });
+    dialog.form->addRow(clear);
     auto media = new QLineEdit(str(button.get("mediaName")), &dialog);
     media->setReadOnly(true);
     dialog.form->addRow(t("sceneMedia"), media);
