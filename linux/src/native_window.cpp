@@ -126,6 +126,50 @@ QString platformLabel(const QString& known) {
         return "TikTok";
     return known.left(1).toUpper() + known.mid(1);
 }
+
+class GaugeWidget : public QWidget {
+    double m_percentage = -1;
+
+  public:
+    explicit GaugeWidget(QWidget* parent = nullptr) : QWidget(parent) {
+        setMinimumSize(100, 50);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    }
+
+    void setPercentage(double p) {
+        m_percentage = p;
+        update();
+    }
+
+    QSize sizeHint() const override {
+        return {100, 50};
+    }
+
+  protected:
+    void paintEvent(QPaintEvent* event) override {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        const bool light = qApp->property("orbisTheme").toString() == "light";
+        QColor bgColor = light ? QColor(0, 0, 0, 20) : QColor(255, 255, 255, 20);
+        QColor fgColor = palette().color(QPalette::Highlight);
+
+        double penWidth = 8;
+        double size = std::min(width() * 1.0, height() * 2.0) - penWidth;
+        QRectF arcRect((width() - size) / 2.0, height() - size / 2.0 - penWidth / 2.0, size, size);
+
+        QPen bgPen(bgColor, penWidth, Qt::SolidLine, Qt::RoundCap);
+        painter.setPen(bgPen);
+        painter.drawArc(arcRect, 180 * 16, -180 * 16);
+
+        if (m_percentage >= 0) {
+            QPen fgPen(fgColor, penWidth, Qt::SolidLine, Qt::RoundCap);
+            painter.setPen(fgPen);
+            painter.drawArc(arcRect, 180 * 16, -180 * 16 * (m_percentage / 100.0));
+        }
+    }
+};
+
 } // namespace
 
 // La finestra richiama il motore direttamente: nessun server HTTP, browser o WebView è avviato.
@@ -1767,11 +1811,11 @@ void NativeWindow::buildMetrics() {
             valueLabel->setObjectName("metricValue");
             layout->addWidget(valueLabel);
 
-            auto progress = new QProgressBar(card);
+            auto progress = new GaugeWidget(card);
             progress->setObjectName("metricProgress");
-            progress->setRange(0, 100);
-            progress->setTextVisible(false);
             layout->addWidget(progress);
+
+            layout->addStretch();
 
             grid->addWidget(card, index / 3, index % 3);
         } else {
@@ -1787,11 +1831,11 @@ void NativeWindow::buildMetrics() {
             grid->addWidget(card, index / 3, index % 3);
         }
 
-        auto progress = card->findChild<QProgressBar*>("metricProgress");
+        auto progress = card->findChild<GaugeWidget*>("metricProgress");
         if (progress) {
             if (item.percentage >= 0) {
                 progress->setVisible(true);
-                progress->setValue(std::min(100, item.percentage));
+                progress->setPercentage(std::min(100, item.percentage));
             } else {
                 progress->setVisible(false);
             }
