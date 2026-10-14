@@ -4,7 +4,7 @@ Riferimento: `windows-inventory.json`, checkout Windows 2.1.2 del 12 ottobre 202
 
 `COPIATO` significa hash identico; `PARZIALE` significa solo che esiste codice Linux correlato, non che il comportamento sia equivalente; `MANCANTE` richiede implementazione; `RIFERIMENTO` indica documenti o file specifici di Windows. Nessun file di codice è segnato come verificato sulla sola base del nome.
 
-Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
+Totale 257 file: COPIATO 43, MANCANTE 30, PARZIALE 161, RIFERIMENTO 23.
 
 | File Windows | SHA-256 (12) | File Linux | Stato | Lavoro residuo |
 |---|---|---|---|---|
@@ -56,7 +56,7 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `src/Orbis.Stream.Core/Data/VideoSettingRepository.cs` | `5e50879b52f0` | src/core.cpp | PARZIALE | Schema SQLite Linux diverso da quello Windows |
 | `src/Orbis.Stream.Core/Domain/Entities.cs` | `2547a218fd41` | src/core.hpp; src/core.cpp | PARZIALE | Modello JSON Linux da confrontare proprietà per proprietà |
 | `src/Orbis.Stream.Core/Domain/Enums.cs` | `6f78cc3e98d9` | src/core.hpp; src/core.cpp | PARZIALE | Modello JSON Linux da confrontare proprietà per proprietà |
-| `src/Orbis.Stream.Core/Domain/FfmpegCodecCatalog.cs` | `f2a4bc27e24c` | — | MANCANTE | Catalogo codec completo mancante |
+| `src/Orbis.Stream.Core/Domain/FfmpegCodecCatalog.cs` | `f2a4bc27e24c` | web/resources/codec-catalog.json; scripts/sync-codec-catalog.py; src/native_live_pages.cpp | PARZIALE | Liste Windows importate; selezione limitata agli encoder/formati del motore Linux |
 | `src/Orbis.Stream.Core/Domain/LiveStatus.cs` | `7b90b680f3ad` | src/core.hpp; src/core.cpp | PARZIALE | Modello JSON Linux da confrontare proprietà per proprietà |
 | `src/Orbis.Stream.Core/Domain/SceneButton.cs` | `7c1db8246cd5` | src/core.hpp; src/core.cpp | PARZIALE | Modello JSON Linux da confrontare proprietà per proprietà |
 | `src/Orbis.Stream.Core/Domain/SourceKind.cs` | `7118ce7ba708` | src/core.hpp; src/core.cpp | PARZIALE | Modello JSON Linux da confrontare proprietà per proprietà |
@@ -104,26 +104,26 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `src/Orbis.Stream.Core/Messages/messages_zh.properties` | `3bbf0249be6f` | web/resources/messages/messages_zh.properties | COPIATO | Byte identici all'inventario |
 | `src/Orbis.Stream.Core/Orbis.Stream.Core.csproj` | `30e2f94d0e68` | CMakeLists.txt; VERSION | PARZIALE | Build e versione Linux indipendenti |
 | `src/Orbis.Stream.Core/Pages/Countdown.cshtml` | `c9e582af3286` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml` | `83ab73b6d3a6` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainChannelSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml` | `83ab73b6d3a6` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainChannelSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml.cs` | `b761f6cd3c39` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/MainLayout.cshtml` | `77af0c2dc526` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/MainLayout.cshtml.cs` | `f8644bb17f1d` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml` | `6654595ff035` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLayoutList.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml` | `6654595ff035` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLayoutList.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainLayoutList.cshtml.cs` | `9a3a894cb7f3` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainLive.cshtml` | `5a44642050fb` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLive.html; web/app.js; src/live_rows.cpp | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainLive.cshtml` | `5a44642050fb` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLive.html; web/app.js; src/live_rows.cpp | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainLive.cshtml.cs` | `cf634e9e752f` | src/live_rows.cpp; src/server.cpp; web/app.js | PARZIALE | Righe/snapshot e wizard portati; locking video e notifiche push Windows ancora diversi |
-| `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml` | `27ae35160bb1` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLiveHistory.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml` | `27ae35160bb1` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLiveHistory.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml.cs` | `aceaf8a6bdbb` | src/history_cleanup_service.cpp; src/server.cpp; web/app.js | PARZIALE | Filtri e pulizia portati; modello dati e scene temporanee ancora diversi |
-| `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml` | `d293f2ca8f85` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLiveMenu.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml` | `d293f2ca8f85` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainLiveMenu.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml.cs` | `5e73dc0c7384` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/MainManual.cshtml` | `9fa8f58b6e70` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/MainMenu.cshtml` | `9aa25a715fc1` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainMenu.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
-| `src/Orbis.Stream.Core/Pages/MainPreview.cshtml` | `6142924a2887` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainPreview.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainMenu.cshtml` | `9aa25a715fc1` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainMenu.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainPreview.cshtml` | `6142924a2887` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainPreview.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainPreview.cshtml.cs` | `b87290dd2698` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainSetting.cshtml` | `d4626e99d286` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainSetting.cshtml` | `d4626e99d286` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainTaskManager.cshtml` | `13d638252bd6` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/MainTaskManager.cshtml.cs` | `f582840e9851` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
-| `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml` | `5ee7df24533b` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainVideoSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml` | `5ee7df24533b` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainVideoSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/MainVideoSetting.cshtml.cs` | `aeaf82f7b750` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/OrbisPageModel.cs` | `b48f328ee53b` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/PageHelpers.cs` | `146998a41524` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
@@ -134,12 +134,12 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `src/Orbis.Stream.Core/Pages/Shared/_VideoSettingFields.cshtml` | `9664431a7b86` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/VideoSettingForm.cs` | `d26c40454b8d` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/server.cpp | PARZIALE | Flusso trasferito in Qt; validazioni da confrontare |
 | `src/Orbis.Stream.Core/Pages/_AppStats.cshtml` | `a954523575b3` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/_LiveRows.cshtml` | `f9d8f113f68f` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_LiveRows.html; web/app.js; src/live_rows.cpp | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/_LiveRows.cshtml` | `f9d8f113f68f` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_LiveRows.html; web/app.js; src/live_rows.cpp | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/_PlaylistVideos.cshtml` | `73902cf7a839` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_SceneComposer.cshtml` | `07b1dfe98aab` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_SceneDeck.cshtml` | `49272363885d` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
-| `src/Orbis.Stream.Core/Pages/_StartWizardConfiguration.cshtml` | `8a482a25af62` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_StartWizardConfiguration.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
-| `src/Orbis.Stream.Core/Pages/_StartWizardSetting.cshtml` | `45eb916bc80a` | src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_StartWizardSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/_StartWizardConfiguration.cshtml` | `8a482a25af62` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_StartWizardConfiguration.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
+| `src/Orbis.Stream.Core/Pages/_StartWizardSetting.cshtml` | `45eb916bc80a` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/_StartWizardSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
 | `src/Orbis.Stream.Core/Pages/_Stats.cshtml` | `e9a874b1645f` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_SystemInfo.cshtml` | `dffad664bd3d` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/_ViewImports.cshtml` | `47666ab1e2ad` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
@@ -208,27 +208,27 @@ Totale 257 file: COPIATO 64, MANCANTE 31, PARZIALE 160, RIFERIMENTO 2.
 | `src/Orbis.Stream.Core/Ui/manual.tlh.json` | `b878c3e180ab` | web/resources/ui/manual.tlh.json | COPIATO | Byte identici all'inventario |
 | `src/Orbis.Stream.Core/Ui/manual.tr.json` | `1d7459f46632` | web/resources/ui/manual.tr.json | COPIATO | Byte identici all'inventario |
 | `src/Orbis.Stream.Core/Ui/manual.zh.json` | `9473ce491e06` | web/resources/ui/manual.zh.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ar.json` | `19fa4b103eec` | web/resources/ui/ui.ar.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.da.json` | `9d7d9fafa58c` | web/resources/ui/ui.da.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.de.json` | `81c8e7c7d18f` | web/resources/ui/ui.de.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.el.json` | `09e046e0cdd4` | web/resources/ui/ui.el.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.en.json` | `8fe17a62131a` | web/resources/ui/ui.en.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.es.json` | `6a6f303710cd` | web/resources/ui/ui.es.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.fil.json` | `7a3b1fe8da20` | web/resources/ui/ui.fil.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.fr.json` | `13bee91c2c66` | web/resources/ui/ui.fr.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.hi.json` | `84a784d17506` | web/resources/ui/ui.hi.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.hod.json` | `168267bb6f6d` | web/resources/ui/ui.hod.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.it.json` | `0a8cb4e0a02b` | web/resources/ui/ui.it.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ja.json` | `f0d128b020ca` | web/resources/ui/ui.ja.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ko.json` | `3fe17174a6dd` | web/resources/ui/ui.ko.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.la.json` | `c2845f592acd` | web/resources/ui/ui.la.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.nl.json` | `0e57efe8276e` | web/resources/ui/ui.nl.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.pt.json` | `277eaf19904f` | web/resources/ui/ui.pt.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ro.json` | `14038c227d82` | web/resources/ui/ui.ro.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ru.json` | `8a25f3f14e12` | web/resources/ui/ui.ru.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.tlh.json` | `a7897555b4f5` | web/resources/ui/ui.tlh.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.tr.json` | `c96b726c3aa9` | web/resources/ui/ui.tr.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.zh.json` | `a71efe43fcb6` | web/resources/ui/ui.zh.json | COPIATO | Byte identici all'inventario |
+| `src/Orbis.Stream.Core/Ui/ui.ar.json` | `19fa4b103eec` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.da.json` | `9d7d9fafa58c` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.de.json` | `81c8e7c7d18f` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.el.json` | `09e046e0cdd4` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.en.json` | `8fe17a62131a` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.es.json` | `6a6f303710cd` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.fil.json` | `7a3b1fe8da20` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.fr.json` | `13bee91c2c66` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.hi.json` | `84a784d17506` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.hod.json` | `168267bb6f6d` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.it.json` | `0a8cb4e0a02b` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.ja.json` | `f0d128b020ca` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.ko.json` | `3fe17174a6dd` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.la.json` | `c2845f592acd` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.nl.json` | `0e57efe8276e` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.pt.json` | `277eaf19904f` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.ro.json` | `14038c227d82` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.ru.json` | `8a25f3f14e12` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.tlh.json` | `a7897555b4f5` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.tr.json` | `c96b726c3aa9` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
+| `src/Orbis.Stream.Core/Ui/ui.zh.json` | `a71efe43fcb6` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
 | `src/Orbis.Stream.Tests/AdaptiveBitrateSwitchTests.cs` | `9c394fce1a0a` | — | MANCANTE | Test equivalente non presente |
 | `src/Orbis.Stream.Tests/BitrateLadderTests.cs` | `394d5c7ff3d4` | — | MANCANTE | Test equivalente non presente |
 | `src/Orbis.Stream.Tests/DatabaseTests.cs` | `d43e5526bad1` | tests/core_tests.cpp | PARZIALE | Casi Windows da trasferire |

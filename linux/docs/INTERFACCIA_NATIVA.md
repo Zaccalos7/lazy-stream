@@ -1,10 +1,10 @@
-# Interfaccia Linux nativa — 0.0.5
+# Interfaccia Linux nativa — 0.0.10
 
 ## Architettura
 
 1. `main.cpp` avvia normalmente `QApplication` e `NativeWindow`, senza avviare `serve()` o processi browser. `--headless`/`--no-browser` abilita esplicitamente il servizio precedente per test e automazioni.
 2. `native_window.cpp` riprende navigazione e sezioni Windows: Pannello, Gestione Live, Anteprima, Layout, Gestore attività, Manuale e Impostazioni. Tabelle e filtri sono widget Qt.
-3. `native_dialogs.cpp` contiene configurazioni canali/profili, wizard profilo → canale → scena/cartella, dettagli storico, collegamento profilo, mixer, deck e import/export. Gli ID sono separati dalle diciture tradotte.
+3. `native_live_pages.cpp` contiene Gestione Live, anteprima con parametri/mixer/deck integrati e storico con filtri e pulizia. `native_dialogs.cpp` contiene configurazioni, avvio profilo → canale → composer, avvio playlist con profilo/canale/cartella sullo stesso foglio, dettagli, collegamento profilo, deck e import/export. Gli ID sono separati dalle diciture tradotte.
 4. `native_composer.cpp` sostituisce il canvas JavaScript con QGraphicsView: sorgenti selezionabili, spostamento, angolo per ridimensionare, Shift, frecce/Canc, livelli, slot, overlay, file dal file manager e inspector. Il salvataggio richiama lo stesso `scene_service.cpp`.
 5. `native_media.cpp` contiene player Qt Multimedia, librerie, playlist e manuale. Testo formattato e immagini del manuale sono resi da QTextDocument, senza motore web; stampa e PDF usano QPrinter. Il player sceglie il backend FFmpeg di Qt quando è disponibile e conserva gli override `QT_MEDIA_BACKEND`; il `.deb` include i decoder GStreamer per le versioni Qt che ne dipendono.
 6. `native_forms.hpp` mantiene i campi sconosciuti del record originale, evitando di perdere opzioni importate durante una modifica del form.
@@ -12,7 +12,7 @@
 
 ## Traduzioni
 
-- Tutti i 21 cataloghi originali `web/resources/ui/ui.*.json` sono riusati byte per byte; ciascuno contiene 439 chiavi.
+- I 21 cataloghi `web/resources/ui/ui.*.json` riusano i testi Windows, incluse le voci Connessione/Riconnessione importate dal checkout di riferimento.
 - Le nuove diciture specifiche delle operazioni native (import/export configurazione, ripetizione playlist, video successivo, libreria video, modifica e altre azioni) sono in `native_i18n.cpp`, in italiano e inglese; nelle altre lingue queste sole diciture usano l'inglese.
 - Il primo avvio sceglie la lingua del sistema se disponibile, altrimenti inglese. Il selettore mostra autonimi e salva la scelta nelle preferenze SQLite.
 - Cambio lingua immediato; arabo RTL e formattazione QLocale di numeri e date. Le lingue artificiali mantengono i cataloghi Windows.
@@ -35,7 +35,13 @@ Il confronto con `guida-2.pdf` e con le pagine del checkout `lazy-stream-windows
 
 Il compositore riprende da `_SceneComposer.cshtml` la separazione tra sorgenti/sagome, canvas e livelli. Le sagome restano selezionabili dal canvas e dalla lista; il pulsante finale indica se salva un layout oppure avvia la diretta. Il pannello scena mostra pulsanti in griglia, ripresa della live e spiegazione delle scorciatoie. Sono widget Qt: le immagini del manuale Windows restano un riferimento, non una certificazione di parità grafica o funzionale completa.
 
+L'anteprima contiene il mixer in percentuale (0–200%, reset a 100%) e modifica i parametri dell'encoder senza cambiare l'identità della live. Il GOP resta di sola lettura. Il layout dell'anteprima si dispone in verticale sulle finestre strette. La selezione dei layout avviene nel composer; gli overlay caricati entrano nella libreria e si aggiungono al canvas selezionandoli. La chiusura del composer riporta alle scelte di avvio, conservandole. Lo storico espande i video della playlist nelle otto colonne Windows, conserva insieme canale/stato/titolo, pagina a 20 righe e mostra il progresso della pulizia.
+
+Le prove native trasmettono a un server RTMP locale e verificano aggiornamenti reali di volume e bitrate audio, oltre a filtri e pulizia dello storico. L'anteprima locale usa i fotogrammi FFmpeg; il player della piattaforma si apre tramite il collegamento pubblico. Il catalogo delle liste codec Windows è importato in `web/resources/codec-catalog.json`, rigenerabile con `scripts/sync-codec-catalog.py`. Le opzioni native selezionabili restano limitate ai formati supportati dal motore Linux (H.264, yuv420p, AAC); le altre sono visibili e disabilitate.
+
 ## Differenze ancora da trasferire o verificare
+
+Lo stato Live viene impostato dal progresso del publisher, dopo l'avvio dell'uscita RTMP. Durante l'handshake resta Connessione/Riconnessione e il bitrate non indica traffico inviato al server. Gli errori FFmpeg di uscita sono conservati separatamente in `logs/<id>.publisher.log`; i dettagli e lo storico oscurano chiave e URL. La diagnostica è visibile sullo stato della riga e nei dettagli della live. Le prove includono un handshake sospeso, una porta RTMP che rifiuta la connessione e un binario sostituito mentre è aperto.
 
 La conversione nativa non certifica parità completa con Windows. Restano da confrontare proprietà per proprietà i form avanzati, i conflitti delle scorciatoie, i riquadri delle sorgenti e il comportamento delle finestre su un desktop reale. Aprire il deck arma le scorciatoie per quel live anche nelle schermate Live/Anteprima; possono essere disattivate dal deck. Il manuale conserva le immagini Windows originali.
 

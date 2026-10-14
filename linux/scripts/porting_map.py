@@ -21,7 +21,6 @@ MISSING = {
     "src/Orbis.Stream.Core/Streaming/Rtmp/Amf0.cs": "Protocollo RTMP nativo mancante",
     "src/Orbis.Stream.Core/Streaming/Rtmp/RtmpPublisher.cs": "Publisher RTMP nativo mancante",
     "src/Orbis.Stream.Core/Services/LiveChangeNotifier.cs": "Notifiche push live mancanti",
-    "src/Orbis.Stream.Core/Domain/FfmpegCodecCatalog.cs": "Catalogo codec completo mancante",
 }
 
 SERVICE_TARGETS = {
@@ -103,6 +102,8 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
     """Return a conservative target and status; a related file never counts as verified parity."""
     path = source["path"]
     name = Path(path).stem
+    if name == "FfmpegCodecCatalog":
+        return "web/resources/codec-catalog.json; scripts/sync-codec-catalog.py; src/native_live_pages.cpp", "PARZIALE", "Liste Windows importate; selezione limitata agli encoder/formati del motore Linux"
     if source["sha256"] in copied:
         return copied[source["sha256"]], "COPIATO", "Byte identici all'inventario"
     if path in MISSING:
@@ -113,7 +114,7 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
         return "src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; web/app.js", "PARZIALE", "Interazioni trasferite in Qt; JavaScript conservato come riferimento"
     if path.endswith(".cshtml"):
         if name in HTML_TARGETS:
-            return "src/native_window.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; " + HTML_TARGETS[name], "PARZIALE", "Flusso trasferito in widget Qt; HTML conservato come riferimento"
+            return "src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; " + HTML_TARGETS[name], "PARZIALE", "Flusso trasferito in widget Qt; HTML conservato come riferimento"
         target = "web/index.html; web/app.js" if "/Shared/_Layout" in path else "web/app.js"
         return target, "PARZIALE", "Pagina Razor da riprodurre nel client Linux"
     if "/Pages/" in path and path.endswith(".cs"):
