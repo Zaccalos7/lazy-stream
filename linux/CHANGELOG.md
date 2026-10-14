@@ -1,5 +1,13 @@
 # Cronologia del port Linux
 
+## 0.0.10 — 2026-10-14
+
+- Lo stato Live richiede progresso effettivo del publisher FFmpeg; durante il collegamento resta Connessione/Riconnessione. Ridotti i tempi di analisi FLV e aggiunto un timeout della connessione di uscita.
+- Gli errori RTMP vengono raccolti nel registro della sessione e mostrati nei dettagli e sullo stato della riga, con chiave e URL oscurati. Gli avvisi GNOME non sono usati come diagnostica della trasmissione.
+- L'avvio di FFprobe/FFmpeg continua a funzionare quando un aggiornamento sostituisce il binario dell'app aperta. Storico e pulizia proteggono anche le sessioni in riconnessione.
+- Wizard playlist su un unico foglio, mixer e parametri nell'anteprima, deck e compositore a tre pannelli, storico con filtri e pulizia. Catalogo codec Windows importato con opzioni non supportate disabilitate.
+- Prove RTMP locali, handshake sospeso, connessione rifiutata, oscuramento credenziali e avvio dopo sostituzione del binario.
+
 ## 0.0.9 — 2026-10-14
 
 - La pagina Gestione Live riprende `MainLive.cshtml` e `_LiveRows.cshtml`: intestazioni Stato/Titolo/Canale/Data, pillole per stato, posizione della playlist e numero di sorgenti della scena, e provenienza sotto il titolo.
