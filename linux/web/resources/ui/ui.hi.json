@@ -437,5 +437,7 @@
   "manualIntro": "Orbis Stream जो कुछ भी कर सकता है, हर सुविधा के लिए एक पेज: ऐप की तस्वीर और दबाने वाले बटन पर एक तीर। आप इस गाइड को PDF में डाउनलोड कर सकते हैं, रखने या छापने के लिए।",
   "manualDownloadPdf": "PDF डाउनलोड करें",
   "manualPrint": "छापें",
-  "manualToc": "इस गाइड में"
+  "manualToc": "इस गाइड में",
+  "liveStatusConnecting": "कनेक्ट हो रहा है",
+  "liveStatusReconnecting": "फिर से कनेक्ट हो रहा है"
 }

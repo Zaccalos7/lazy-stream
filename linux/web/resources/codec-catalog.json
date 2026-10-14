@@ -1,0 +1,629 @@
+{
+  "VideoCodecs": [
+    {
+      "id": 2,
+      "label": "MPEG2VIDEO",
+      "name": "mpeg2video"
+    },
+    {
+      "id": 12,
+      "label": "MPEG4",
+      "name": "mpeg4"
+    },
+    {
+      "id": 4,
+      "label": "H263",
+      "name": "h263"
+    },
+    {
+      "id": 21,
+      "label": "FLV1",
+      "name": "flv"
+    },
+    {
+      "id": 27,
+      "label": "H264",
+      "name": "libx264"
+    },
+    {
+      "id": 173,
+      "label": "H265 / HEVC",
+      "name": "libx265"
+    },
+    {
+      "id": 30,
+      "label": "THEORA",
+      "name": "libtheora"
+    },
+    {
+      "id": 70,
+      "label": "VC1",
+      "name": "vc1"
+    },
+    {
+      "id": 71,
+      "label": "WMV3",
+      "name": "wmv2"
+    },
+    {
+      "id": 139,
+      "label": "VP8",
+      "name": "libvpx"
+    },
+    {
+      "id": 167,
+      "label": "VP9",
+      "name": "libvpx-vp9"
+    },
+    {
+      "id": 225,
+      "label": "AV1",
+      "name": "libaom-av1"
+    },
+    {
+      "id": 7,
+      "label": "MJPEG",
+      "name": "mjpeg"
+    },
+    {
+      "id": 61,
+      "label": "PNG (video)",
+      "name": "png"
+    },
+    {
+      "id": 24,
+      "label": "DVVIDEO",
+      "name": "dvvideo"
+    },
+    {
+      "id": 25,
+      "label": "HUFFYUV",
+      "name": "huffyuv"
+    },
+    {
+      "id": 33,
+      "label": "FFV1 (lossless)",
+      "name": "ffv1"
+    },
+    {
+      "id": 147,
+      "label": "PRORES",
+      "name": "prores_ks"
+    },
+    {
+      "id": 99,
+      "label": "DNXHD",
+      "name": "dnxhd"
+    },
+    {
+      "id": 43,
+      "label": "CINEPAK",
+      "name": "cinepak"
+    },
+    {
+      "id": 28,
+      "label": "INDEO3",
+      "name": "indeo3"
+    },
+    {
+      "id": 116,
+      "label": "DIRAC",
+      "name": "vc2"
+    },
+    {
+      "id": 91,
+      "label": "VP6",
+      "name": "vp6"
+    },
+    {
+      "id": 92,
+      "label": "VP6F",
+      "name": "vp6f"
+    },
+    {
+      "id": 171,
+      "label": "WEBP (video)",
+      "name": "libwebp"
+    }
+  ],
+  "AudioCodecs": [
+    {
+      "id": 86016,
+      "label": "MP2",
+      "name": "mp2"
+    },
+    {
+      "id": 86017,
+      "label": "MP3",
+      "name": "libmp3lame"
+    },
+    {
+      "id": 86018,
+      "label": "AAC",
+      "name": "aac"
+    },
+    {
+      "id": 86019,
+      "label": "AC3",
+      "name": "ac3"
+    },
+    {
+      "id": 86020,
+      "label": "DTS",
+      "name": "dca"
+    },
+    {
+      "id": 86021,
+      "label": "Vorbis",
+      "name": "libvorbis"
+    },
+    {
+      "id": 86028,
+      "label": "FLAC",
+      "name": "flac"
+    },
+    {
+      "id": 86032,
+      "label": "ALAC",
+      "name": "alac"
+    },
+    {
+      "id": 86076,
+      "label": "Opus",
+      "name": "libopus"
+    },
+    {
+      "id": 86056,
+      "label": "E-AC3 (Dolby Digital Plus)",
+      "name": "eac3"
+    },
+    {
+      "id": 86060,
+      "label": "TrueHD",
+      "name": "truehd"
+    },
+    {
+      "id": 86045,
+      "label": "MLP",
+      "name": "mlp"
+    },
+    {
+      "id": 65536,
+      "label": "WAV (PCM S16LE)",
+      "name": "pcm_s16le"
+    },
+    {
+      "id": 65548,
+      "label": "PCM S24LE",
+      "name": "pcm_s24le"
+    },
+    {
+      "id": 65557,
+      "label": "PCM F32LE",
+      "name": "pcm_f32le"
+    },
+    {
+      "id": 86024,
+      "label": "WMA v2",
+      "name": "wmav2"
+    },
+    {
+      "id": 86053,
+      "label": "WMA Pro",
+      "name": "wmapro"
+    },
+    {
+      "id": 86048,
+      "label": "APE",
+      "name": "ape"
+    },
+    {
+      "id": 86044,
+      "label": "Musepack",
+      "name": "mpc8"
+    },
+    {
+      "id": 73728,
+      "label": "AMR-NB",
+      "name": "libopencore_amrnb"
+    },
+    {
+      "id": 73729,
+      "label": "AMR-WB",
+      "name": "libvo_amrwbenc"
+    }
+  ],
+  "PixelFormats": [
+    {
+      "id": 0,
+      "label": "YUV420P",
+      "name": "yuv420p"
+    },
+    {
+      "id": 1,
+      "label": "YUYV422",
+      "name": "yuyv422"
+    },
+    {
+      "id": 2,
+      "label": "RGB24",
+      "name": "rgb24"
+    },
+    {
+      "id": 3,
+      "label": "BGR24",
+      "name": "bgr24"
+    },
+    {
+      "id": 4,
+      "label": "YUV422P",
+      "name": "yuv422p"
+    },
+    {
+      "id": 5,
+      "label": "YUV444P",
+      "name": "yuv444p"
+    },
+    {
+      "id": 6,
+      "label": "YUV410P",
+      "name": "yuv410p"
+    },
+    {
+      "id": 7,
+      "label": "YUV411P",
+      "name": "yuv411p"
+    },
+    {
+      "id": 8,
+      "label": "GRAY",
+      "name": "gray"
+    },
+    {
+      "id": 9,
+      "label": "MONOW",
+      "name": "monow"
+    },
+    {
+      "id": 10,
+      "label": "MONOB",
+      "name": "monob"
+    },
+    {
+      "id": 11,
+      "label": "PAL8",
+      "name": "pal8"
+    },
+    {
+      "id": 12,
+      "label": "YUVJ420P",
+      "name": "yuvj420p"
+    },
+    {
+      "id": 13,
+      "label": "YUVJ422P",
+      "name": "yuvj422p"
+    },
+    {
+      "id": 14,
+      "label": "YUVJ444P",
+      "name": "yuvj444p"
+    },
+    {
+      "id": 15,
+      "label": "UYVY422",
+      "name": "uyvy422"
+    },
+    {
+      "id": 16,
+      "label": "UYYVYY411",
+      "name": "uyyvyy411"
+    },
+    {
+      "id": 17,
+      "label": "BGR8",
+      "name": "bgr8"
+    },
+    {
+      "id": 18,
+      "label": "BGR4",
+      "name": "bgr4"
+    },
+    {
+      "id": 19,
+      "label": "BGR4_BYTE",
+      "name": "bgr4_byte"
+    },
+    {
+      "id": 20,
+      "label": "RGB8",
+      "name": "rgb8"
+    },
+    {
+      "id": 21,
+      "label": "RGB4",
+      "name": "rgb4"
+    },
+    {
+      "id": 22,
+      "label": "RGB4_BYTE",
+      "name": "rgb4_byte"
+    },
+    {
+      "id": 23,
+      "label": "NV12",
+      "name": "nv12"
+    },
+    {
+      "id": 24,
+      "label": "NV21",
+      "name": "nv21"
+    },
+    {
+      "id": 25,
+      "label": "ARGB",
+      "name": "argb"
+    },
+    {
+      "id": 26,
+      "label": "RGBA",
+      "name": "rgba"
+    },
+    {
+      "id": 27,
+      "label": "ABGR",
+      "name": "abgr"
+    },
+    {
+      "id": 28,
+      "label": "BGRA",
+      "name": "bgra"
+    },
+    {
+      "id": 29,
+      "label": "GRAY16BE",
+      "name": "gray16be"
+    },
+    {
+      "id": 30,
+      "label": "GRAY16LE",
+      "name": "gray16le"
+    },
+    {
+      "id": 31,
+      "label": "YUV440P",
+      "name": "yuv440p"
+    },
+    {
+      "id": 32,
+      "label": "YUVJ440P",
+      "name": "yuvj440p"
+    },
+    {
+      "id": 33,
+      "label": "YUVA420P",
+      "name": "yuva420p"
+    },
+    {
+      "id": 34,
+      "label": "RGB48BE",
+      "name": "rgb48be"
+    },
+    {
+      "id": 35,
+      "label": "RGB48LE",
+      "name": "rgb48le"
+    },
+    {
+      "id": 36,
+      "label": "RGB565BE",
+      "name": "rgb565be"
+    },
+    {
+      "id": 37,
+      "label": "RGB565LE",
+      "name": "rgb565le"
+    },
+    {
+      "id": 38,
+      "label": "RGB555BE",
+      "name": "rgb555be"
+    },
+    {
+      "id": 39,
+      "label": "RGB555LE",
+      "name": "rgb555le"
+    },
+    {
+      "id": 40,
+      "label": "BGR565BE",
+      "name": "bgr565be"
+    },
+    {
+      "id": 41,
+      "label": "BGR565LE",
+      "name": "bgr565le"
+    },
+    {
+      "id": 42,
+      "label": "BGR555BE",
+      "name": "bgr555be"
+    },
+    {
+      "id": 43,
+      "label": "BGR555LE",
+      "name": "bgr555le"
+    },
+    {
+      "id": 44,
+      "label": "VAAPI",
+      "name": "vaapi"
+    },
+    {
+      "id": 45,
+      "label": "YUV420P16LE",
+      "name": "yuv420p16le"
+    },
+    {
+      "id": 46,
+      "label": "YUV420P16BE",
+      "name": "yuv420p16be"
+    },
+    {
+      "id": 47,
+      "label": "YUV422P16LE",
+      "name": "yuv422p16le"
+    },
+    {
+      "id": 48,
+      "label": "YUV422P16BE",
+      "name": "yuv422p16be"
+    },
+    {
+      "id": 49,
+      "label": "YUV444P16LE",
+      "name": "yuv444p16le"
+    },
+    {
+      "id": 50,
+      "label": "YUV444P16BE",
+      "name": "yuv444p16be"
+    },
+    {
+      "id": 51,
+      "label": "DXVA2_VLD",
+      "name": "dxva2_vld"
+    },
+    {
+      "id": 52,
+      "label": "RGB444LE",
+      "name": "rgb444le"
+    },
+    {
+      "id": 53,
+      "label": "RGB444BE",
+      "name": "rgb444be"
+    },
+    {
+      "id": 54,
+      "label": "BGR444LE",
+      "name": "bgr444le"
+    },
+    {
+      "id": 55,
+      "label": "BGR444BE",
+      "name": "bgr444be"
+    },
+    {
+      "id": 56,
+      "label": "YA8",
+      "name": "ya8"
+    }
+  ],
+  "VideoCodecNames": [
+    {
+      "label": "Codec CPU (libx264)",
+      "name": "libx264"
+    },
+    {
+      "label": "Codec CPU (libx265)",
+      "name": "libx265"
+    },
+    {
+      "label": "Codec CPU (libaom-av1)",
+      "name": "libaom-av1"
+    },
+    {
+      "label": "Codec CPU (libsvtav1)",
+      "name": "libsvtav1"
+    },
+    {
+      "label": "Codec CPU (libvpx)",
+      "name": "libvpx"
+    },
+    {
+      "label": "Codec CPU (libvpx-vp9)",
+      "name": "libvpx-vp9"
+    },
+    {
+      "label": "Codec CPU (mpeg4)",
+      "name": "mpeg4"
+    },
+    {
+      "label": "Codec CPU (mjpeg)",
+      "name": "mjpeg"
+    },
+    {
+      "label": "Codec CPU (prores_ks)",
+      "name": "prores_ks"
+    },
+    {
+      "label": "Codec CPU (dnxhd)",
+      "name": "dnxhd"
+    },
+    {
+      "label": "Codec CPU (ffv1)",
+      "name": "ffv1"
+    },
+    {
+      "label": "Codec CPU (huffyuv)",
+      "name": "huffyuv"
+    },
+    {
+      "label": "Codec NVIDIA (h264_nvenc)",
+      "name": "h264_nvenc"
+    },
+    {
+      "label": "Codec NVIDIA (hevc_nvenc)",
+      "name": "hevc_nvenc"
+    },
+    {
+      "label": "Codec NVIDIA (av1_nvenc)",
+      "name": "av1_nvenc"
+    },
+    {
+      "label": "Codec AMD (h264_amf)",
+      "name": "h264_amf"
+    },
+    {
+      "label": "Codec AMD (hevc_amf)",
+      "name": "hevc_amf"
+    },
+    {
+      "label": "Codec AMD (av1_amf)",
+      "name": "av1_amf"
+    },
+    {
+      "label": "Codec Intel (h264_qsv)",
+      "name": "h264_qsv"
+    },
+    {
+      "label": "Codec Intel (hevc_qsv)",
+      "name": "hevc_qsv"
+    },
+    {
+      "label": "Codec Intel (av1_qsv)",
+      "name": "av1_qsv"
+    },
+    {
+      "label": "Codec Apple (h264_videotoolbox)",
+      "name": "h264_videotoolbox"
+    },
+    {
+      "label": "Codec Apple (hevc_videotoolbox)",
+      "name": "hevc_videotoolbox"
+    },
+    {
+      "label": "Codec VAAPI (h264_vaapi)",
+      "name": "h264_vaapi"
+    },
+    {
+      "label": "Codec VAAPI (hevc_vaapi)",
+      "name": "hevc_vaapi"
+    },
+    {
+      "label": "Codec VAAPI (av1_vaapi)",
+      "name": "av1_vaapi"
+    }
+  ]
+}

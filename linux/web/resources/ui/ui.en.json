@@ -437,5 +437,7 @@
   "manualIntro": "Everything Orbis Stream can do, one page per feature: a picture of the app and an arrow on the button to press. You can download this guide as a PDF, to keep or print.",
   "manualDownloadPdf": "Download PDF",
   "manualPrint": "Print",
-  "manualToc": "In this guide"
+  "manualToc": "In this guide",
+  "liveStatusConnecting": "Connecting",
+  "liveStatusReconnecting": "Reconnecting"
 }

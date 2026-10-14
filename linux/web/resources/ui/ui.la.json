@@ -437,5 +437,7 @@
   "manualIntro": "Omnia quae Orbis Stream facere potest, una pagina pro quoque munere: imago applicationis et sagitta in bulla premenda. Hoc manuale ut PDF demittere potes, servandum vel imprimendum.",
   "manualDownloadPdf": "PDF demittere",
   "manualPrint": "Imprimere",
-  "manualToc": "In hoc manuali"
+  "manualToc": "In hoc manuali",
+  "liveStatusConnecting": "Conexio",
+  "liveStatusReconnecting": "Reconexio"
 }

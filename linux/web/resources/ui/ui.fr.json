@@ -437,5 +437,7 @@
   "manualIntro": "Tout ce qu'Orbis Stream sait faire, une page par fonction : une image de l'application et une flèche sur le bouton à presser. Vous pouvez télécharger ce manuel en PDF, pour le garder ou l'imprimer.",
   "manualDownloadPdf": "Télécharger le PDF",
   "manualPrint": "Imprimer",
-  "manualToc": "Dans ce manuel"
+  "manualToc": "Dans ce manuel",
+  "liveStatusConnecting": "Connexion",
+  "liveStatusReconnecting": "Reconnexion"
 }
