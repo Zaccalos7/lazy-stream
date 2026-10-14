@@ -1,5 +1,12 @@
 # Cronologia del port Linux
 
+## 0.0.9 — 2026-10-14
+
+- La pagina Gestione Live riprende `MainLive.cshtml` e `_LiveRows.cshtml`: intestazioni Stato/Titolo/Canale/Data, pillole per stato, posizione della playlist e numero di sorgenti della scena, e provenienza sotto il titolo.
+- Le azioni della riga non passano più dal menu aggiuntivo: marchio della piattaforma (con la pagina pubblica del canale), dettagli, collegamento profilo, deck delle scene, anteprima, spot, stop, avvio, riavvio ed eliminazione sono icone sempre visibili, nell'ordine Windows e abilitate secondo lo stato.
+- L'intestazione mostra Sblocca video (solo con video bloccati), Avvia playlist con l'icona dell'elenco e Avvia Live con quella di riproduzione; i marchi delle piattaforme sono disegnati dai percorsi SVG di Windows, non da icone Qt.
+- La ricerca testuale resta solo sulla pagina Storico; `live_rows.cpp` espone inoltre URL di ingresso, piattaforma riconosciuta, presenza di un profilo collegato e fermo immagine in onda.
+
 ## 0.0.8 — 2026-10-13
 
 - La chiusura confermata della finestra principale termina esplicitamente l'app anche con finestre secondarie aperte.

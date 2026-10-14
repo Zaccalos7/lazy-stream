@@ -31,7 +31,7 @@
 
 ## Riferimento grafico e comandi
 
-Il confronto con `guida-2.pdf` e con le pagine del checkout `lazy-stream-windows` mantiene la sequenza profilo → canale → composizione/cartella. La dashboard riprende le sezioni e le descrizioni di `MainMenu.cshtml`; navigazione e accento blu seguono le schermate della guida. `MainLive` usa un avvio principale, un avvio playlist distinto, filtri etichettati e uno stato vuoto. Le azioni più frequenti delle righe sono visibili; il menu aggiuntivo conserva duplicazione, attivazione, collegamento profilo, riavvio ed eliminazione.
+Il confronto con `guida-2.pdf` e con le pagine del checkout `lazy-stream-windows` mantiene la sequenza profilo → canale → composizione/cartella. La dashboard riprende le sezioni e le descrizioni di `MainMenu.cshtml`; navigazione e accento blu seguono le schermate della guida. `MainLive` usa un avvio principale, un avvio playlist distinto, l'eventuale sblocco dei video, filtri etichettati e uno stato vuoto; le righe hanno stato e titolo come pillole, la data di avvio e tutte le azioni come icone sempre visibili, ciascuna con il proprio marchio di piattaforma, senza il menu aggiuntivo delle altre tabelle.
 
 Il compositore riprende da `_SceneComposer.cshtml` la separazione tra sorgenti/sagome, canvas e livelli. Le sagome restano selezionabili dal canvas e dalla lista; il pulsante finale indica se salva un layout oppure avvia la diretta. Il pannello scena mostra pulsanti in griglia, ripresa della live e spiegazione delle scorciatoie. Sono widget Qt: le immagini del manuale Windows restano un riferimento, non una certificazione di parità grafica o funzionale completa.
 
