@@ -1163,39 +1163,115 @@ void NativeWindow::updatePreview() {
 // Le metriche mantengono gli stessi contatori Linux già verificati e vengono mostrate in widget
 // nativi.
 void NativeWindow::buildMetrics() {
-    auto label = body->findChild<QLabel*>("metrics");
-    if (!label) {
-        label = new QLabel(body);
-        label->setObjectName("metrics");
-        label->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        bodyLayout->addWidget(label);
+    auto container = body->findChild<QWidget*>("metricsContainer");
+    QGridLayout* grid = nullptr;
+    if (!container) {
+        container = new QWidget(body);
+        container->setObjectName("metricsContainer");
+        grid = new QGridLayout(container);
+        grid->setContentsMargins(0, 0, 0, 0);
+        grid->setSpacing(12);
+        bodyLayout->addWidget(container);
+    } else {
+        grid = qobject_cast<QGridLayout*>(container->layout());
     }
+
     auto values = state.get("metrics"), process = state.get("process");
-    QStringList lines;
-    lines.append(t("cpu") + ": " + formatMetric(values.get("cpu").num(-1), "%"));
-    lines.append(t("ramUsed") + ": " + formatMetric(values.get("ram").num(-1), "%"));
-    lines.append("SWAP: " + formatMetric(values.get("swap").num(-1), "%"));
-    lines.append("↓ " + formatMetric(values.get("networkRx").num(-1) / 1024.0, " KiB/s") + " · ↑ " +
-                 formatMetric(values.get("networkTx").num(-1) / 1024.0, " KiB/s"));
-    lines.append(t("diskFree") + ": " +
-                 formatMetric(values.get("diskAvailable").num(-1) / 1073741824.0, " GiB"));
-    lines.append(t("uptime") + ": " + formatMetric(values.get("uptime").num(-1), " s"));
-    lines.append(t("appUsage") + ": " + formatMetric(process.get("cpu").num(-1), "%") + " · " +
-                 formatMetric(process.get("rssBytes").num(-1) / 1048576.0, " MiB"));
+
+    struct MetricItem {
+        QString id, title, value;
+        int percentage;
+    };
+    std::vector<MetricItem> items;
+
+    items.push_back({"cpu", t("cpu"), formatMetric(values.get("cpu").num(-1), "%"), int(values.get("cpu").num(-1))});
+    items.push_back({"ram", t("ramUsed"), formatMetric(values.get("ram").num(-1), "%"), int(values.get("ram").num(-1))});
+    items.push_back({"swap", "SWAP", formatMetric(values.get("swap").num(-1), "%"), int(values.get("swap").num(-1))});
+    items.push_back({"network", "Network",
+                     "↓ " + formatMetric(values.get("networkRx").num(-1) / 1024.0, " KiB/s") + "\n↑ " +
+                     formatMetric(values.get("networkTx").num(-1) / 1024.0, " KiB/s"), -1});
+    items.push_back({"disk", t("diskFree"), formatMetric(values.get("diskAvailable").num(-1) / 1073741824.0, " GiB"), -1});
+    items.push_back({"uptime", t("uptime"), formatMetric(values.get("uptime").num(-1), " s"), -1});
+    items.push_back({"appUsage", t("appUsage"), formatMetric(process.get("cpu").num(-1), "%") + "\n" +
+                     formatMetric(process.get("rssBytes").num(-1) / 1048576.0, " MiB"), int(process.get("cpu").num(-1))});
+
     auto temperatures = values.get("temperatures");
     for (size_t i = 0; i < temperatures.size(); ++i)
-        lines.append(s(temperatures.at(i).get("label")) + ": " +
-                     formatMetric(temperatures.at(i).get("celsius").num(-1), " °C"));
+        items.push_back({"temp_" + QString::number(i), s(temperatures.at(i).get("label")),
+                         formatMetric(temperatures.at(i).get("celsius").num(-1), " °C"), -1});
+
     auto live = state.get("live");
     for (size_t i = 0; i < live.size(); ++i)
         for (auto key : {"producerMetrics", "publisherMetrics"}) {
             auto metrics = live.at(i).get(key);
             if (metrics.has("pid"))
-                lines.append("FFmpeg · PID " + QString::number(metrics.get("pid").num()) + " · " +
-                             formatMetric(metrics.get("cpu").num(-1), "%") + " · " +
-                             formatMetric(metrics.get("rssBytes").num(-1) / 1048576.0, " MiB"));
+                items.push_back({"ffmpeg_" + QString::number(metrics.get("pid").num()),
+                                 "FFmpeg · PID " + QString::number(metrics.get("pid").num()),
+                                 formatMetric(metrics.get("cpu").num(-1), "%") + "\n" +
+                                 formatMetric(metrics.get("rssBytes").num(-1) / 1048576.0, " MiB"), int(metrics.get("cpu").num(-1))});
         }
-    label->setText(lines.join('\n'));
+
+    QSet<QString> activeIds;
+    int index = 0;
+    for (const auto& item : items) {
+        activeIds.insert(item.id);
+        auto card = container->findChild<QFrame*>(item.id);
+        if (!card) {
+            card = new QFrame(container);
+            card->setObjectName(item.id);
+            card->setProperty("class", "card");
+
+            auto layout = new QVBoxLayout(card);
+            layout->setContentsMargins(18, 18, 18, 18);
+            layout->setSpacing(12);
+
+            auto heading = new QLabel(item.title, card);
+            heading->setObjectName("muted");
+            heading->setWordWrap(true);
+            layout->addWidget(heading);
+
+            auto valueLabel = new QLabel(item.value, card);
+            valueLabel->setObjectName("metricValue");
+            layout->addWidget(valueLabel);
+
+            auto progress = new QProgressBar(card);
+            progress->setObjectName("metricProgress");
+            progress->setRange(0, 100);
+            progress->setTextVisible(false);
+            layout->addWidget(progress);
+
+            grid->addWidget(card, index / 3, index % 3);
+        } else {
+            // Se esiste, aggiorniamo i dati senza ricreare il widget
+            auto labels = card->findChildren<QLabel*>();
+            for (auto label : labels) {
+                if (label->objectName() == "muted") label->setText(item.title);
+                else if (label->objectName() == "metricValue") label->setText(item.value);
+            }
+            // Riposizioniamo nella griglia per evitare buchi se qualche widget viene rimosso
+            grid->addWidget(card, index / 3, index % 3);
+        }
+
+        auto progress = card->findChild<QProgressBar*>("metricProgress");
+        if (progress) {
+            if (item.percentage >= 0) {
+                progress->setVisible(true);
+                progress->setValue(std::min(100, item.percentage));
+            } else {
+                progress->setVisible(false);
+            }
+        }
+        card->setVisible(true);
+        index++;
+    }
+
+    // Nascondi le card che non sono più attive per questa passata
+    auto cards = container->findChildren<QFrame*>(QRegularExpression(".*"), Qt::FindDirectChildrenOnly);
+    for (auto card : cards) {
+        if (!activeIds.contains(card->objectName())) {
+            card->setVisible(false);
+        }
+    }
 }
 
 // Le impostazioni aprono sezioni e dialoghi interni, conservando un’unica finestra applicativa.
