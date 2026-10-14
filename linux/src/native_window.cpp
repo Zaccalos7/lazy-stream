@@ -140,7 +140,7 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     setWindowTitle(QString("OrbisStream · %1").arg(ORBIS_VERSION));
     resize(1380, 900);
     setMinimumSize(640, 640);
-    setWindowIcon(studioIcon("live"));
+    setWindowIcon(QIcon(QString::fromStdString((this->resources / "app-icon.png").string())));
     auto preferences = studio.store.list("preferences");
     QString saved;
     for (size_t i = 0; i < preferences.size(); ++i)
@@ -2059,6 +2059,8 @@ int runNativeApp(int /*argc*/, char** argv, Studio& studio, const fs::path& reso
     int qtArgc = 1;
     QApplication app(qtArgc, argv);
     app.setApplicationName("OrbisStream");
+    app.setDesktopFileName("orbis-stream");
+    app.setWindowIcon(QIcon(QString::fromStdString((resources / "app-icon.png").string())));
     app.setOrganizationName("OrbisStream");
     NativeWindow window(studio, resources);
     QLocalServer activation;
