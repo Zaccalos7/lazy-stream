@@ -1,4 +1,5 @@
 #include "live_stream_keys.hpp"
+#include "media_job.hpp"
 #include "native_controls.hpp"
 #include "native_forms.hpp"
 #include "native_theme.hpp"
@@ -6,6 +7,8 @@
 #include "scene_service.hpp"
 #include <QApplication>
 #include <QButtonGroup>
+#include <QDesktopServices>
+#include <QEventLoop>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHeaderView>
@@ -17,6 +20,7 @@
 #include <QRadioButton>
 #include <QShortcut>
 #include <QSlider>
+#include <QStackedWidget>
 #include <QStandardItemModel>
 #include <QStyle>
 #include <QStyledItemDelegate>
@@ -932,9 +936,10 @@ void NativeWindow::replay(Json history, bool beginning, int index) {
     }
     runAsync(
         [this, request, history] {
-            if (auto previous = studio.session(history.get("id").num());
-                previous && !previous->done())
-                previous->stop();
+            const auto live = studio.live();
+            for (size_t i = 0; i < live.size(); ++i)
+                if (live.at(i).get("id").num() == history.get("id").num())
+                    studio.session(history.get("id").num())->stop();
             return Json::number(studio.start(request));
         },
         [this](Json id) {
@@ -1008,6 +1013,7 @@ void NativeWindow::showLiveDetails(Json history) {
     logs->setLineWrapMode(QPlainTextEdit::NoWrap);
     logs->hide();
     auto toggle = new QPushButton("FFmpeg · logs", &dialog);
+    toggle->setAutoDefault(false);
     toggle->setCheckable(true);
     layout->addWidget(toggle);
     layout->addWidget(logs, 1);
@@ -1054,11 +1060,17 @@ void NativeWindow::showLiveDetails(Json history) {
                                                         : "liveStatusOffline";
             const auto path = scene ? items.at(i).get("sourceTarget").str() : items.at(i).str();
             table->setItem(i, 0, new QTableWidgetItem(QString::number(i + 1)));
-            auto badge = new QLabel(t(statusKey), table);
+            auto statusCell = new QWidget(table);
+            auto statusRow = new QHBoxLayout(statusCell);
+            statusRow->setContentsMargins(8, 0, 8, 0);
+            auto badge = new QLabel(t(statusKey), statusCell);
+            badge->setFixedHeight(20);
+            statusRow->addWidget(badge, 0, Qt::AlignVCenter);
+            statusRow->addStretch();
             badge->setProperty("badge", status == "STARTING" || status == "RECONNECTING"
                                             ? "connecting"
                                             : QString::fromStdString(status).toLower());
-            table->setCellWidget(i, 1, badge);
+            table->setCellWidget(i, 1, statusCell);
             auto title = new QTableWidgetItem(
                 QString::fromStdString(
                     scene ? items.at(i).get("label").str(fs::path(path).filename().string())
@@ -1083,6 +1095,9 @@ void NativeWindow::showLiveDetails(Json history) {
                 if (status == "ERROR") {
                     auto report = new QToolButton(actions);
                     report->setObjectName("reportError");
+                    report->setProperty("rowAction", true);
+                    report->setFixedSize(32, 32);
+                    report->setIconSize(QSize(18, 18));
                     report->setIcon(studioIcon("report"));
                     report->setToolTip(t("reportError"));
                     row->addWidget(report);
@@ -1097,6 +1112,8 @@ void NativeWindow::showLiveDetails(Json history) {
                     auto control = new QToolButton(actions);
                     control->setObjectName(name);
                     control->setProperty("rowAction", true);
+                    control->setFixedSize(32, 32);
+                    control->setIconSize(QSize(18, 18));
                     control->setIcon(studioIcon(icon, color));
                     control->setToolTip(t(name));
                     control->setAccessibleName(t(name));
@@ -1104,6 +1121,33 @@ void NativeWindow::showLiveDetails(Json history) {
                     row->addWidget(control);
                     connect(control, &QToolButton::clicked, &dialog, std::move(handler));
                 };
+                const auto platform = str(record.get("platform"));
+                if (status == "LIVE" &&
+                    QStringList{"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}.contains(
+                        platform)) {
+                    auto publicPage = new QToolButton(actions);
+                    publicPage->setProperty("rowAction", true);
+                    publicPage->setFixedSize(32, 32);
+                    publicPage->setIconSize(QSize(18, 18));
+                    publicPage->setIcon(platformMark(platform));
+                    publicPage->setToolTip(platform == "Facebook" ? "Facebook Gaming" : platform);
+                    row->addWidget(publicPage);
+                    connect(publicPage, &QToolButton::clicked, &dialog, [this, record] {
+                        runAsync(
+                            [record] {
+                                auto channel = record.get("request").clone();
+                                channel.set("platform", record.get("platform"));
+                                channel.set("channelName", record.get("channelName"));
+                                return platformPlayer(channel);
+                            },
+                            [](Json player) {
+                                const auto url =
+                                    QString::fromStdString(player.get("publicUrl").str());
+                                if (!url.isEmpty())
+                                    QDesktopServices::openUrl(QUrl(url));
+                            });
+                    });
+                }
                 if (status == "LIVE") {
                     action("preview", "preview", {}, true, [this, record, &dialog] {
                         watched = record.get("id").num();
@@ -1123,6 +1167,9 @@ void NativeWindow::showLiveDetails(Json history) {
                 });
                 auto start = new QToolButton(actions);
                 start->setObjectName("playlistStartFrom");
+                start->setProperty("rowAction", true);
+                start->setFixedSize(32, 32);
+                start->setIconSize(QSize(18, 18));
                 start->setIcon(studioIcon("play", QColor("#30d158")));
                 start->setToolTip(t("playlistStartFrom"));
                 start->setEnabled(!active);
@@ -1225,115 +1272,171 @@ void NativeWindow::showMixer(long id) {
 
 // Aprire il deck arma i tasti per questo live nelle schermate Live/Anteprima, sempre con conferma.
 void NativeWindow::showDeck(long id) {
-    armedDeck = id;
-    for (auto shortcut : deckShortcuts)
-        delete shortcut;
-    deckShortcuts.clear();
+    armedDeck = 0;
+    const auto sessions = studio.live();
+    for (size_t i = 0; i < sessions.size(); ++i)
+        if (sessions.at(i).get("id").num() == id && sessions.at(i).get("status").str() == "LIVE")
+            armedDeck = id;
     QDialog dialog(this);
     dialog.setObjectName("sceneDeckDialog");
     dialog.setWindowTitle(t("sceneDeck"));
-    dialog.resize(760, 540);
+    dialog.resize(900, 720);
     auto layout = new QVBoxLayout(&dialog);
     layout->setContentsMargins(24, 24, 24, 24);
     layout->setSpacing(16);
     auto title = new QLabel(t("sceneDeck"), &dialog);
-    title->setObjectName("heroTitle");
+    title->setObjectName("dialogTitle");
     layout->addWidget(title);
+    auto offline = new QLabel(t("sceneNotLive"), &dialog);
+    offline->setObjectName("sceneDeckOffline");
+    layout->addWidget(offline);
+    auto resume = new QPushButton(t("sceneResume"), &dialog);
+    resume->setObjectName("sceneResume");
+    resume->setIcon(studioIcon("play"));
+    layout->addWidget(resume);
+    connect(resume, &QPushButton::clicked, &dialog,
+            [this, id] { run([&] { liveCommand(id, "resume"); }); });
     auto hint = new QLabel(t("sceneDeckHint"), &dialog);
     hint->setWordWrap(true);
     hint->setObjectName("muted");
     layout->addWidget(hint);
-    auto scroll = new QScrollArea(&dialog);
+    auto stack = new QStackedWidget(&dialog);
+    auto scroll = new QScrollArea(stack);
     scroll->setWidgetResizable(true);
-    auto deck = new QWidget;
+    auto deck = new QWidget(scroll);
     auto grid = new QGridLayout(deck);
     scroll->setWidget(deck);
-    layout->addWidget(scroll, 1);
-    auto rows = studio.store.list("buttons");
-    if (rows.size() == 0)
-        grid->addWidget(new QLabel(t("sceneEmpty"), deck), 0, 0);
-    for (size_t i = 0; i < rows.size(); ++i) {
-        auto button = rows.at(i);
-        auto card = new QWidget(deck);
-        auto cardColumn = new QVBoxLayout(card);
-        auto push = new SceneTile(
-            str(button.get("label")),
-            QString::fromStdString(
-                (studio.store.root / "scene-media" / button.get("mediaName").str()).string()),
-            str(button.get("hotkey")),
-            t(button.get("displayMode").str() == "in_scene" ? "sceneModeInScene"
-                                                            : "sceneModeFullscreen"),
-            card);
-        cardColumn->addWidget(push);
-        auto actions = new QHBoxLayout;
-        auto edit = new QPushButton(t("sceneEdit"), card);
-        edit->setIcon(studioIcon("edit"));
-        auto remove = new QPushButton(t("sceneDelete"), card);
-        remove->setIcon(studioIcon("delete"));
-        actions->addWidget(edit);
-        actions->addWidget(remove);
-        cardColumn->addLayout(actions);
-        connect(edit, &QPushButton::clicked, &dialog, [&, button] {
-            editButton(button);
-            dialog.accept();
-            QTimer::singleShot(0, this, [this, id] { showDeck(id); });
-        });
-        connect(remove, &QPushButton::clicked, &dialog, [&, button] {
-            if (confirm("sceneDeleteConfirm")) {
-                studio.store.remove("buttons", button.get("id").num());
-                dialog.accept();
-                QTimer::singleShot(0, this, [this, id] { showDeck(id); });
+    stack->addWidget(scroll);
+    auto editor = new QWidget(stack);
+    editor->setObjectName("sceneDeckEditorHost");
+    stack->addWidget(editor);
+    layout->addWidget(stack, 1);
+    QList<QShortcut*> localKeys;
+    std::function<void()> render;
+    auto edit = [&](Json button) {
+        stack->setCurrentWidget(editor);
+        hint->hide();
+        editButton(button, editor);
+        stack->setCurrentWidget(scroll);
+        hint->show();
+        render();
+    };
+    render = [&] {
+        for (auto shortcut : localKeys)
+            delete shortcut;
+        localKeys.clear();
+        for (auto shortcut : deckShortcuts)
+            delete shortcut;
+        deckShortcuts.clear();
+        while (auto item = grid->takeAt(0)) {
+            if (auto widget = item->widget()) {
+                widget->hide();
+                widget->deleteLater();
             }
-        });
-        grid->addWidget(card, int(i) / 3, int(i) % 3);
-        auto activate = [this, id, button] {
-            if (confirm(button.get("displayMode").str() == "in_scene" ? "sceneConfirmInScene"
-                                                                      : "sceneConfirm",
-                        str(button.get("label"))))
-                run([&] {
-                    Json data;
-                    data.set("id", button.get("id"));
-                    liveCommand(id, "button", data);
-                });
-        };
-        connect(push, &QPushButton::clicked, &dialog, activate);
-        auto key = str(button.get("hotkey"));
-        key.replace("Key", "");
-        key.replace("Digit", "");
-        if (!key.isEmpty()) {
-            auto shortcut = new QShortcut(QKeySequence(key), &dialog);
-            shortcut->setContext(Qt::WidgetWithChildrenShortcut);
-            connect(shortcut, &QShortcut::activated, &dialog, activate);
-            auto armed = new QShortcut(QKeySequence(key), this);
-            armed->setContext(Qt::WindowShortcut);
-            connect(armed, &QShortcut::activated, this, [this, id, activate] {
-                if (armedDeck == id && (page == "live" || page == "preview"))
-                    activate();
-            });
-            deckShortcuts.append(armed);
+            delete item;
         }
-    }
-    auto resume = new QPushButton(t("sceneResume"), &dialog);
-    resume->setProperty("primary", true);
-    layout->addWidget(resume);
-    connect(resume, &QPushButton::clicked, &dialog,
-            [this, id] { run([&] { liveCommand(id, "resume"); }); });
+        const auto rows = studio.store.list("buttons");
+        for (size_t i = 0; i < rows.size(); ++i) {
+            const auto button = rows.at(i);
+            auto card = new QWidget(deck);
+            auto column = new QVBoxLayout(card);
+            auto tile = new SceneTile(
+                str(button.get("label")),
+                QString::fromStdString(
+                    (studio.store.root / "scene-media" / button.get("mediaName").str()).string()),
+                str(button.get("hotkey")),
+                t(button.get("displayMode").str() == "in_scene" ? "sceneModeInScene"
+                                                                : "sceneModeFullscreen"),
+                card);
+            tile->setObjectName("sceneDeckTile");
+            tile->setProperty("label", str(button.get("label")));
+            column->addWidget(tile);
+            auto change = new QPushButton(t("sceneEdit"), card);
+            change->setObjectName("editSceneButton");
+            change->setIcon(studioIcon("edit"));
+            column->addWidget(change);
+            connect(change, &QPushButton::clicked, &dialog, [&, button] { edit(button); });
+            auto activate = [this, id, button] {
+                const auto sessions = studio.live();
+                bool live = false;
+                for (size_t i = 0; i < sessions.size(); ++i)
+                    if (sessions.at(i).get("id").num() == id)
+                        live = sessions.at(i).get("status").str() == "LIVE";
+                if (!live)
+                    return;
+                if (confirm(button.get("displayMode").str() == "in_scene" ? "sceneConfirmInScene"
+                                                                          : "sceneConfirm",
+                            str(button.get("label"))))
+                    run([&] {
+                        Json command;
+                        command.set("id", button.get("id"));
+                        liveCommand(id, "button", command);
+                    });
+            };
+            connect(tile, &QPushButton::clicked, &dialog, activate);
+            grid->addWidget(card, int(i) / 3, int(i) % 3);
+            auto key = str(button.get("hotkey"));
+            key.replace("Key", "");
+            key.replace("Digit", "");
+            if (!key.isEmpty()) {
+                auto shortcut = new QShortcut(QKeySequence(key), &dialog);
+                shortcut->setContext(Qt::WidgetWithChildrenShortcut);
+                connect(shortcut, &QShortcut::activated, &dialog, [stack, scroll, activate] {
+                    if (stack->currentWidget() == scroll)
+                        activate();
+                });
+                localKeys.append(shortcut);
+                auto armed = new QShortcut(QKeySequence(key), this);
+                armed->setContext(Qt::WindowShortcut);
+                connect(armed, &QShortcut::activated, this, [this, id, activate] {
+                    if (armedDeck == id && (page == "live" || page == "preview"))
+                        activate();
+                });
+                deckShortcuts.append(armed);
+            }
+        }
+        if (rows.size() < 6) {
+            auto add = new QPushButton(t("sceneAdd"), deck);
+            add->setObjectName("sceneAdd");
+            add->setIcon(studioIcon("plus"));
+            add->setMinimumHeight(145);
+            grid->addWidget(add, int(rows.size()) / 3, int(rows.size()) % 3);
+            connect(add, &QPushButton::clicked, &dialog, [&] { edit(Json{}); });
+        }
+    };
+    auto sync = [&] {
+        Json snapshot;
+        const auto sessions = studio.live();
+        for (size_t i = 0; i < sessions.size(); ++i)
+            if (sessions.at(i).get("id").num() == id)
+                snapshot = sessions.at(i);
+        const bool live = snapshot.get("status").str() == "LIVE";
+        offline->setVisible(!live);
+        resume->setVisible(live && snapshot.get("takeoverHolds").flag());
+        for (auto tile : deck->findChildren<QPushButton*>("sceneDeckTile")) {
+            tile->setEnabled(live);
+            tile->setProperty("onAir", live && tile->property("label").toString() ==
+                                                   str(snapshot.get("takeoverLabel")));
+            tile->update();
+        }
+    };
+    render();
+    sync();
+    auto timer = new QTimer(&dialog);
+    connect(timer, &QTimer::timeout, &dialog, sync);
+    timer->start(500);
+    auto footer = new QHBoxLayout;
+    auto keys = new QLabel(t("sceneKeysHint"), &dialog);
+    keys->setWordWrap(true);
+    footer->addWidget(keys, 1);
     auto disarm = new QPushButton(t("sceneKeysOff"), &dialog);
-    layout->addWidget(disarm);
+    footer->addWidget(disarm);
     connect(disarm, &QPushButton::clicked, &dialog, [this] { armedDeck = 0; });
-    auto config = new QPushButton(t("sceneAdd"), &dialog);
-    layout->addWidget(config);
-    connect(config, &QPushButton::clicked, &dialog, [&] {
-        editButton();
-        dialog.accept();
-    });
-    auto keysHint = new QLabel(t("sceneKeysHint"), &dialog);
-    keysHint->setWordWrap(true);
-    keysHint->setObjectName("muted");
-    layout->addWidget(keysHint);
-    auto close = new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
-    connect(close, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-    layout->addWidget(close);
+    auto close = new QPushButton(t("close"), &dialog);
+    close->setObjectName("closeSceneDeck");
+    footer->addWidget(close);
+    connect(close, &QPushButton::clicked, &dialog, &QDialog::reject);
+    layout->addLayout(footer);
     dialog.exec();
 }
 
@@ -1397,7 +1500,7 @@ void NativeWindow::editVideo(Json video) {
 
 // Sei posizioni e chiavi uniche mantengono il contratto del deck originale, inclusi gli overlay
 // temporizzati.
-void NativeWindow::editButton(Json button) {
+void NativeWindow::editButton(Json button, QWidget* host) {
     if (!button.has("id")) {
         auto all = studio.store.list("buttons");
         int free = -1;
@@ -1417,7 +1520,15 @@ void NativeWindow::editButton(Json button) {
         }
         button.set("position", double(free));
     }
-    NativeForm dialog(this, t(button.has("id") ? "sceneEdit" : "sceneAdd"), button);
+    NativeForm dialog(host ? host : this, t(button.has("id") ? "sceneEdit" : "sceneAdd"), button);
+    if (host) {
+        dialog.setWindowFlags(Qt::Widget);
+        dialog.setMinimumWidth(0);
+        if (!host->layout())
+            new QVBoxLayout(host);
+        host->layout()->setContentsMargins(0, 0, 0, 0);
+        host->layout()->addWidget(&dialog);
+    }
     dialog.text("label", t("sceneButtonName"));
     auto position = dialog.number("position", t("scenePlacement"), 0, 0, 5);
     position->hide();
@@ -1539,6 +1650,15 @@ void NativeWindow::editButton(Json button) {
             dialog.accept();
         });
     });
-    dialog.exec();
+    if (host) {
+        // The Windows deck replaces its grid with the editor inside the same dialog.
+        QEventLoop editing;
+        connect(&dialog, &QDialog::finished, &editing, &QEventLoop::quit);
+        if (auto deckDialog = qobject_cast<QDialog*>(host->window()))
+            connect(deckDialog, &QDialog::finished, &dialog, &QDialog::reject);
+        dialog.show();
+        editing.exec();
+    } else
+        dialog.exec();
 }
 } // namespace orbis

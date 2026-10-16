@@ -462,13 +462,11 @@ QIcon studioIcon(const QString& name, const QColor& color) {
             path.lineTo(19, 12);
             path.lineTo(8, 19);
             path.closeSubpath();
-            p.setBrush(inkFill);
-            p.setPen(Qt::NoPen);
+            p.setBrush(Qt::NoBrush);
             p.drawPath(path);
         } else if (name == "stop") {
             // E71A: il quadrato pieno dell'arresto.
-            p.setBrush(inkFill);
-            p.setPen(Qt::NoPen);
+            p.setBrush(Qt::NoBrush);
             p.drawRect(QRectF(7, 7, 10, 10));
         } else if (name == "restart") {
             // E72C: freccia circolare del riavvio.

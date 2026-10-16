@@ -251,9 +251,9 @@ void NativeWindow::buildManual() {
         auto escape = [](Json value) {
             return QString::fromStdString(value.str()).toHtmlEscaped();
         };
-        QString html = "<a name='section-" + QString::number(index) + "'></a><h1>" +
+        QString html = "<h1><a name='section-" + QString::number(index) + "'>" +
                        QString::number(index + 1) + ". " + escape(section.get("title")) +
-                       "</h1><p>" + escape(section.get("body")) + "</p><ol>";
+                       "</a></h1><p>" + escape(section.get("body")) + "</p><ol>";
         auto steps = section.get("steps");
         for (size_t i = 0; i < steps.size(); ++i)
             html += "<li>" + escape(steps.at(i)) + "</li>";

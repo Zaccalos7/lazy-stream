@@ -161,7 +161,7 @@ void NativeWindow::buildLive(bool history) {
         close->setToolTip(t("close"));
         column->insertWidget(0, close, 0, Qt::AlignRight);
         connect(close, &QToolButton::clicked, this, [this, progress] {
-            cleanupDismissed = "dismissed";
+            cleanupDismissed = text(studio.historyCleanup->progress().get("startedAt"));
             progress->hide();
         });
         progress->setFixedWidth(460);
@@ -416,11 +416,15 @@ void NativeWindow::refreshHistory() {
     popup->adjustSize();
     popup->move(std::max(12, (width() - popup->width()) / 2),
                 std::max(12, height() - popup->height() - 24));
-    popup->setVisible(cleanupDismissed.isEmpty() && progress.has("totalVideos"));
+    popup->setVisible(progress.has("startedAt") &&
+                      cleanupDismissed != text(progress.get("startedAt")));
     popup->raise();
     cleanupLabel->setText(
         progress.get("error").str().empty()
-            ? (progress.get("running").flag() ? t("cleanupRunning") : t("cleanupInProgress")) +
+            ? (progress.get("running").flag()
+                   ? t("cleanupRunning")
+                   : t("cleanupSuccess")
+                         .replace("{0}", QString::number(progress.get("deletedLives").num()))) +
                   "\n" +
                   t("cleanupProgressCount")
                       .replace("{0}", QString::number(progress.get("deletedVideos").num()))

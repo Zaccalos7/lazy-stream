@@ -51,8 +51,8 @@ Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle ap
 
 ## Utilizzo
 
-1. **Canali:** aggiungi nome, piattaforma, server RTMP/RTMPS e chiave; i server iniziali sono quelli previsti da Windows, ma puoi inserire l'ingest del tuo account. Il nome canale viene usato anche per il link pubblico; puoi scegliere la cartella e le regole di pulizia. TikTok richiede una nuova chiave ad ogni avvio.
-2. **Profili video:** imposta H.264, risoluzione, fps, bitrate, GOP in secondi, audio AAC, preset e bassa latenza. “Qualità Auto” esegue un benchmark x264. NVENC richiede hardware e driver adeguati.
+1. **Canali:** aggiungi nome, piattaforma, server RTMP/RTMPS e chiave; i server iniziali sono quelli previsti da Windows, ma puoi inserire l'ingest del tuo account. Il nome canale viene usato anche per il link pubblico; la cartella si sceglie avviando una playlist e le regole di pulizia sono nello Storico. TikTok richiede una nuova chiave ad ogni avvio.
+2. **Profili video:** imposta H.264, risoluzione, fps, bitrate, GOP in secondi, audio AAC, preset e bassa latenza. “Qualità Auto” misura l’encoder alla risoluzione e al frame rate della live e conserva il risultato per la durata del processo. NVENC richiede hardware e driver adeguati.
 3. **Playlist:** il wizard trasmette una cartella locale in ordine naturale. La libreria consente di aggiungere percorsi, abilitare video e impostare ordine, profilo e posizione iniziale.
 4. **Scene e layout:** aggiungi file, desktop X11, camera V4L2, microfono PulseAudio, slot e overlay. Trascina/ridimensiona; usa frecce, Shift e Canc. Puoi trascinare file dal desktop nel canvas: gli overlay vengono copiati nella libreria locale; i video mantengono il percorso originale. “Usa layout” crea una scena distinta dagli slot salvati.
 5. **Overlay e pulsanti scena:** carica i media, scegli modalità a schermo intero o sovrapposta, posizione, durata e scorciatoia. Aprire il pannello di regia arma i tasti per quella diretta anche in Live/Anteprima; chiedono conferma.
@@ -76,7 +76,7 @@ Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle ap
 
 Il database è `stream.db`; `overlays/`, `scene-media/`, `proxies/`, `previews/`, `images/` e `logs/` sono nella cartella dati. La cartella dati è privata (`0700`), il database e i file importati sono `0600`. Le chiavi dei canali sono nel database locale, come nel progetto Windows; non sono cifrate con Secret Service. Export e storico escludono la chiave. L'importazione JSON sostituisce canali/profili/scene/pulsanti/video/preferenze in una transazione; conserva lo storico locale e richiede di reinserire le chiavi.
 
-Nei **Dettagli** di una diretta sono visibili i log aggiornati durante l'esecuzione: `<id>.session.log` contiene comandi, PID, segmenti, primo output, errori con fase ed exit code e riconnessioni; `<id>.log` contiene la diagnostica del producer FFmpeg; `<id>.publisher.log` quella del publisher. Le chiavi e gli URL RTMP sono oscurati prima della scrittura su disco; i file sono privati (`0600`) e i tentativi restano nello stesso registro. Il pannello e `GET /api/logs/<id>` mostrano gli ultimi 64 KiB di ciascun file. FFmpeg analizza fino a 4 MiB/due secondi per raccogliere le intestazioni H.264/AAC prima di pubblicare, come il sender Windows, e conserva integralmente la chiave Facebook passando app e playpath separati. Avvio e progresso del publisher hanno un watchdog di 30 secondi; un fallimento durante la finalizzazione viene segnalato come errore.
+Nei **Dettagli** di una diretta sono visibili i log aggiornati durante l'esecuzione: `<id>.session.log` contiene comandi, PID, segmenti, primo output, errori con fase ed exit code e riconnessioni; `<id>.log` contiene la diagnostica del producer FFmpeg; `<id>.publisher.log` quella del publisher. Le chiavi e gli URL RTMP sono oscurati prima della scrittura su disco; i file sono privati (`0600`) e i tentativi restano nello stesso registro. `<id>.preview.log` registra ricerca della diretta pubblica, caricamento del player, errori console e uscita del renderer. Il pannello e `GET /api/logs/<id>` mostrano gli ultimi 64 KiB di ciascun file. FFmpeg analizza fino a 4 MiB/due secondi per raccogliere le intestazioni H.264/AAC prima di pubblicare, come il sender Windows, e conserva integralmente la chiave Facebook passando app e playpath separati. Avvio e progresso del publisher hanno un watchdog di 30 secondi; un fallimento durante la finalizzazione viene segnalato come errore.
 
 Il database Windows originale ha uno schema diverso: **non sostituire `stream.db` Linux con quello Windows**. La migrazione automatica del database originale non è inclusa.
 
@@ -89,7 +89,7 @@ I processi sono avviati con argomenti separati, senza shell. `orbis-stream-runne
 - **Microfono/audio desktop:** sorgenti PulseAudio, comprese le sorgenti monitor. PipeWire funziona attraverso `pipewire-pulse` e `pactl`.
 - **Sensori:** `/sys/class/thermal`; statistiche NVIDIA tramite `nvidia-smi` se presente. Nessun valore GPU o temperatura viene inventato.
 
-L'uscita RTMP usa FLV/H.264/AAC. HEVC, altri contenitori e VAAPI non sono opzioni operative di questo motore. `h264_nvenc` è disponibile nel dialogo Qt; `h264_qsv` è accettato dal motore tramite un profilo importato, ma entrambi, ma devono superare una prova sul computer reale.
+L'uscita RTMP usa FLV/H.264/AAC. HEVC, altri contenitori e VAAPI non sono opzioni operative di questo motore. `h264_nvenc` è disponibile nel dialogo Qt; `h264_qsv` è disponibile nello stesso catalogo; entrambi richiedono una prova sul computer reale.
 
 ## Verifica e risorse Windows
 

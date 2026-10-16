@@ -2,6 +2,11 @@
 
 ## Modifiche in sviluppo — 2026-10-16
 
+- Anteprima Twitch/YouTube incorporata con Qt WebEngine, controllata da C++; test con decodifica H.264 reale e sandbox attiva. Registro aggiuntivo della risoluzione del player, caricamento, console e arresti del renderer.
+- Storico con stati/esiti separati per video, messaggio completo e rapporto QR multipagina; aggiornati i 21 cataloghi dai sorgenti Windows. Dettagli playlist con azioni sui singoli video e log espandibili.
+- Canali e profili in schede con pulsanti, toggle e duplicazione; editor con griglie equivalenti a Windows e unità di bitrate coerenti. Impostazioni, indicatori attività, manuale continuo e pulsanti scena allineati ai percorsi Windows.
+- Corretto il parsing dei valori JSON scalari usati dai cataloghi codec e il salvataggio dei layout dal compositore ampio.
+- Qualità encoder applicata ai preset x264/NVENC/QSV come su Windows; Auto misura la velocità e conserva il risultato per encoder, risoluzione e FPS. Diagnostica persistita prima di pubblicare lo stato di errore, con protezione dello storico durante la riconnessione.
 - Gestione Live con filtri compatti e pagine numerate; wizard profilo → canale → compositore ampio, con schede adattive fino a cinque colonne e comandi di navigazione distinti.
 - Avvio scena sopra il canvas, sorgenti usate/disponibili e overlay a sinistra, livelli a destra. Trascinamento dal catalogo al canvas e aggiunta di un video tramite percorso.
 - Sender FFmpeg allineato a Windows per analisi delle intestazioni AVC/AAC e app/playpath Facebook; keyframe periodici, flush FLV e CBR x264 sulle piattaforme che lo richiedono.

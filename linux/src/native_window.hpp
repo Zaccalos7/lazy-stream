@@ -81,7 +81,7 @@ class NativeWindow : public QMainWindow {
     void editChannel(Json channel = Json{});
     void editProfile(Json profile = Json{}, std::function<void(Json)> apply = {});
     void editVideo(Json video = Json{});
-    void editButton(Json button = Json{});
+    void editButton(Json button = Json{}, QWidget* host = nullptr);
     void startWizard(bool playlist = false);
     void showLiveDetails(Json history);
     void liveCommand(long id, const std::string& action, Json parameters = Json{});
