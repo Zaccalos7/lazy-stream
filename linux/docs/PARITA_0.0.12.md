@@ -12,6 +12,7 @@ Riferimento: checkout locale `lazy-stream-windows`, inventario di 272 file e 62 
 - Marchi: path SVG identici a `PageHelpers.cs`, con colori distinti per tema chiaro/scuro.
 - Manuale: dipendenza Qt per WebP dichiarata e preparabile senza installazione di sistema; verifica di decodifica reale. Le 42 figure di wizard/playlist sono catture Qt aggiornate nelle 21 lingue. Sincronizzati anche il capitolo e le figure dei rapporti d'errore.
 - Client headless: la chiusura del dialogo non invia il form, quindi i campi obbligatori vuoti non bloccano l'annullamento.
+- Editor profili headless: dimensioni e FPS vuoti restano nulli, come nel profilo Twitch Windows; la scelta del preset trasferisce anche le opzioni encoder. La prova browser verifica il salvataggio effettivo.
 
 ## Controlli riproducibili
 
@@ -27,6 +28,10 @@ Riferimento: checkout locale `lazy-stream-windows`, inventario di 272 file e 62 
 | Client headless | `browser.mjs`: navigazione, filtri, CRUD, wizard, RTMP, storico e pulizia; fixture in cartella temporanea |
 
 Il confronto statico non certifica il comportamento di ogni metodo Windows: `PORTING_MAP.md` distingue codice correlato, risorse adattate, esclusioni e test Windows ancora da trasferire. I test della GUI verificano i flussi e i controlli esercitati; non costituiscono una misura dell'identità di ogni pixel.
+
+Risultati finali: **11/11 gruppi CTest passati in 55,82 secondi**; `browser.mjs` passato con playlist e scena su RTMP locale; cattura dei 42 screenshot nelle 21 lingue passata. Debian estratto senza installazione: avvio/seconda istanza, risorse senza la piattaforma rimossa, dipendenza Qt WebP, API/SQLite e streaming completo con entrambi i trasporti tutti passati, inclusi cambi producer HEVC/VP9/AV1 e WebP animato con alpha.
+
+Pacchetto: `build/packages/orbis-stream_0.0.12_amd64.deb`, 29.207.022 byte; SHA-256 `64bf225ce37701d96234d4c1acc6a92865feb2bc2862c1bb2e47fd94bf7a286f`.
 
 ## Rimozione della piattaforma esclusa
 

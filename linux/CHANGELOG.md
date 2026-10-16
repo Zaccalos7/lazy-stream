@@ -7,6 +7,7 @@
 - Corretta la parità dei canali: sender YouTube modificabile e conservato al salvataggio, ingest Facebook identico al riferimento Windows, istruzioni per gli ingest personali Kick/Facebook.
 - Localizzati i titoli dei preset leggeri, omesse dimensioni/FPS non specificati nel wizard, allineati i colori chiari dei marchi; dipendenza WebP Qt esplicita.
 - Corretta la chiusura del dialogo headless con campi obbligatori vuoti; la “×” annulla senza inviare il form.
+- Editor profili headless: dimensioni/FPS opzionali conservati come nulli e opzioni encoder copiate dal preset; verificato il salvataggio del profilo Twitch.
 - Sincronizzazione risorse con filtro persistente e verifica automatica di cataloghi, ingest, marchi SVG e assenza della piattaforma esclusa; figure del wizard e playlist catturate dalla GUI Qt nelle 21 lingue.
 
 ## 0.0.11 — 2026-10-16
