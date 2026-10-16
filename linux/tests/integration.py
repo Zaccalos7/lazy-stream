@@ -295,6 +295,16 @@ def main():
                 for log in (root/'data'/'logs').glob(f'{failed}*.log'):
                     assert 'private-stream-key' not in log.read_text(), log
                     assert log.stat().st_mode & 0o077 == 0, log
+                # A pending reconnect must stay protected from inactive-history cleanup.
+                retrying=api('live/start','POST',{'files':[str(clip)],'profileId':profile,'streamUrl':f'rtmp://127.0.0.1:{refused_port}/live','streamKey':'private-stream-key'})['id']
+                for _ in range(100):
+                    reconnecting=next(s for s in api('live') if s['id']==retrying)
+                    if reconnecting['status']=='RECONNECTING': break
+                    time.sleep(.05)
+                assert reconnecting['status']=='RECONNECTING',reconnecting
+                assert api(f'history/{retrying}')['status']=='RECONNECTING'
+                api(f'live/{retrying}/stop','POST',{})
+                assert api(f'history/{retrying}')['status']=='STOPPED'
             # Riavvia il server per esercitare lo scheduler reale senza aspettare un intervallo artificiale.
             scheduled_channel=api(f'channels/{channel}')
             api(f'channels/{channel}','PUT',{**scheduled_channel,'autoCleanupEnabled':True,'autoCleanupIntervalMonths':1,'autoCleanupOlderThanMonths':0,'lastCleanupEpoch':0})
