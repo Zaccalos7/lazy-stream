@@ -400,7 +400,112 @@ class NativeTests : public QObject {
         QCOMPARE(window.findChild<QLabel*>("pageTitle")->text(), QString("Video Settings"));
     }
 
+    void sceneWizardNavigation() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        const QStringList platforms = {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"};
+        for (int i = 0; i < 11; ++i) {
+            Json profile;
+            profile.set("title",
+                        "Default " + platforms[i % 5].toStdString() + " " + std::to_string(i));
+            profile.set("isActive", true);
+            profile.set("videoWidth", 1920.0);
+            profile.set("videoHeight", 1080.0);
+            profile.set("videoBitrate", 4500.0);
+            profile.set("frameRate", 30.0);
+            profile.set("defaultPlatformConfiguration", platforms[i % 5].toStdString());
+            studio.store.save("profiles", profile);
+        }
+        for (const auto& platform : platforms) {
+            Json channel;
+            channel.set("channelName", "Test " + platform.toStdString());
+            channel.set("platform", platform.toStdString());
+            channel.set("streamUrl", "rtmp://localhost/live");
+            channel.set("streamKey", "test-key");
+            channel.set("isActive", true);
+            studio.store.save("channels", channel);
+        }
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.resize(1900, 900);
+        window.show();
+        window.navigate("live");
+        int stage = 0;
+        QTimer driver;
+        connect(&driver, &QTimer::timeout, &window, [&] {
+            auto modal = QApplication::activeModalWidget();
+            if (auto wizard = qobject_cast<QWizard*>(modal)) {
+                if (stage == 0) {
+                    QCOMPARE(wizard->currentId(), 0);
+                    auto choices = wizard->findChild<QListWidget*>("wizardProfile");
+                    QCOMPARE(choices->count(), 11);
+                    QVERIFY(wizard->findChild<QLineEdit*>("wizardFolder")->isHidden());
+                    auto header = wizard->currentPage()->findChild<QFrame*>("wizardHeading");
+                    QVERIFY(header);
+                    QVERIFY(choices->y() > header->geometry().bottom());
+                    QVERIFY(choices->gridSize().width() < choices->viewport()->width() / 4);
+                    QVERIFY(
+                        wizard->grab().save(QString(ORBIS_TEST_SCREENSHOT)
+                                                .replace("native-window", "native-live-step1")));
+                    wizard->next();
+                    stage = 1;
+                } else if (stage == 1) {
+                    QCOMPARE(wizard->currentId(), 1);
+                    QVERIFY(
+                        wizard->grab().save(QString(ORBIS_TEST_SCREENSHOT)
+                                                .replace("native-window", "native-live-step2")));
+                    stage = 2;
+                    QTimer::singleShot(
+                        0, wizard, [wizard] { wizard->button(QWizard::FinishButton)->click(); });
+                } else if (stage == 3) {
+                    QCOMPARE(wizard->currentId(), 1);
+                    stage = 4;
+                    wizard->reject();
+                } else if (stage == 4) {
+                    wizard->next();
+                    stage = 5;
+                    QTimer::singleShot(
+                        0, wizard, [wizard] { wizard->button(QWizard::FinishButton)->click(); });
+                }
+            } else if (auto editor = qobject_cast<QDialog*>(modal);
+                       editor && editor->objectName() == "sceneEditor") {
+                if (stage == 2) {
+                    QVERIFY(editor->findChild<QListWidget*>("sceneLayers")->isHidden());
+                    QVERIFY(
+                        editor->grab().save(QString(ORBIS_TEST_SCREENSHOT)
+                                                .replace("native-window", "native-live-step3")));
+                    stage = 3;
+                    editor->findChild<QPushButton*>("composerBack")->click();
+                } else if (stage == 5) {
+                    stage = 6;
+                    editor->findChild<QPushButton*>("composerClose")->click();
+                }
+            }
+        });
+        driver.start(120);
+        QTimer guard;
+        connect(&guard, &QTimer::timeout, &window, [] {
+            if (auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget()))
+                dialog->reject();
+        });
+        guard.start(10000);
+        window.findChild<QPushButton*>("startLiveButton")->click();
+        QCOMPARE(stage, 4);
+        window.findChild<QPushButton*>("startLiveButton")->click();
+        QCOMPARE(stage, 6);
+        driver.stop();
+        QVERIFY(studio.live().size() == 0);
+        QVERIFY(studio.store.list("scenes").size() == 0);
+    }
+
+    void playlistWizardStreams_data() {
+        QTest::addColumn<bool>("sceneLive");
+        QTest::newRow("playlist") << false;
+        QTest::newRow("scene") << true;
+    }
+
     void playlistWizardStreams() {
+        QFETCH(bool, sceneLive);
         QTemporaryDir directory;
         Studio studio(directory.path().toStdString());
         auto root = fs::path(directory.path().toStdString());
@@ -467,16 +572,38 @@ class NativeTests : public QObject {
             auto profiles = wizard->findChild<QListWidget*>("wizardProfile");
             QVERIFY(profiles);
             QVERIFY(profiles->currentItem());
-            QVERIFY(profiles->currentItem()->text().contains("kbps"));
+            QVERIFY(profiles->currentItem()->text().contains("Mbit/s"));
             QVERIFY(wizard->grab().save(
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-wizard")));
-            QCOMPARE(wizard->pageIds().size(), 1);
+            QCOMPARE(wizard->pageIds().size(), sceneLive ? 2 : 1);
+            if (sceneLive)
+                wizard->next();
             QVERIFY(wizard->findChild<QListWidget*>("wizardChannel")->isVisible());
-            wizard->findChild<QLineEdit*>("wizardFolder")
-                ->setText(QString::fromStdString(root.string()));
+            if (sceneLive) {
+                QTimer::singleShot(0, &window, [&] {
+                    auto editor = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+                    QVERIFY(editor);
+                    QCOMPARE(editor->objectName(), QString("sceneEditor"));
+                    auto canvas = editor->findChild<QGraphicsView*>("sceneCanvas");
+                    QVERIFY(canvas);
+                    auto commit = editor->findChild<QPushButton*>("commitScene");
+                    QVERIFY(commit->isVisible());
+                    QVERIFY(commit->y() < canvas->y());
+                    editor->findChild<QLineEdit*>("composerVideoPath")
+                        ->setText(QString::fromStdString(video.string()));
+                    editor->findChild<QPushButton*>("composerAddVideo")->click();
+                    QApplication::processEvents();
+                    QCOMPARE(editor->findChild<QListWidget*>("composerUsedSources")->count(), 1);
+                    commit->click();
+                });
+            } else
+                wizard->findChild<QLineEdit*>("wizardFolder")
+                    ->setText(QString::fromStdString(root.string()));
             QTest::mouseClick(wizard->button(QWizard::FinishButton), Qt::LeftButton);
         });
-        QTest::mouseClick(window.findChild<QPushButton*>("startPlaylistButton"), Qt::LeftButton);
+        QTest::mouseClick(
+            window.findChild<QPushButton*>(sceneLive ? "startLiveButton" : "startPlaylistButton"),
+            Qt::LeftButton);
         QTRY_VERIFY_WITH_TIMEOUT(studio.live().size() == 1, 15000);
         auto id = studio.live().at(0).get("id").num();
         QTRY_VERIFY_WITH_TIMEOUT(

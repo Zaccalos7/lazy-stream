@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <fstream>
+#include <locale>
 #include <poll.h>
 #include <regex>
 #include <signal.h>
@@ -19,6 +20,7 @@ namespace {
 // sistema.
 std::string number(double n) {
     std::ostringstream s;
+    s.imbue(std::locale::classic());
     s << n;
     return s.str();
 }
@@ -89,25 +91,90 @@ void put24(unsigned char* p, uint32_t n) {
     p[2] = n;
 }
 
-std::string streamDiagnostic(const fs::path& path, const Json& request) {
+std::string streamDiagnostic(const fs::path& path, const Json& request,
+                             std::streamoff limit = 4096) {
     std::ifstream file(path, std::ios::binary);
     if (!file)
         return {};
     file.seekg(0, std::ios::end);
     const std::streamoff length = file.tellg();
-    file.seekg(length > 4096 ? length - std::streamoff(4096) : std::streamoff(0));
+    file.seekg(length > limit ? length - limit : std::streamoff(0));
     std::string message{std::istreambuf_iterator<char>(file), {}};
+    return redactStreamText(message, request);
+}
+} // namespace
+
+// Redact before writing stderr or commands, including Facebook's separate playpath argument.
+std::string redactStreamText(std::string message, const Json& request) {
     const auto key = request.get("streamKey").str();
     if (!key.empty()) {
         size_t pos = 0;
         while ((pos = message.find(key, pos)) != std::string::npos) {
             message.replace(pos, key.size(), "[chiave nascosta]");
-            pos += 16;
+            pos += std::string("[chiave nascosta]").size();
         }
     }
-    return std::regex_replace(message, std::regex("rtmps?://[^\\s]+"), "[server RTMP]");
+    return std::regex_replace(message, std::regex("rtmps?://[^\\s\"']+", std::regex::icase),
+                              "[server RTMP]");
 }
-} // namespace
+
+// Bound each section so a long live can be inspected without loading the entire log into the UI.
+std::string readStreamLogs(const fs::path& root, long id) {
+    std::string result;
+    for (auto suffix : {".session.log", ".publisher.log", ".log"}) {
+        const auto path = root / "logs" / (std::to_string(id) + suffix);
+        auto section = streamDiagnostic(path, Json{}, 65536);
+        if (!section.empty())
+            result += "=== " + path.filename().string() + " ===\n" + section + "\n";
+    }
+    return result;
+}
+
+// Mirrors Windows BuildSender: complete AVC/AAC headers and an explicit Facebook app/playpath.
+std::vector<std::string> buildPublisher(const std::string& output) {
+    std::vector<std::string> args = {ffmpeg(),
+                                     "-hide_banner",
+                                     "-nostdin",
+                                     "-loglevel",
+                                     "level+info",
+                                     "-nostats",
+                                     "-y",
+                                     "-progress",
+                                     "pipe:1",
+                                     "-stats_period",
+                                     "0.2",
+                                     "-probesize",
+                                     "4194304",
+                                     "-analyzeduration",
+                                     "2000000",
+                                     "-f",
+                                     "flv",
+                                     "-i",
+                                     "pipe:0",
+                                     "-map",
+                                     "0:v:0",
+                                     "-map",
+                                     "0:a:0",
+                                     "-c",
+                                     "copy",
+                                     "-flvflags",
+                                     "no_duration_filesize",
+                                     "-rw_timeout",
+                                     "15000000",
+                                     "-flush_packets",
+                                     "1",
+                                     "-f",
+                                     "flv"};
+    const auto scheme = output.find("://");
+    const auto path =
+        scheme == std::string::npos ? std::string::npos : output.find('/', scheme + 3);
+    if (detectStreamPlatform(output) == StreamPlatform::Facebook && path != std::string::npos &&
+        output.compare(path, 6, "/rtmp/") == 0)
+        add(args, {"-rtmp_app", "rtmp", "-rtmp_playpath", output.substr(path + 6), "-rtmp_tcurl",
+                   output.substr(0, path) + "/rtmp"});
+    args.push_back(output);
+    return args;
+}
 
 // Costruisce ingressi e filtri FFmpeg per video, audio e anteprima; una pipeline comune mantiene
 // coerente l’uscita.
@@ -115,8 +182,17 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
                     const fs::path& preview) {
     Build result;
     auto& a = result.args;
-    a = {ffmpeg(), "-hide_banner", "-nostdin", "-loglevel", "warning", "-filter_complex_threads",
-         "1",      "-threads",     "2",        "-y"};
+    a = {ffmpeg(),
+         "-hide_banner",
+         "-nostdin",
+         "-loglevel",
+         "level+info",
+         "-nostats",
+         "-filter_complex_threads",
+         "1",
+         "-threads",
+         "2",
+         "-y"};
     int w = profile.get("videoWidth").num(scene.get("width").num(1280)),
         h = profile.get("videoHeight").num(scene.get("height").num(720));
     double fps = profile.get("frameRate").num(30);
@@ -247,11 +323,15 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
     auto bitrate = number(profile.get("videoBitrate").num(4500)) + "k";
     add(a, {"-c:v", codec, "-b:v", bitrate, "-maxrate", bitrate, "-bufsize",
             number(profile.get("videoBitrate").num(4500) * 2) + "k", "-g",
-            number(std::round(profile.get("gopSize").num(2) * fps)), "-pix_fmt", "yuv420p"});
+            number(std::round(profile.get("gopSize").num(2) * fps)), "-pix_fmt", "yuv420p",
+            "-force_key_frames",
+            "expr:gte(t,n_forced*" + number(profile.get("gopSize").num(2)) + ")"});
     if (codec == "libx264") {
         add(a, {"-preset", profile.get("preset").str("veryfast")});
         if (profile.get("lowLatency").flag(true))
             add(a, {"-tune", "zerolatency"});
+        if (profile.get("constantBitrate").flag())
+            add(a, {"-minrate", bitrate, "-x264-params", "nal-hrd=cbr:force-cfr=1:scenecut=0"});
     }
     auto options = profile.get("videoSettingsOptions");
     for (size_t i = 0; i < options.size(); ++i) {
@@ -270,7 +350,7 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
         result.duration = std::max(0.05, duration);
         add(a, {"-t", number(result.duration)});
     }
-    add(a, {"-flvflags", "no_duration_filesize", "-f", "flv", "pipe:1"});
+    add(a, {"-flvflags", "no_duration_filesize", "-flush_packets", "1", "-f", "flv", "pipe:1"});
     if (!preview.empty()) {
         add(a, {"-map", "[thumb]", "-an", "-c:v", "mjpeg", "-q:v", "5", "-threads", "1"});
         if (finite)
@@ -488,6 +568,24 @@ void Session::run() {
     FlvRelay relay;
     const auto publisherLog = store.root / "logs" / (std::to_string(id) + ".publisher.log");
     const auto producerLog = store.root / "logs" / (std::to_string(id) + ".log");
+    const auto sessionLog = store.root / "logs" / (std::to_string(id) + ".session.log");
+    auto redact = [this](const std::string& message) { return redactStreamText(message, request); };
+    auto log = [&](const std::string& phase, const std::string& message) {
+        std::ofstream file(sessionLog, std::ios::app);
+        file << now() << " [" << phase << "] " << redact(message) << '\n';
+        std::error_code permissionError;
+        fs::permissions(sessionLog, fs::perms::owner_read | fs::perms::owner_write,
+                        permissionError);
+    };
+    auto logCommand = [&](const std::string& role, const std::vector<std::string>& args) {
+        auto command = Json::array();
+        for (const auto& arg : args)
+            command.push(Json::string(redact(arg)));
+        log(role, command.dump());
+    };
+    std::string phase = "prepare";
+    log(phase, "attempt=" + std::to_string(reconnectAttempts + 1) +
+                   " channel=" + request.get("channelName").str());
     try {
         std::string output = request.get("outputFile").str();
         if (output.empty()) {
@@ -500,37 +598,11 @@ void Session::run() {
         }
         if (pipe2(relayPipe, O_CLOEXEC))
             throw std::runtime_error("Relay pipe fallita");
-        fs::remove(publisherLog);
-        publisher.start({ffmpeg(),
-                         "-hide_banner",
-                         "-nostdin",
-                         "-loglevel",
-                         "error",
-                         "-y",
-                         "-progress",
-                         "pipe:1",
-                         "-stats_period",
-                         "0.2",
-                         "-probesize",
-                         "32768",
-                         "-analyzeduration",
-                         "1000000",
-                         "-f",
-                         "flv",
-                         "-i",
-                         "pipe:0",
-                         "-c",
-                         "copy",
-                         "-flvflags",
-                         "no_duration_filesize",
-                         "-rw_timeout",
-                         "15000000",
-                         "-flush_packets",
-                         "1",
-                         "-f",
-                         "flv",
-                         output},
-                        relayPipe[0], publisherLog);
+        phase = "publisher-start";
+        auto publisherArgs = buildPublisher(output);
+        logCommand(phase, publisherArgs);
+        publisher.start(publisherArgs, relayPipe[0], publisherLog, true, redact);
+        log(phase, "pid=" + std::to_string(publisher.id()));
         close(relayPipe[0]);
         relayPipe[0] = -1;
         fcntl(relayPipe[1], F_SETFL, O_NONBLOCK);
@@ -543,6 +615,9 @@ void Session::run() {
         }
         bool publishing = false;
         std::string progress;
+        auto connectStarted = std::chrono::steady_clock::now();
+        auto lastProgress = connectStarted;
+        long long lastOutputTime = 0;
         auto checkPublisher = [&] {
             pollfd fd{publisher.fd(), POLLIN, 0};
             if (poll(&fd, 1, 0) > 0 && (fd.revents & POLLIN)) {
@@ -554,9 +629,17 @@ void Session::run() {
                 while ((newline = progress.find('\n')) != std::string::npos) {
                     const auto line = progress.substr(0, newline);
                     progress.erase(0, newline + 1);
-                    if (!publishing && line.starts_with("out_time_us=") &&
-                        std::strtoll(line.c_str() + 12, nullptr, 10) > 0) {
+                    if (line.starts_with("out_time_us=")) {
+                        const auto time = std::strtoll(line.c_str() + 12, nullptr, 10);
+                        if (time > lastOutputTime) {
+                            lastOutputTime = time;
+                            lastProgress = std::chrono::steady_clock::now();
+                        }
+                    }
+                    if (!publishing && lastOutputTime > 0) {
                         publishing = true;
+                        log("publishing",
+                            "first output timestamp=" + std::to_string(lastOutputTime));
                         {
                             std::lock_guard lock(mutex);
                             state = "LIVE";
@@ -567,8 +650,21 @@ void Session::run() {
                     }
                 }
             }
-            if (!publisher.running())
-                throw std::runtime_error("Trasmissione al server interrotta");
+            if (!publisher.running()) {
+                phase = "publisher-exit";
+                throw std::runtime_error("Publisher terminato, exit=" +
+                                         std::to_string(publisher.wait()));
+            }
+            const auto clock = std::chrono::steady_clock::now();
+            if (!publishing && clock - connectStarted > std::chrono::seconds(30)) {
+                phase = "publisher-connect";
+                throw std::runtime_error(
+                    "Timeout avvio publisher: nessun avanzamento in 30 secondi");
+            }
+            if (publishing && clock - lastProgress > std::chrono::seconds(30)) {
+                phase = "publisher-stall";
+                throw std::runtime_error("Publisher bloccato: nessun avanzamento in 30 secondi");
+            }
         };
         auto relayEpoch = std::chrono::steady_clock::now();
         auto lastAdapt = relayEpoch;
@@ -602,13 +698,25 @@ void Session::run() {
                 startOffset = isTakeover && !inScene ? 0 : offset;
                 segmentIndex = index;
             }
+            phase = "producer-build";
+            if (detectStreamPlatform(output) == StreamPlatform::YouTube ||
+                detectStreamPlatform(output) == StreamPlatform::Facebook ||
+                detectStreamPlatform(output) == StreamPlatform::TikTok)
+                params.set("constantBitrate", true);
+            log(phase, "segment=" + std::to_string(segmentIndex) +
+                           " offset=" + number(startOffset) +
+                           " sources=" + std::to_string(scene.get("items").size()));
             auto build = buildProducer(scene, params, startOffset, frame);
             double takeoverDuration = 0;
             if (isTakeover) {
                 std::lock_guard lock(mutex);
                 takeoverDuration = takeover.get("durationSeconds").num();
             }
-            producer.start(build.args, -1, producerLog);
+            phase = "producer-start";
+            logCommand(phase, build.args);
+            producer.start(build.args, -1, producerLog, true, redact);
+            log(phase, "pid=" + std::to_string(producer.id()));
+            phase = "relay";
             {
                 std::lock_guard lock(mutex);
                 producerPid = producer.id();
@@ -623,10 +731,14 @@ void Session::run() {
                 int n = poll(&rd, 1, 100);
                 if (n < 0 && errno == EINTR)
                     continue;
+                if (n < 0)
+                    throw std::runtime_error("Lettura producer: poll fallita");
                 if (n > 0) {
                     auto count = read(producer.fd(), bytes, sizeof(bytes));
                     if (count <= 0)
                         break;
+                    if (!received)
+                        log("producer-output", "first FLV bytes=" + std::to_string(count));
                     received = true;
                     lastByte = std::chrono::steady_clock::now();
                     auto tags = relay.feed(bytes, count);
@@ -634,6 +746,8 @@ void Session::run() {
                     while (pos < tags.size() && !stopped) {
                         pollfd wr{relayPipe[1], POLLOUT, 0};
                         int ready = poll(&wr, 1, 100);
+                        if (ready < 0 && errno != EINTR)
+                            throw std::runtime_error("Scrittura relay: poll fallita");
                         if (ready == 0)
                             ++stalledPolls;
                         if (ready > 0) {
@@ -701,8 +815,11 @@ void Session::run() {
             }
             bool interrupted = changed || stopped;
             int result = interrupted ? (producer.stop(), 0) : producer.wait();
+            phase = "producer-exit";
+            log("producer-exit",
+                "exit=" + std::to_string(result) + " interrupted=" + std::to_string(interrupted));
             if (!interrupted && (!received || result != 0))
-                throw std::runtime_error("Codifica fallita; consulta il registro della diretta");
+                throw std::runtime_error("Codifica fallita, exit=" + std::to_string(result));
             if (interrupted)
                 continue;
             {
@@ -748,7 +865,13 @@ void Session::run() {
         auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
         while (publisher.running() && std::chrono::steady_clock::now() < deadline)
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        if (!stopped && publisher.running())
+            throw std::runtime_error("Timeout chiusura publisher: dati finali non confermati");
+        const bool publisherFailed = !stopped && !publisher.running() && publisher.wait() != 0;
         publisher.stop();
+        if (publisherFailed)
+            throw std::runtime_error("Publisher fallito durante la chiusura, exit=" +
+                                     std::to_string(publisher.wait()));
         {
             std::lock_guard lock(mutex);
             // Uno stop richiesto dall'utente è distinto dalla fine naturale della playlist.
@@ -757,12 +880,14 @@ void Session::run() {
     } catch (const std::exception& e) {
         producer.stop();
         publisher.stop();
-        auto detail = streamDiagnostic(publisherLog, request);
-        if (detail.empty())
-            detail = streamDiagnostic(producerLog, request);
+        log("error", "phase=" + phase + " error=" + e.what() +
+                         " producerExit=" + std::to_string(producer.wait()) +
+                         " publisherExit=" + std::to_string(publisher.wait()));
+        auto detail = "[producer]\n" + streamDiagnostic(producerLog, request) + "\n[publisher]\n" +
+                      streamDiagnostic(publisherLog, request);
         std::lock_guard lock(mutex);
         state = stopped ? "STOPPED" : "ERROR";
-        error = stopped ? "" : std::string(e.what()) + (detail.empty() ? "" : "\n" + detail);
+        error = stopped ? "" : redact("phase=" + phase + ": " + e.what() + "\n" + detail);
     }
     producer.stop();
     publisher.stop();
@@ -780,6 +905,7 @@ void Session::run() {
         }
     }
     if (retry) {
+        log("reconnect", "next attempt=" + std::to_string(reconnectAttempts + 1));
         for (int i = 0; i < 20 && !stopped; ++i)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         if (!stopped) {
@@ -790,6 +916,10 @@ void Session::run() {
     {
         std::lock_guard lock(mutex);
         producerPid = publisherPid = -1;
+        if (stopped) {
+            state = "STOPPED";
+            error.clear();
+        }
     }
     try {
         auto h = store.get("history", id);
@@ -802,6 +932,7 @@ void Session::run() {
         store.save("history", h, id);
     } catch (...) {
     }
+    log("finished", "status=" + snapshot().get("status").str());
     finished = true;
 }
 

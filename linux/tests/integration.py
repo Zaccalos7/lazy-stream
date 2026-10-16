@@ -288,6 +288,13 @@ def main():
                 assert 'LIVE' not in statuses and rejected['outputKbps']==0,rejected
                 assert 'private-stream-key' not in rejected['error'] and 'rtmp://' not in rejected['error'],rejected
                 assert api(f'history/{failed}')['error']==rejected['error']
+                with urllib.request.urlopen(urllib.request.Request(base+f'/api/logs/{failed}', headers={'Authorization':'Bearer '+token})) as response:
+                    logs = response.read().decode()
+                assert '.session.log' in logs and '.publisher.log' in logs and '[error]' in logs, logs
+                assert 'Connection refused' in logs and 'private-stream-key' not in logs, logs
+                for log in (root/'data'/'logs').glob(f'{failed}*.log'):
+                    assert 'private-stream-key' not in log.read_text(), log
+                    assert log.stat().st_mode & 0o077 == 0, log
             # Riavvia il server per esercitare lo scheduler reale senza aspettare un intervallo artificiale.
             scheduled_channel=api(f'channels/{channel}')
             api(f'channels/{channel}','PUT',{**scheduled_channel,'autoCleanupEnabled':True,'autoCleanupIntervalMonths':1,'autoCleanupOlderThanMonths':0,'lastCleanupEpoch':0})

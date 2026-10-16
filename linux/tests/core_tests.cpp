@@ -4,6 +4,8 @@
 #include "live_stream_keys.hpp"
 #include "scene_service.hpp"
 #include "stream_platform.hpp"
+#include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
@@ -67,6 +69,25 @@ int main() {
                "Facebook ingest detection");
         expect(detectStreamPlatform("https://a.rtmps.youtube.com/live") == StreamPlatform::Generic,
                "non-RTMP URL ignored");
+        const auto sender =
+            buildPublisher("rtmps://live-api-s.facebook.com:443/rtmp/raw/key?token=abc");
+        auto option = [&](const std::string& name) {
+            auto found = std::find(sender.begin(), sender.end(), name);
+            expect(found != sender.end() && found + 1 != sender.end(), "publisher option missing");
+            return *(found + 1);
+        };
+        expect(option("-rtmp_app") == "rtmp", "Facebook application independent of key slashes");
+        expect(option("-rtmp_playpath") == "raw/key?token=abc", "Facebook raw playpath preserved");
+        expect(option("-rtmp_tcurl") == "rtmps://live-api-s.facebook.com:443/rtmp",
+               "Facebook tcUrl");
+        expect(option("-probesize") == "4194304", "complete AVC and AAC headers before publish");
+        Json diagnosticRequest;
+        diagnosticRequest.set("streamKey", "raw/key?token=abc");
+        const auto safe =
+            redactStreamText("playpath raw/key?token=abc RTMPS://host/rtmp/key", diagnosticRequest);
+        expect(safe.find("token=abc") == std::string::npos &&
+                   safe.find("host/rtmp") == std::string::npos,
+               "redact separate playpath and case-insensitive URL");
         expect(asksForStreamKey("Custom", "tiktok", "rtmp://example.test/live"),
                "TikTok public name requires fresh key");
         expect(asksForStreamKey("Custom", "", "rtmp://push.tiktokcdn.com/live"),
@@ -107,6 +128,31 @@ int main() {
         expect(relay.timestamp() == 1, "continuous FLV");
         auto dir = fs::temp_directory_path() / ("orbis-core-" + std::to_string(getpid()));
         fs::create_directories(dir);
+        {
+            Process failed;
+            failed.start({"/bin/false"});
+            while (failed.running())
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            expect(failed.wait() == 1, "retain exit status after nonblocking process check");
+            Process diagnostic;
+            const auto log = dir / "redacted.log";
+            diagnostic.start(
+                {"python3", "-c",
+                 "import sys,time; sys.stderr.write('playpath raw/key?'); sys.stderr.flush(); "
+                 "time.sleep(.02); sys.stderr.write('token=abc\\n')"},
+                -1, log, true, [diagnosticRequest](const std::string& line) {
+                    return redactStreamText(line, diagnosticRequest);
+                });
+            diagnostic.wait();
+            diagnostic.stop();
+            std::ifstream diagnosticFile(log);
+            const std::string diagnosticText{std::istreambuf_iterator<char>(diagnosticFile), {}};
+            expect(diagnosticText.find("token=abc") == std::string::npos &&
+                       diagnosticText.find("[chiave nascosta]") != std::string::npos,
+                   "redact stderr secrets split across pipe reads before writing");
+            expect((fs::status(log).permissions() & fs::perms::group_read) == fs::perms::none,
+                   "diagnostic file private");
+        }
         {
             Store store(dir);
             Json c;
