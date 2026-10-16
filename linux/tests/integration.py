@@ -88,7 +88,14 @@ def main():
                 with urllib.request.urlopen(urllib.request.Request(base+f'/pages/{page_name}.html',headers={'Authorization':'Bearer '+token}),timeout=5) as r:
                     assert f'Pages/{page_name}.cshtml'.encode() in r.read(), 'installed live wizard resource: '+page_name
             defaults = api('profiles')
-            assert len(defaults) == 10 and all(p['isActive'] for p in defaults), defaults
+            assert len(defaults) == 8 and all(p['isActive'] for p in defaults), defaults
+            expected_defaults = json.loads(pathlib.Path(__file__).with_name('windows-defaults.json').read_text())
+            for expected in expected_defaults:
+                actual = next(p for p in defaults if p['platform']==expected['platform'] and p['isDefaultConfiguration']==expected['isDefaultConfiguration'])
+                for key in ('videoBitrate','audioBitrate','videoWidth','videoHeight','frameRate','preset'):
+                    assert actual.get(key)==expected[key], (expected['platform'],key,actual,expected)
+                options={o['key']:o['value'] for o in actual['videoSettingsOptions']}
+                assert options['profile:v']==expected['profile'] and options.get('x264-params')==expected['x264-params'], (actual,expected)
             for default in defaults:
                 api('profiles/'+str(default['id']), 'PUT', {**default, 'isActive':False})
             p = {'title':'Test','videoWidth':320,'videoHeight':180,'frameRate':25,'videoBitrate':500,'audioBitrate':64,'gopSize':1,'preset':'ultrafast','lowLatency':True}
@@ -153,15 +160,13 @@ def main():
                 raise AssertionError('invalid cleanup threshold accepted')
             except urllib.error.HTTPError as e:
                 assert e.code==400
-            # A TikTok ingest is temporary even if the channel is labelled Custom.
-            temporary=api('channels','POST',{'channelName':'Temporary key','platform':'Custom','streamUrl':'rtmp://push.tiktokcdn.com/live','streamKey':'do-not-store','profileId':profile})['id']
-            saved=api('channels/'+str(temporary))
-            assert saved['streamKey']=='asked-at-every-live:Temporary key', saved
+            # Unsupported providers cannot be saved through HTTP or restored by import.
             try:
-                api('live/start','POST',{'channelId':temporary,'files':[str(clip)]})
-                raise AssertionError('TikTok live accepted a missing fresh key')
+                api('channels','POST',{'channelName':'Removed provider','platform':'TikTok',
+                    'streamUrl':'rtmp://example.test/live','streamKey':'test'})
+                raise AssertionError('removed provider accepted')
             except urllib.error.HTTPError as e:
-                assert e.code==400 and 'Chiave richiesta' in e.read().decode()
+                assert e.code==400 and 'Piattaforma non supportata' in e.read().decode()
             output=root/'output.flv'
             video=api('videos','POST',{'name':'Clip','videoPath':str(clip),'enabled':True})['id']
             with urllib.request.urlopen(urllib.request.Request(base+f'/api/video/{video}/play',headers={'Authorization':'Bearer '+token,'Range':'bytes=0-99'})) as r:
@@ -236,14 +241,25 @@ def main():
                 if switched['status'] in ('LIVE','ERROR'): break
                 time.sleep(.05)
             assert switched['status']=='LIVE', switched
+            def delivered(predicate):
+                for _ in range(200):
+                    current=next(s for s in api('live') if s['id']==live2)
+                    assert current['status'] not in ('ERROR','ENDED'), current
+                    if predicate(current): return current
+                    time.sleep(.05)
+                raise AssertionError(('Command not delivered',current))
             api(f'live/{live2}/volume','POST',{'index':0,'volume':30,'audioEnabled':True})
+            delivered(lambda s: s['scene']['items'][0].get('volume')==30)
             api(f'live/{live2}/takeover','POST',{'scene':{'name':'Takeover','items':[{'sourceKind':'FILE','sourceTarget':str(clip),'audioEnabled':True}]},'durationSeconds':1})
-            time.sleep(1.3)
+            delivered(lambda s: s.get('takeover',{}).get('scene',{}).get('name')=='Takeover')
             api(f'live/{live2}/resume','POST',{})
-            time.sleep(.8)
+            delivered(lambda s: not s.get('takeover',{}).get('scene') and s['offsetSeconds']>.25)
             api(f'live/{live2}/stop','POST',{})
             assert api('history/'+str(live2))['status']=='STOPPED'
-            assert output2.stat().st_size>5000
+            # Verify the media actually delivered, independent of codec compression or CPU speed.
+            decoded=json.loads(subprocess.check_output(['ffprobe','-v','error','-count_frames','-show_streams','-of','json',str(output2)],text=True))
+            assert {'video','audio'} <= {s['codec_type'] for s in decoded['streams']}, decoded
+            assert all(int(s.get('nb_read_frames',0))>0 for s in decoded['streams']), decoded
             # Il worker elimina snapshot datati e restituisce conteggi coerenti senza toccare una live.
             old={'status':'ENDED','channelId':channel,'channelName':'Old channel','platform':'Custom','startedAt':'2020-01-01T00:00:00Z','request':{'files':['one.mp4','two.mp4']}}
             old_id=api('history','POST',old)['id']

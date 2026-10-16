@@ -62,8 +62,6 @@ StreamPlatform streamPlatform(const std::string& outputUrl, const std::string& d
         return StreamPlatform::Kick;
     if (name == "facebook" || name == "facebook gaming")
         return StreamPlatform::Facebook;
-    if (name == "tiktok")
-        return StreamPlatform::TikTok;
     return StreamPlatform::Generic;
 }
 
@@ -76,15 +74,13 @@ StreamDeliveryProfile deliveryFor(StreamPlatform platform) {
         profile.stallSeconds = 15;
         profile.uniformFormat = platform == StreamPlatform::Kick;
         profile.audioSampleRate = platform == StreamPlatform::Twitch ? 44100 : 48000;
-    } else if (platform == StreamPlatform::YouTube || platform == StreamPlatform::Facebook ||
-               platform == StreamPlatform::TikTok) {
+    } else if (platform == StreamPlatform::YouTube || platform == StreamPlatform::Facebook) {
         profile.buffered = profile.uniformFormat = true;
         profile.stallSeconds = 20;
-        profile.reconnectAttempts = platform == StreamPlatform::TikTok ? 3 : 5;
-        profile.maxLeadMilliseconds = platform == StreamPlatform::TikTok ? 3000 : 4000;
+        profile.reconnectAttempts = 5;
+        profile.maxLeadMilliseconds = 4000;
         profile.prerollMilliseconds = 2000;
-        profile.constantBitrate = platform != StreamPlatform::TikTok;
-        profile.portrait = platform == StreamPlatform::TikTok;
+        profile.constantBitrate = true;
     }
     return profile;
 }
@@ -103,10 +99,6 @@ StreamPlatform detectStreamPlatform(const std::string& outputUrl) {
         return StreamPlatform::YouTube;
     if (isOrUnder(host, "facebook.com"))
         return StreamPlatform::Facebook;
-    for (std::string_view domain :
-         {"tiktokcdn.com", "tiktokcdn-eu.com", "tiktokcdn-us.com", "tiktokv.com", "tiktok.com"})
-        if (isOrUnder(host, domain))
-            return StreamPlatform::TikTok;
     return StreamPlatform::Generic;
 }
 
@@ -123,10 +115,13 @@ std::string normalizeIngestUrl(const std::string& outputUrl) {
     return "rtmps://" + host.substr(0, host.size() - oldHost.size()) + "rtmps.youtube.com" + suffix;
 }
 
-// Riconosce i domini regionali elencati da StreamPlatforms.Detect senza fidarsi del suffisso di
-// una stringa arbitraria (per esempio evil-tiktokcdn.com).
-bool isTikTokIngest(const std::string& outputUrl) {
-    return detectStreamPlatform(outputUrl) == StreamPlatform::TikTok;
+bool supportedPlatform(const std::string& value) {
+    auto name = value;
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return name.empty() || name == "custom" || name == "twitch" || name == "youtube" ||
+           name == "kick" || name == "facebook" || name == "facebook gaming" || name == "rumble" ||
+           name == "x";
 }
 
 } // namespace orbis

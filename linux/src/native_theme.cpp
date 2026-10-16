@@ -293,18 +293,7 @@ const char* const kickMark =
 const char* const facebookMark =
     "M0 0h24v24H0zM3.75 3.75v16.5h10.8v-5.03H8.83V8.82h11.48V3.75zM9.5 9.49v5.03h5.73v5.73h5."
     "08V9.49z";
-const char* const tiktokMark = "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 "
-                               "1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-"
-                               ".35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 "
-                               "1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-"
-                               "5.91 "
-                               "3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-."
-                               "5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-"
-                               "4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 "
-                               "4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-"
-                               ".21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 "
-                               "2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-"
-                               "3.57.07-5.36.01-4.03-.01-8.05.02-12.07z";
+
 const char* const rumbleMark = "M14.4528 13.5458c.8064-.6542.9297-1.8381.2756-2.6445a1.8802 1.8802 "
                                "0 0 0-.2756-.2756 21.2127 21.2127 0 0 0-4."
                                "3121-2.776c-1.066-.51-2.256.2-2.4261 1.414a23.5226 23.5226 0 0 "
@@ -619,23 +608,21 @@ QIcon studioIcon(const QString& name, const QColor& color) {
 }
 
 // I marchi disegnano il path ufficiale della piattaforma: il colore è quello del brand, con il
-// fondo bianco del logo di Facebook e le ombre ciano e rosse della nota di TikTok.
+// fondo bianco del logo di Facebook.
 QIcon platformMark(const QString& value) {
     auto platform = value.trimmed().toLower();
     if (platform == "facebook gaming")
         platform = "facebook";
-    static const QMap<QString, QString> marks = {{"twitch", twitchMark},
-                                                 {"youtube", youtubeMark},
-                                                 {"kick", kickMark},
-                                                 {"facebook", facebookMark},
-                                                 {"tiktok", tiktokMark},
-                                                 {"rumble", rumbleMark},
-                                                 {"x", xMark}};
-    static const QMap<QString, QColor> colors = {
-        {"twitch", QColor("#bf5af2")}, {"youtube", QColor("#ff453a")},
-        {"kick", QColor("#53fc18")},   {"facebook", QColor("#015eec")},
-        {"tiktok", QColor("#f5f5f7")}, {"rumble", QColor("#85c742")},
-        {"x", QColor("#e7e9ea")}};
+    static const QMap<QString, QString> marks = {{"twitch", twitchMark}, {"youtube", youtubeMark},
+                                                 {"kick", kickMark},     {"facebook", facebookMark},
+                                                 {"rumble", rumbleMark}, {"x", xMark}};
+    const bool light = qApp && qApp->palette().color(QPalette::Window).lightness() > 128;
+    const QMap<QString, QColor> colors = {{"twitch", QColor(light ? "#af52de" : "#bf5af2")},
+                                          {"youtube", QColor(light ? "#ff3b30" : "#ff453a")},
+                                          {"kick", QColor(light ? "#1e9e00" : "#53fc18")},
+                                          {"facebook", QColor("#015eec")},
+                                          {"rumble", QColor("#85c742")},
+                                          {"x", QColor("#e7e9ea")}};
     const QPainterPath path = pathFromSvg(marks.value(platform, playMark));
     const QColor color = colors.value(platform, QColor("#98989d"));
     QIcon icon;
@@ -650,17 +637,6 @@ QIcon platformMark(const QString& value) {
             // Il ritaglio del logo mostra il bianco che sta dietro al quadrato blu.
             p.setBrush(Qt::white);
             p.drawRect(QRectF(0, 0, 24, 24));
-        } else if (platform == "tiktok") {
-            p.setBrush(QColor("#25f4ee"));
-            p.save();
-            p.translate(-0.8, -0.8);
-            p.drawPath(path);
-            p.restore();
-            p.setBrush(QColor("#fe2c55"));
-            p.save();
-            p.translate(0.8, 0.8);
-            p.drawPath(path);
-            p.restore();
         }
         p.setBrush(color);
         p.drawPath(path);
@@ -828,7 +804,6 @@ void applyNativeTheme(const QString& theme) {
         QPushButton[brand="youtube"] { background: #ff453a; color: white; }
         QPushButton[brand="kick"] { background: #53fc18; color: black; }
         QPushButton[brand="facebook"] { background: #015eec; color: white; }
-        QPushButton[brand="tiktok"] { background: black; color: white; }
         QWidget#livePageNumbers QPushButton:checked { background: #0a84ff; color: white; }
         QPushButton[liveIndicator="true"], QLabel#previewLiveIndicator { background: #ff453a; color: white; border: none; border-radius: 6px; padding: 7px 12px; }
     )");

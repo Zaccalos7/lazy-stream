@@ -208,8 +208,7 @@ void NativeWindow::buildLive(bool history) {
         platformFilter = new QComboBox(filters);
         platformFilter->setObjectName("platformFilter");
         platformFilter->addItem("—", "");
-        for (const auto& name :
-             {"Custom", "Twitch", "YouTube", "Kick", "Facebook", "TikTok", "Rumble", "X"})
+        for (const auto& name : {"Custom", "Twitch", "YouTube", "Kick", "Facebook", "Rumble", "X"})
             platformFilter->addItem(name, name);
         addField("platform", platformFilter);
         connect(platformFilter, &QComboBox::currentIndexChanged, this, [this] {

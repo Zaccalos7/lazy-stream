@@ -4,7 +4,7 @@
 #include <QTranslator>
 
 namespace orbis {
-// Legge i cataloghi originali senza convertirli o modificarli: una sola fonte per tutte le lingue.
+// Legge i cataloghi condivisi delle lingue, adattati alle piattaforme supportate su Linux.
 class NativeTranslations : public QTranslator {
     QString directory, selected;
     QJsonObject catalog;

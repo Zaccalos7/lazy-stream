@@ -1,7 +1,7 @@
 #include "core.hpp"
+#include "database_schema.hpp"
 #include "history_cleanup_service.hpp"
 #include "live_rows.hpp"
-#include "live_stream_keys.hpp"
 #include "scene_service.hpp"
 #include "stream_platform.hpp"
 #include <algorithm>
@@ -80,9 +80,6 @@ int main() {
         expect(normalizeIngestUrl("rtmps://example.test/live/key") ==
                    "rtmps://example.test/live/key",
                "other platforms unchanged");
-        expect(isTikTokIngest("rtmps://push-rtmp-1.tiktokcdn-eu.com/live"),
-               "regional TikTok ingest");
-        expect(!isTikTokIngest("rtmp://evil-tiktokcdn.com/live"), "TikTok domain boundary");
         expect(detectStreamPlatform("rtmp://fa723fc1b171.global-contribute.live-video.net/live") ==
                    StreamPlatform::Kick,
                "Kick IVS endpoint before Twitch network");
@@ -115,13 +112,6 @@ int main() {
         expect(safe.find("token=abc") == std::string::npos &&
                    safe.find("host/rtmp") == std::string::npos,
                "redact separate playpath and case-insensitive URL");
-        expect(asksForStreamKey("Custom", "tiktok", "rtmp://example.test/live"),
-               "TikTok public name requires fresh key");
-        expect(asksForStreamKey("Custom", "", "rtmp://push.tiktokcdn.com/live"),
-               "TikTok ingest requires fresh key");
-        expect(standInStreamKey("  channel  ") == "asked-at-every-live:channel",
-               "TikTok key stand-in");
-        expect(isStandInStreamKey(standInStreamKey("channel")), "TikTok key not publishable");
         using namespace std::chrono;
         const auto reference = system_clock::to_time_t(sys_days{year{2024} / 3 / 31} + hours{12});
         expect(historyCleanupThreshold(1, reference) == "2024-02-29T12:00:00Z",
@@ -392,6 +382,56 @@ int main() {
             for (size_t i = 0; i < history.size(); ++i)
                 expect(history.at(i).get("status").str() != "RECONNECTING",
                        "reconnecting history recovered after restart");
+        }
+        {
+            const auto path = dir / "provider-upgrade";
+            fs::create_directories(path);
+            sqlite3* db = nullptr;
+            expect(sqlite3_open((path / "stream.db").c_str(), &db) == SQLITE_OK,
+                   "open upgrade fixture");
+            const char* fixture = R"sql(
+                CREATE TABLE records(kind TEXT,id INTEGER,data TEXT,PRIMARY KEY(kind,id));
+                INSERT INTO records VALUES
+                ('profiles',77,'{"platform":"TikTok","title":"Edited old preset","videoBitrate":1234}'),
+                ('profiles',78,'{"platform":"Custom","title":"Keep my portrait preset","videoWidth":720,"videoHeight":1280}'),
+                ('channels',90,'{"platform":"TikTok","channelName":"Retired","streamKey":"preserve-private-key"}'),
+                ('channels',91,'{"platform":"Custom","channelName":"Regional","streamUrl":"rtmps://push.tiktokcdn-eu.com:443/live"}'),
+                ('channels',3,'{"platform":"YouTube","channelName":"Keep","profileId":77}'),
+                ('channels',4,'{"platform":"Custom","channelName":"Keep unrelated host","streamUrl":"rtmp://evil-tiktokcdn.com/live"}'),
+                ('history',1,'{"platform":"TikTok","status":"ENDED","channelId":90,"request":{"profileId":77}}');
+                PRAGMA user_version=1;
+            )sql";
+            expect(sqlite3_exec(db, fixture, nullptr, nullptr, nullptr) == SQLITE_OK,
+                   "seed old database");
+            sqlite3_close(db);
+            {
+                Store upgraded(path);
+                expect(upgraded.list("channels").size() == 2, "removed provider channels archived");
+                expect(upgraded.get("channels", 3).get("profileId").num() == 0,
+                       "retired profile references cleared");
+                expect(upgraded.get("profiles", 78).get("videoHeight").num() == 1280,
+                       "custom portrait profile preserved");
+                expect(upgraded.list("history").size() == 1, "historical snapshots preserved");
+                expect(upgraded.save("channels",
+                                     Json::parse(R"({"platform":"Custom","channelName":"New"})")) ==
+                           92,
+                       "archived identities cannot be reused by another channel");
+            }
+            expect(sqlite3_open((path / "stream.db").c_str(), &db) == SQLITE_OK, "read archive");
+            sqlite3_stmt* query = nullptr;
+            expect(sqlite3_prepare_v2(db,
+                                      "SELECT count(*),sum(instr(data,'preserve-private-key')>0) "
+                                      "FROM retired_records",
+                                      -1, &query, nullptr) == SQLITE_OK,
+                   "archive query");
+            expect(sqlite3_step(query) == SQLITE_ROW && sqlite3_column_int(query, 0) == 3 &&
+                       sqlite3_column_int(query, 1) == 1,
+                   "archive preserves configurations and credentials privately");
+            sqlite3_finalize(query);
+            sqlite3_close(db);
+            Store reopened(path);
+            expect(reopened.list("channels").size() == 3 && reopened.list("profiles").size() == 9,
+                   "upgrade is idempotent with eight supported defaults");
         }
         for (const auto [folder, schema] : {
                  std::pair{"foreign", "CREATE TABLE setting(id INTEGER); PRAGMA user_version=1"},

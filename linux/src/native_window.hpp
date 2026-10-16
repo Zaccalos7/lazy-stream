@@ -109,6 +109,7 @@ class NativeWindow : public QMainWindow {
     void addDashboardCards(const QList<QStringList>& entries, const QString& section = {});
     void updatePreview();
     void updatePreviewFrame();
+    QString profileTitle(const Json& profile) const;
 
   protected:
     void closeEvent(QCloseEvent* event) override;

@@ -28,9 +28,6 @@ Json platformPlayer(const Json& channel, std::stop_token stop) {
         case StreamPlatform::Facebook:
             platform = "Facebook";
             break;
-        case StreamPlatform::TikTok:
-            platform = "TikTok";
-            break;
         default:
             break;
         }
@@ -90,10 +87,6 @@ Json platformPlayer(const Json& channel, std::stop_token stop) {
     } else if (platform == "Kick") {
         out.set("publicUrl", "https://kick.com/" + name);
         out.set("reason", "Apri il canale Kick per verificare la diretta");
-    } else if (platform == "TikTok") {
-        out.set("publicUrl",
-                "https://www.tiktok.com/" + (name.starts_with("@") ? name : "@" + name) + "/live");
-        out.set("reason", "Apri la pagina TikTok LIVE");
     } else if (platform == "Facebook") {
         out.set("publicUrl", "https://www.facebook.com/" + name + "/live");
         out.set("reason", "Apri la pagina Facebook Live");

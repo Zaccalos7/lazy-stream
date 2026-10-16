@@ -1,7 +1,6 @@
 #include "core.hpp"
 #include "history_cleanup_service.hpp"
 #include "live_rows.hpp"
-#include "live_stream_keys.hpp"
 #include "media_job.hpp"
 #include "scene_service.hpp"
 #include "screen_capture.hpp"
@@ -625,10 +624,6 @@ struct Api {
                 result = success();
             } else if (method == http::verb::post || method == http::verb::put) {
                 validate(k, body);
-                if (k == "channels" && asksForStreamKey(body.get("platform").str(),
-                                                        body.get("platformStreamName").str(),
-                                                        body.get("streamUrl").str()))
-                    body.set("streamKey", standInStreamKey(body.get("channelName").str()));
                 if (k == "buttons") {
                     auto all = studio.store.list(k);
                     for (size_t i = 0; i < all.size(); ++i) {

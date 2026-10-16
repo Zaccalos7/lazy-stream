@@ -143,8 +143,6 @@ QString liveUrlFor(const QString& known, const QString& channelName) {
         return "https://kick.com/" + escaped(name.toLower());
     if (known == "facebook")
         return "https://www.facebook.com/" + escaped(withoutAt(name));
-    if (known == "tiktok")
-        return "https://www.tiktok.com/@" + escaped(withoutAt(name)) + "/live";
     return {};
 }
 
@@ -152,8 +150,6 @@ QString liveUrlFor(const QString& known, const QString& channelName) {
 QString platformLabel(const QString& known) {
     if (known == "youtube")
         return "YouTube";
-    if (known == "tiktok")
-        return "TikTok";
     return known.left(1).toUpper() + known.mid(1);
 }
 
@@ -801,8 +797,7 @@ void NativeWindow::showError(const std::exception& error) {
     const char* key = message.find("Nome scena") != std::string::npos ? "sceneNeedsName"
                       : message.find("almeno una sorgente video") != std::string::npos
                           ? "sceneNeedsPicture"
-                      : message.find("Chiave richiesta") != std::string::npos ? "tiktokKeyHint"
-                                                                              : "invalidParameter";
+                          : "invalidParameter";
     QMessageBox box(QMessageBox::Warning, t("error"), t(key), QMessageBox::Ok, this);
     box.setDetailedText(QString::fromUtf8(error.what()));
     box.setObjectName("errorDialog");

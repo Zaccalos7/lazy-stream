@@ -41,6 +41,9 @@ try {
     if (!response.ok) throw Error(result.message || response.statusText);
     return result;
   };
+  // This scenario starts with no active setting and creates its own profile through the UI.
+  for (const profile of await api('profiles'))
+    await api(`profiles/${profile.id}`, 'PUT', { ...profile, isActive: false });
   chrome = spawn(
     'google-chrome',
     [
@@ -96,6 +99,15 @@ try {
     if (r.exceptionDetails)
       throw Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
     return r.result.value;
+  };
+  const eventually = async (expression, label) => {
+    for (let attempt = 0; attempt < 100; ++attempt) {
+      if (await evaluate(expression)) return;
+      await sleep(50);
+    }
+    throw Error(
+      `${label}; notice=${await evaluate(`document.querySelector('#notice').textContent`)}; view=${await evaluate(`JSON.stringify({modalOpen,page,channelFilters,channels:data.channels,html:document.querySelector('#content [data-platform="Custom"]')?.outerHTML})`)}; channels=${JSON.stringify(await api('channels'))}`,
+    );
   };
   await send('Runtime.enable');
   await send('Page.enable');
@@ -179,16 +191,16 @@ try {
     ))
   )
     throw Error('Windows YouTube ingest preset');
-  if (
-    !(await evaluate(
-      `(()=>{const p=document.querySelector('#modal [name=platform]');p.value='TikTok';p.dispatchEvent(new Event('change'));return document.querySelector('#modal [name=streamKey]').closest('label').hidden})()`,
-    ))
-  )
-    throw Error('Windows TikTok temporary key field');
+  if (!(await evaluate(`!document.querySelector('#modal [name=platform] option[value="TikTok"]')`)))
+    throw Error('Removed provider still offered');
   await evaluate(`document.querySelector('#modal [value=cancel]').click()`);
+  await eventually(
+    `!modalOpen && !document.querySelector('#modal').open`,
+    'Close must cancel an incomplete channel form',
+  );
   if (
     !(await evaluate(
-      `(()=>{const s=document.querySelector('[name=platformFilter]');s.value='TikTok';s.dispatchEvent(new Event('change'));return document.querySelector('#content [data-platform="Custom"]').hidden})()`,
+      `(()=>{const s=document.querySelector('[name=platformFilter]');s.value='YouTube';s.dispatchEvent(new Event('change'));return document.querySelector('#content [data-platform="Custom"]').hidden})()`,
     ))
   )
     throw Error('Windows platform filter');
@@ -198,13 +210,10 @@ try {
   await evaluate(
     `[...document.querySelector('#content [data-platform="Custom"]').querySelectorAll('button')].find(b=>b.textContent.includes('Disattiva')).click()`,
   );
-  await sleep(250);
-  if (
-    !(await evaluate(
-      `document.querySelector('#content [data-platform="Custom"]').dataset.active==='false'`,
-    ))
-  )
-    throw Error('Windows channel toggle');
+  await eventually(
+    `document.querySelector('#content [data-platform="Custom"]')?.dataset.active==='false'`,
+    'Windows channel toggle',
+  );
   await evaluate(
     `[...document.querySelector('#content [data-platform="Custom"]').querySelectorAll('button')].find(b=>b.textContent.includes('Attiva')).click()`,
   );
@@ -225,14 +234,17 @@ try {
   );
   if (!(await evaluate(`document.querySelector('#modal [name=title]').value==='Twitch'`)))
     throw Error('Windows profile preset');
-  await evaluate(`document.querySelector('#modal-footer .primary').click()`);
-  await sleep(300);
   if (
     !(await evaluate(
-      `document.querySelector('#content .row-card')?.textContent.includes('Twitch')`,
+      `['videoWidth','videoHeight','frameRate'].every(key=>document.querySelector('#modal [name='+key+']').value==='')`,
     ))
   )
-    throw Error('Profile save UI');
+    throw Error('Twitch source dimensions must stay unspecified');
+  await evaluate(`document.querySelector('#modal-footer .primary').click()`);
+  await eventually(
+    `!modalOpen && document.querySelector('#content .row-card')?.textContent.includes('Twitch')`,
+    'Profile save UI',
+  );
   await evaluate(
     `[...document.querySelector('#content .row-card').querySelectorAll('button')].find(b=>b.textContent.includes('Attiva')).click()`,
   );
@@ -343,11 +355,11 @@ try {
     ))
   )
     throw Error('Windows live filters and pagination');
-  const tiktok = (
+  const wizardChannel = (
     await api('channels', 'POST', {
-      channelName: 'TikTok wizard',
-      platform: 'TikTok',
-      streamUrl: 'rtmp://push.tiktokcdn.com/live',
+      channelName: 'Four platform wizard',
+      platform: 'YouTube',
+      streamUrl: 'rtmps://a.rtmps.youtube.com/live2',
       streamKey: 'temporary',
     })
   ).id;
@@ -368,33 +380,23 @@ try {
   )
     throw Error('Windows wizard channel second');
   await evaluate(
-    `(()=>{const field=document.querySelector('#modal [name=configurationId][value="${tiktok}"]');field.click();document.querySelector('#modal-footer .primary').click();})()`,
+    `(()=>{const field=document.querySelector('#modal [name=configurationId][value="${wizardChannel}"]');field.click();document.querySelector('#modal-footer .primary').click();})()`,
   );
   await sleep(100);
   if (
     !(await evaluate(
-      `!document.querySelector('[data-wizard-live-key]').hidden && document.querySelector('[data-modal-error]')?.textContent.includes('TikTok')`,
+      `document.querySelector('#modal .canvas')!==null && !document.querySelector('[data-wizard-live-key]')`,
     ))
   )
-    throw Error('Windows wizard refuses missing fresh TikTok key');
-  await evaluate(
-    `document.querySelector('#modal [name=streamKey]').value='fresh-test-key';document.querySelector('#modal-footer .primary').click()`,
-  );
-  await sleep(100);
-  if (
-    !(await evaluate(
-      `document.querySelector('#modal .canvas')!==null && Number(document.querySelector('#modal .fields [name=width]').value) < Number(document.querySelector('#modal .fields [name=height]').value)`,
-    ))
-  )
-    throw Error('Windows wizard opens portrait compositor for TikTok');
+    throw Error('Wizard must open compositor without a temporary key');
   await evaluate(`document.querySelector('#modal-footer button').click()`);
   await sleep(100);
   if (
     !(await evaluate(
-      `document.querySelector('#modal [name=configurationId]:checked')?.value==='${tiktok}' && document.querySelector('#modal [name=streamKey]').value==='fresh-test-key'`,
+      `document.querySelector('#modal [name=configurationId]:checked')?.value==='${wizardChannel}'`,
     ))
   )
-    throw Error('Wizard Back loses configuration or temporary key');
+    throw Error('Wizard Back loses configuration');
   await evaluate(`document.querySelector('#modal-footer button').click()`);
   await sleep(100);
   if (!(await evaluate(`document.querySelector('#modal [name=settingId]:checked')!==null`)))

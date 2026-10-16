@@ -2,7 +2,6 @@
 #include "core.hpp"
 #include "encoder_options.hpp"
 #include "history_cleanup_service.hpp"
-#include "live_stream_keys.hpp"
 #include "overlay_media.hpp"
 #include "paced_output.hpp"
 #include "platform_lookup.hpp"
@@ -719,7 +718,6 @@ Json Session::snapshot() {
                                  : platform == StreamPlatform::YouTube  ? "YouTube"
                                  : platform == StreamPlatform::Kick     ? "Kick"
                                  : platform == StreamPlatform::Facebook ? "Facebook"
-                                 : platform == StreamPlatform::TikTok   ? "TikTok"
                                                                         : "Custom";
     s.set("playerPlatform", playerPlatform);
     s.set("startedAt", request.get("startedAt"));
@@ -876,8 +874,7 @@ void Session::run() {
         if (output.empty()) {
             auto url = request.get("streamUrl").str();
             auto key = request.get("streamKey").str();
-            if ((!url.starts_with("rtmp://") && !url.starts_with("rtmps://")) || key.empty() ||
-                isStandInStreamKey(key))
+            if ((!url.starts_with("rtmp://") && !url.starts_with("rtmps://")) || key.empty())
                 throw std::runtime_error("Server e chiave richiesti");
             output = normalizeIngestUrl(url + (url.ends_with('/') ? "" : "/") + key);
         }
@@ -1102,12 +1099,6 @@ void Session::run() {
                 params.set("audioChannels", 2.);
             params.set("constantBitrate", platformProfile.constantBitrate);
             params.set("rateBufferSeconds", platform == StreamPlatform::Generic ? 2. : 1.);
-            if (platformProfile.portrait) {
-                const auto w = params.get("videoWidth").num(scene.get("width").num(1280));
-                const auto h = params.get("videoHeight").num(scene.get("height").num(720));
-                params.set("videoWidth", std::min(w, h));
-                params.set("videoHeight", std::max(w, h));
-            }
             log(phase, "segment=" + std::to_string(segmentIndex) +
                            " offset=" + number(startOffset) +
                            " sources=" + std::to_string(scene.get("items").size()));
@@ -1447,9 +1438,7 @@ long Studio::start(Json r) {
         r.set("channelName", c.get("channelName"));
         r.set("platform", c.get("platform"));
         r.set("ffmpegSender", c.get("ffmpegSender").flag(true));
-        if (!asksForStreamKey(c.get("platform").str(), c.get("platformStreamName").str(),
-                              c.get("streamUrl").str()))
-            r.set("streamKey", c.get("streamKey"));
+        r.set("streamKey", c.get("streamKey"));
         // Una scena scelta nel wizard non richiede la cartella playlist del canale.
         if (!r.has("files") && !r.has("scene") && r.get("sceneId").num() <= 0) {
             if (c.get("scenePkid").num() > 0)
@@ -1491,18 +1480,9 @@ long Studio::start(Json r) {
     if (!r.has("profile"))
         r.set("profile", store.get("profiles", r.get("profileId").num(1)));
     validate("profiles", r.get("profile"));
-    if (channel && asksForStreamKey(store.get("channels", channel).get("platform").str(),
-                                    store.get("channels", channel).get("platformStreamName").str(),
-                                    store.get("channels", channel).get("streamUrl").str())) {
-        auto p = r.get("profile");
-        double w = p.get("videoWidth").num(), h = p.get("videoHeight").num();
-        if (w > h) {
-            p.set("videoWidth", h);
-            p.set("videoHeight", w);
-        }
-    }
-    if (!r.has("outputFile") &&
-        (r.get("streamKey").str().empty() || isStandInStreamKey(r.get("streamKey").str())))
+    if (!supportedPlatform(r.get("platform").str()))
+        throw std::runtime_error("Piattaforma non supportata");
+    if (!r.has("outputFile") && r.get("streamKey").str().empty())
         throw std::runtime_error("Chiave richiesta per questa diretta");
     if (r.has("scene")) {
         buildProducer(r.get("scene"), r.get("profile"), 0, {});

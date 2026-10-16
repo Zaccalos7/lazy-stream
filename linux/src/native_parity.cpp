@@ -52,6 +52,18 @@ QString bitrate(double kbps) {
 }
 } // namespace
 
+QString NativeWindow::profileTitle(const Json& profile) const {
+    const auto title = value(profile.get("title"));
+    for (const auto& platform : {"Twitch", "YouTube", "Kick", "Facebook Gaming"}) {
+        if (title.trimmed().compare(QString("Default Low ") + platform, Qt::CaseInsensitive) == 0) {
+            auto key = QString("defaultLow") + platform;
+            key.remove(' ');
+            return t(key.toUtf8().constData());
+        }
+    }
+    return title.trimmed().isEmpty() ? t("untitled") : title;
+}
+
 void NativeWindow::buildChannels() {
     auto heading = body->findChild<QFrame*>("pageHeading");
     auto actions = new QWidget(heading);
@@ -72,7 +84,7 @@ void NativeWindow::buildChannels() {
     platformFilter = new QComboBox(filters);
     platformFilter->setObjectName("platformFilter");
     platformFilter->addItem("–", "");
-    for (const auto& name : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok", "Custom"})
+    for (const auto& name : {"Twitch", "YouTube", "Kick", "Facebook", "Custom"})
         platformFilter->addItem(name == QString("Facebook") ? "Facebook Gaming" : name, name);
     field(t("platform"), platformFilter);
     statusFilter = new QComboBox(filters);
@@ -150,7 +162,7 @@ void NativeWindow::refreshConfigurations() {
         text->setSpacing(2);
         text->addWidget(label(channels ? value(record.get("channelName")) + " · " +
                                              value(record.get("platform"))
-                                       : value(record.get("title")),
+                                       : profileTitle(record),
                               card, "rowTitle"));
         if (channels) {
             if (!record.get("description").str().empty())

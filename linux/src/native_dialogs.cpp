@@ -1,4 +1,3 @@
-#include "live_stream_keys.hpp"
 #include "media_job.hpp"
 #include "native_controls.hpp"
 #include "native_forms.hpp"
@@ -213,8 +212,7 @@ std::string copyMedia(const fs::path& root, const QString& file) {
 }
 } // namespace
 
-// Il form del canale mantiene ingest e chiave separati; TikTok richiede una nuova chiave a ogni
-// avvio.
+// Il form del canale mantiene ingest e chiave separati.
 void NativeWindow::editChannel(Json channel) {
     NativeForm dialog(this, t(channel.has("id") ? "editModalTitle" : "addConfiguration"), channel);
     dialog.setObjectName("channelEditor");
@@ -226,11 +224,10 @@ void NativeWindow::editChannel(Json channel) {
         {"Twitch", "rtmp://live.twitch.tv/app"},
         {"YouTube", "rtmps://a.rtmps.youtube.com/live2"},
         {"Kick", "rtmps://fa723fc1b171.global-contribute.live-video.net/app"},
-        {"Facebook", "rtmps://rtmp-api.facebook.com:443/rtmp"},
-        {"TikTok", "rtmp://push-rtmp-l11-va01.tiktokcdn.com/stage"},
+        {"Facebook", "rtmps://live-api-s.facebook.com:443/rtmp"},
         {"Custom", ""}};
     QList<QPair<QString, Json>> platforms;
-    for (const auto& name : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok", "Custom"})
+    for (const auto& name : {"Twitch", "YouTube", "Kick", "Facebook", "Custom"})
         platforms.append({name, Json::string(name)});
     auto platform = dialog.choice("platform", t("platform"), platforms);
     platform->hide();
@@ -276,10 +273,6 @@ void NativeWindow::editChannel(Json channel) {
             [key](bool show) { key->setEchoMode(show ? QLineEdit::Normal : QLineEdit::Password); });
     dialog.grid(
         {{"channelName", t("channelName")}, {"streamUrl", t("url")}, {"streamKey", t("key")}}, 2);
-    auto fresh = new QLabel(t("keyEachLiveHint"), &dialog);
-    fresh->setObjectName("muted");
-    fresh->setWordWrap(true);
-    dialog.form->addRow(fresh);
     dialog.multiline("description", t("description"));
     auto active = dialog.check("isActive", t("active"), true);
     active->hide();
@@ -293,20 +286,22 @@ void NativeWindow::editChannel(Json channel) {
     facebook->setObjectName("muted");
     facebook->setWordWrap(true);
     dialog.form->addRow(facebook);
-    auto select = [&, platform, ingest, key, fresh, sender, senderHint, facebook](bool fill) {
+    auto ingestHint = new QLabel(t("ingestFromDashboard"), &dialog);
+    ingestHint->setObjectName("ingestDashboardHint");
+    ingestHint->setWordWrap(true);
+    dialog.form->addRow(ingestHint);
+    auto select = [&, platform, ingest, sender, senderHint, facebook, ingestHint](bool fill) {
         auto name = platform->currentText();
         if (fill && servers.contains(name))
             ingest->setText(servers.value(name));
-        const bool tiktok = name == "TikTok";
-        key->parentWidget()->setVisible(!tiktok);
-        fresh->setVisible(tiktok);
         sender->setVisible(name == "YouTube");
         senderHint->setVisible(name == "YouTube");
-        if (name == "YouTube") {
+        sender->setEnabled(name == "YouTube");
+        if (fill && name == "YouTube") {
             sender->setChecked(true);
-            sender->setEnabled(false);
         }
         facebook->setVisible(name == "Facebook");
+        ingestHint->setVisible(name == "Kick" || name == "Facebook");
     };
     connect(platform, &QComboBox::currentIndexChanged, &dialog, [&] { select(true); });
     select(!channel.has("id"));
@@ -326,8 +321,6 @@ void NativeWindow::editChannel(Json channel) {
         run([&] {
             auto result = dialog.value();
             result.set("platformStreamName", platform->currentText().toLower().toStdString());
-            if (platform->currentText() == "TikTok")
-                result.set("streamKey", standInStreamKey(result.get("channelName").str()));
             validate("channels", result);
             studio.store.save("channels", result, channel.get("id").num());
             dialog.accept();
@@ -473,7 +466,7 @@ void NativeWindow::editProfile(Json profile, std::function<void(Json)> apply) {
     };
     connect(low, &QCheckBox::toggled, &dialog, tuning);
     tuning(low->isChecked());
-    for (const auto& platform : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}) {
+    for (const auto& platform : {"Twitch", "YouTube", "Kick", "Facebook"}) {
         auto button = new QPushButton(
             platform == QString("Facebook") ? "Facebook Gaming" : platform, presets);
         button->setIcon(platformMark(platform));
@@ -575,17 +568,18 @@ void NativeWindow::startWizard(bool playlist) {
     profile->setTextElideMode(Qt::ElideNone);
     for (auto entry : choices(profiles, "title", true)) {
         const auto value = studio.store.get("profiles", entry.second.num());
-        const auto detail =
-            QString("%5 · %1×%2 · %3 fps · %4 Mbit/s · FLV · GOP %6 · %7 %8 kbit/s")
-                .arg(value.get("videoWidth").num())
-                .arg(value.get("videoHeight").num())
-                .arg(value.get("frameRate").num())
-                .arg(value.get("videoBitrate").num(4500) / 1000)
-                .arg(QString::fromStdString(value.get("videoCodecName").str("libx264")))
-                .arg(value.get("gopSize").num(2))
-                .arg(t("audioBitrate"))
-                .arg(value.get("audioBitrate").num(128));
-        auto item = new QListWidgetItem(entry.first + "\n" + detail, profile);
+        QStringList details{QString::fromStdString(value.get("videoCodecName").str("–"))};
+        if (value.get("videoWidth").num() > 0 && value.get("videoHeight").num() > 0)
+            details << QString::number(value.get("videoWidth").num()) + "×" +
+                           QString::number(value.get("videoHeight").num());
+        if (value.get("frameRate").num() > 0)
+            details << QString::number(value.get("frameRate").num(), 'g', 5) + " fps";
+        details << QString::number(value.get("videoBitrate").num(4500) / 1000, 'g', 5) + " Mbit/s"
+                << QString::fromStdString(value.get("videoFormat").str("flv")).toUpper()
+                << "GOP " + QString::number(value.get("gopSize").num(2))
+                << t("audioBitrate") + " " + QString::number(value.get("audioBitrate").num(128)) +
+                       " kbit/s";
+        auto item = new QListWidgetItem(profileTitle(value) + "\n" + details.join(" · "), profile);
         item->setSizeHint(QSize(310, 96));
         item->setData(Qt::UserRole, entry.second.num());
     }
@@ -659,36 +653,6 @@ void NativeWindow::startWizard(bool playlist) {
     title->setObjectName("wizardTitle");
     title->setPlaceholderText(t("titlePlaceholder"));
     title->hide();
-    auto key = new QLineEdit(second);
-    key->setObjectName("wizardStreamKey");
-    key->setEchoMode(QLineEdit::Password);
-    auto keyLabel = new QLabel(t("tiktokKey"), second);
-    secondForm->addRow(keyLabel, key);
-    auto reveal = new QPushButton(t("showStreamKey"), second);
-    reveal->setObjectName("revealStreamKey");
-    secondForm->addRow(reveal);
-    connect(reveal, &QPushButton::clicked, &wizard, [&] {
-        const bool show = key->echoMode() == QLineEdit::Password;
-        key->setEchoMode(show ? QLineEdit::Normal : QLineEdit::Password);
-        reveal->setText(t(show ? "hideStreamKey" : "showStreamKey"));
-    });
-    auto changed = [&] {
-        if (!channel->currentItem()) {
-            key->hide();
-            reveal->hide();
-            keyLabel->hide();
-            return;
-        }
-        auto c =
-            studio.store.get("channels", channel->currentItem()->data(Qt::UserRole).toLongLong());
-        const bool needsKey = asksForStreamKey(
-            c.get("platform").str(), c.get("platformStreamName").str(), c.get("streamUrl").str());
-        key->setVisible(needsKey);
-        reveal->setVisible(needsKey);
-        keyLabel->setVisible(needsKey);
-    };
-    connect(channel, &QListWidget::currentRowChanged, &wizard, changed);
-    changed();
     wizard.addPage(second);
     auto folder = new QLineEdit(&wizard);
     folder->hide();
@@ -742,9 +706,6 @@ void NativeWindow::startWizard(bool playlist) {
                 navigate("channels");
             });
         }
-        form->addRow(keyLabel, key);
-        form->addRow(reveal);
-        changed();
 
         form->addRow(hint);
         form->addRow(t("playlistFolder"), folder);
@@ -775,8 +736,7 @@ void NativeWindow::startWizard(bool playlist) {
         };
         connect(folder, &QLineEdit::textChanged, third, &ChoiceWizardPage::refresh);
     }
-    // La conferma resta aperta finché i dati minimi sono validi, senza perdere la chiave
-    // temporanea.
+    // La conferma resta aperta finché i dati minimi sono validi.
     disconnect(wizard.button(QWizard::FinishButton), nullptr, &wizard, nullptr);
     for (auto which :
          {QWizard::FinishButton, QWizard::NextButton, QWizard::BackButton, QWizard::CancelButton}) {
@@ -785,13 +745,6 @@ void NativeWindow::startWizard(bool playlist) {
     }
     connect(wizard.button(QWizard::FinishButton), &QAbstractButton::clicked, &wizard, [&] {
         run([&] {
-            auto selectedChannel = studio.store.get(
-                "channels", channel->currentItem()->data(Qt::UserRole).toLongLong());
-            if (asksForStreamKey(selectedChannel.get("platform").str(),
-                                 selectedChannel.get("platformStreamName").str(),
-                                 selectedChannel.get("streamUrl").str()) &&
-                key->text().trimmed().isEmpty())
-                throw std::runtime_error("TikTok: chiave richiesta");
             if (playlist && scanVideos(folder->text().toStdString()).empty())
                 throw std::runtime_error("Nessun video");
             wizard.accept();
@@ -806,8 +759,6 @@ void NativeWindow::startWizard(bool playlist) {
         request.set("channelId", channel->currentItem()->data(Qt::UserRole).toDouble());
         request.set("title", title->text().isEmpty() ? t("untitled").toStdString()
                                                      : title->text().toStdString());
-        if (!key->text().isEmpty())
-            request.set("streamKey", key->text().toStdString());
         if (playlist) {
             request.set("loop", repeat->isChecked());
             if (countdown->value() > 0) {
@@ -923,16 +874,6 @@ void NativeWindow::replay(Json history, bool beginning, int index) {
     request.set("offsetSeconds",
                 beginning ? 0 : history.get("offsetSeconds").num(history.get("offset").num()));
     request.set("startIndex", index >= 0 ? index : beginning ? 0 : history.get("position").num());
-    auto channel = studio.store.get("channels", request.get("channelId").num());
-    if (asksForStreamKey(channel.get("platform").str(), channel.get("platformStreamName").str(),
-                         channel.get("streamUrl").str())) {
-        NativeForm dialog(this, t("tiktokKey"));
-        dialog.text("streamKey", t("tiktokKey"), true);
-        connect(dialog.buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-        if (dialog.exec() != QDialog::Accepted)
-            return;
-        request.set("streamKey", dialog.value().get("streamKey"));
-    }
     runAsync(
         [this, request, history] {
             const auto live = studio.live();
@@ -1122,8 +1063,7 @@ void NativeWindow::showLiveDetails(Json history) {
                 };
                 const auto platform = str(record.get("platform"));
                 if (status == "LIVE" &&
-                    QStringList{"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}.contains(
-                        platform)) {
+                    QStringList{"Twitch", "YouTube", "Kick", "Facebook"}.contains(platform)) {
                     auto publicPage = new QToolButton(actions);
                     publicPage->setProperty("rowAction", true);
                     publicPage->setFixedSize(32, 32);

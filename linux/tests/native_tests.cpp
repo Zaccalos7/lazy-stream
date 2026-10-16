@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -16,6 +17,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPlainTextEdit>
+#include <QRadioButton>
 #include <QScrollArea>
 #include <QSlider>
 #include <QTableWidget>
@@ -351,6 +353,10 @@ class NativeTests : public QObject {
         });
         customCard()->findChild<QToolButton*>("editConfiguration")->click();
         window.navigate("manual");
+        for (const auto figure : {"wizard", "playlist"}) {
+            const auto path = QString(ORBIS_TEST_RESOURCES) + "/manual/en/" + figure + ".webp";
+            QVERIFY2(!QImage(path).isNull(), "Qt must decode the manual WebP figures");
+        }
         auto text = window.findChild<QTextBrowser*>("manualText");
         auto contents = window.findChild<QListWidget*>("manualContents");
         QVERIFY(contents->count() > 5);
@@ -551,6 +557,21 @@ class NativeTests : public QObject {
         QTimer::singleShot(0, &window, [&] {
             auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
             QVERIFY(dialog);
+            QCOMPARE(dialog->findChildren<QRadioButton*>().size(), 5);
+            QVERIFY(!dialog->findChild<QRadioButton*>("platform_TikTok"));
+            for (auto platform : {"Twitch", "YouTube", "Kick", "Facebook"}) {
+                auto radio = dialog->findChild<QRadioButton*>(QString("platform_") + platform);
+                QVERIFY(radio);
+                radio->click();
+                QVERIFY(dialog->findChild<QLineEdit*>("streamKey")->isVisible());
+                const auto hint = dialog->findChild<QLabel*>("ingestDashboardHint");
+                QCOMPARE(hint->isVisible(),
+                         QString(platform) == "Kick" || QString(platform) == "Facebook");
+            }
+            dialog->findChild<QRadioButton*>("platform_YouTube")->click();
+            auto sender = dialog->findChild<QCheckBox*>("ffmpegSender");
+            QVERIFY(sender->isEnabled());
+            sender->setChecked(false);
             auto name = dialog->findChild<QLineEdit*>("channelName");
             QVERIFY(name);
             name->setText("Native test");
@@ -564,6 +585,18 @@ class NativeTests : public QObject {
         QCOMPARE(studio.store.list("channels").size(), size_t(1));
         QCOMPARE(studio.store.list("channels").at(0).get("channelName").str(),
                  std::string("Native test"));
+        QVERIFY(!studio.store.list("channels").at(0).get("ffmpegSender").flag(true));
+        QTRY_VERIFY(window.findChild<QFrame*>("configurationRow"));
+        QTimer::singleShot(0, &window, [&] {
+            auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            auto sender = dialog->findChild<QCheckBox*>("ffmpegSender");
+            QVERIFY(sender->isVisible() && sender->isEnabled() && !sender->isChecked());
+            dialog->reject();
+        });
+        window.findChild<QFrame*>("configurationRow")
+            ->findChild<QToolButton*>("editConfiguration")
+            ->click();
         window.navigate("profiles");
         auto profile = window.findChild<QPushButton*>("addNewAudioVideoConfiguration");
         QVERIFY(profile);
@@ -583,6 +616,47 @@ class NativeTests : public QObject {
             if (profiles.at(i).get("title").str() == "Native profile")
                 found = true;
         QVERIFY(found);
+    }
+
+    // Optional release tool: capture real Qt wizard figures in all supported manual languages.
+    void captureManualWizards() {
+        const auto destination = qEnvironmentVariable("ORBIS_MANUAL_CAPTURE_DIR");
+        if (destination.isEmpty())
+            QSKIP("Manual capture requested only when rebuilding manual figures");
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.resize(1880, 900);
+        window.show();
+        NativeTranslations catalogs(QString(ORBIS_TEST_RESOURCES) + "/ui");
+        for (const auto& language : catalogs.languages()) {
+            catalogs.setLanguage(language);
+            window.setLanguage(language);
+            window.navigate("live");
+            QVERIFY(QDir().mkpath(destination + '/' + language));
+            for (bool playlist : {false, true}) {
+                QTimer::singleShot(0, &window, [&] {
+                    auto wizard = qobject_cast<QWizard*>(QApplication::activeModalWidget());
+                    QVERIFY(wizard);
+                    auto profiles = wizard->findChild<QListWidget*>("wizardProfile");
+                    QVERIFY(profiles);
+                    QCOMPARE(profiles->count(), 8);
+                    QVERIFY(!profiles->item(0)->text().contains("0×0"));
+                    QVERIFY(!profiles->item(0)->text().contains("0 fps"));
+                    QVERIFY(profiles->item(1)->text().contains(catalogs.text("defaultLowTwitch")));
+                    QApplication::processEvents();
+                    const bool saved =
+                        wizard->grab().save(destination + '/' + language +
+                                                (playlist ? "/playlist.webp" : "/wizard.webp"),
+                                            "WEBP", 90);
+                    wizard->reject();
+                    QVERIFY(saved);
+                });
+                window
+                    .findChild<QPushButton*>(playlist ? "startPlaylistButton" : "startLiveButton")
+                    ->click();
+            }
+        }
     }
 
     // Parte dal wizard Qt e controlla che FFmpeg riceva realmente la playlist su localhost.
@@ -621,17 +695,18 @@ class NativeTests : public QObject {
         QTemporaryDir directory;
         Studio studio(directory.path().toStdString());
         deactivateSeedProfiles(studio);
-        const QStringList platforms = {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"};
+        const QStringList platforms = {"Twitch", "YouTube", "Kick", "Facebook"};
         for (int i = 0; i < 11; ++i) {
             Json profile;
-            profile.set("title",
-                        "Default " + platforms[i % 5].toStdString() + " " + std::to_string(i));
+            profile.set("title", "Default " + platforms[i % platforms.size()].toStdString() + " " +
+                                     std::to_string(i));
             profile.set("isActive", true);
             profile.set("videoWidth", 1920.0);
             profile.set("videoHeight", 1080.0);
             profile.set("videoBitrate", 4500.0);
             profile.set("frameRate", 30.0);
-            profile.set("defaultPlatformConfiguration", platforms[i % 5].toStdString());
+            profile.set("defaultPlatformConfiguration",
+                        platforms[i % platforms.size()].toStdString());
             studio.store.save("profiles", profile);
         }
         for (const auto& platform : platforms) {
@@ -1062,7 +1137,7 @@ class NativeTests : public QObject {
             headers << table->horizontalHeaderItem(c)->text();
         QCOMPARE(headers, QStringList({"LIVE STATUS", "TITLE", "CHANNEL", "START DATE", ""}));
         // Il marchio di ogni piattaforma nota si disegna davvero (percorsi SVG, non icone Qt).
-        for (auto name : {"twitch", "youtube", "kick", "facebook", "tiktok"}) {
+        for (auto name : {"twitch", "youtube", "kick", "facebook"}) {
             QImage mark(24, 24, QImage::Format_ARGB32);
             mark.fill(Qt::transparent);
             QPainter painter(&mark);
