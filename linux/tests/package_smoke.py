@@ -21,12 +21,19 @@ def main() -> None:
             package_version = subprocess.check_output(
                 ["dpkg-deb", "--field", str(package), "Version"], text=True
             ).strip()
+            dependencies = subprocess.check_output(["dpkg-deb", "--field", str(package), "Depends"], text=True)
+            if "qt6-image-formats-plugins" not in dependencies:
+                raise RuntimeError("Missing Qt dependency for manual WebP figures")
         else:
             with tarfile.open(package) as archive:
                 archive.extractall(tmp, filter="data")
             app = next(root.glob("*/bin/orbis-stream"))
         if not app.is_file():
             raise RuntimeError("Executable not found in package")
+        web = app.parent.parent / "share/orbis-stream/web"
+        for file in web.rglob("*"):
+            if file.suffix in (".json", ".properties", ".html", ".js") and "tiktok" in file.read_text().lower():
+                raise RuntimeError("Removed provider still present in installed product: " + str(file))
         ffmpeg = app.parent.parent / "libexec/orbis-stream/ffmpeg/ffmpeg"
         ffprobe = ffmpeg.with_name("ffprobe")
         env = os.environ.copy()

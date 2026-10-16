@@ -31,7 +31,7 @@ int main() {
         {
             Store store(directory / "data");
             const auto profiles = store.list("profiles");
-            expect(profiles.size() == 10, "ten Windows defaults");
+            expect(profiles.size() == 8, "eight defaults for four supported platforms");
             int high = 0;
             for (size_t i = 0; i < profiles.size(); ++i) {
                 const auto p = profiles.at(i);
@@ -42,7 +42,7 @@ int main() {
                     expect(p.get("videoBitrate").num() == 6000 && p.get("videoWidth").num() == 1920,
                            "current Windows YouTube default");
             }
-            expect(high == 5, "five high and five low defaults");
+            expect(high == 4, "four high and four low defaults");
             auto custom = profiles.at(0).clone();
             custom.set("title", "My edited default");
             custom.set("videoBitrate", 1234.);
@@ -50,7 +50,7 @@ int main() {
         }
         {
             Store reopened(directory / "data");
-            expect(reopened.list("profiles").size() == 10, "no duplicate seeds on restart");
+            expect(reopened.list("profiles").size() == 8, "no duplicate seeds on restart");
             expect(reopened.list("profiles").at(0).get("videoBitrate").num() == 1234,
                    "preserve user edits to defaults");
         }
