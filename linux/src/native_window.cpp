@@ -1,3 +1,5 @@
+#include "async_logger.hpp"
+#include <cstdio>
 #include "native_window.hpp"
 #include "history_cleanup_service.hpp"
 #include "live_rows.hpp"
@@ -51,6 +53,27 @@
 
 namespace orbis {
 namespace {
+std::atomic<AsyncLogger*> qtLog{nullptr};
+QtMessageHandler previousQtHandler = nullptr;
+void applicationMessage(QtMsgType type, const QMessageLogContext& context, const QString& message) {
+    if (auto logger = qtLog.load()) {
+        logger->write("qt:" + std::to_string(type), redactStreamText(message.toStdString()));
+        if (type == QtFatalMsg) logger->flush();
+    }
+    if (previousQtHandler) previousQtHandler(type, context, message);
+    else std::fprintf(stderr, "%s\n", qPrintable(message));
+}
+struct NativeLogScope {
+    explicit NativeLogScope(AsyncLogger& logger) {
+        qtLog = &logger;
+        previousQtHandler = qInstallMessageHandler(applicationMessage);
+    }
+    ~NativeLogScope() {
+        qInstallMessageHandler(previousQtHandler);
+        qtLog = nullptr;
+    }
+};
+
 class SidebarLanguagePicker : public QComboBox {
   protected:
     void paintEvent(QPaintEvent*) override {
@@ -345,10 +368,22 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     frames->start();
     rebuild();
     sample();
+    changeWatcher = std::jthread([this](std::stop_token stop) {
+        auto version = this->studio.store.changes.version();
+        while (!stop.stop_requested()) {
+            const auto latest = this->studio.store.changes.wait(version, stop, std::chrono::hours(1));
+            if (stop.stop_requested()) break;
+            version = latest;
+            QMetaObject::invokeMethod(this, [this] { sample(); }, Qt::QueuedConnection);
+        }
+    });
 }
 
 // I lavori Qt devono terminare prima che vengano distrutti Studio e SQLite.
 NativeWindow::~NativeWindow() {
+    for (auto player : findChildren<PlatformPreview*>()) player->cancel();
+    changeWatcher.request_stop();
+    if (changeWatcher.joinable()) changeWatcher.join();
     QThreadPool::globalInstance()->waitForDone();
     // Un lavoro già avviato può creare una sessione: fermarla dopo aver atteso i worker.
     studio.stopAll();
@@ -747,6 +782,7 @@ void NativeWindow::run(const std::function<void()>& action) {
 // richiesta.
 void NativeWindow::showError(const std::exception& error) {
     const std::string message = error.what();
+    studio.store.logger->write("ui-error", redactStreamText(message));
     const char* key = message.find("Nome scena") != std::string::npos ? "sceneNeedsName"
                       : message.find("almeno una sorgente video") != std::string::npos
                           ? "sceneNeedsPicture"
@@ -1491,15 +1527,27 @@ void NativeWindow::refreshLiveRow(int row, const Json& record) {
 
     // Colonna 0: lo stato, come la pillola della pagina Windows.
     auto statusCell = new QWidget(table);
-    auto statusRow = new QHBoxLayout(statusCell);
+    const auto air = record.get("air");
+    const bool offAir = status == "LIVE" && air.get("offAir").flag();
+    const bool unverified = status == "LIVE" && air.get("unverified").flag();
+    const bool airWarning = offAir || unverified;
+    auto statusRow = new QBoxLayout(airWarning ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight, statusCell);
     statusRow->setContentsMargins(8, 0, 8, 0);
+    statusRow->setSpacing(2);
     auto badge = new QLabel(t(statusKey), statusCell);
     badge->setToolTip(s(record.get("error")));
     statusCell->setToolTip(s(record.get("error")));
     badge->setProperty("badge", statusToken);
     badge->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     statusRow->addWidget(badge);
-    statusRow->addStretch();
+    if (airWarning) {
+        auto notice = new QLabel(t(offAir ? "youtubeOffAir" : "youtubeUnverified"), statusCell);
+        notice->setObjectName("youtubeAirWarning");
+        notice->setProperty("badge", "stopped");
+        notice->setToolTip(t(offAir ? "youtubeOffAirHelp" : "youtubeUnverifiedHelp"));
+        notice->setWordWrap(true);
+        statusRow->addWidget(notice);
+    } else statusRow->addStretch();
     auto statusItem = new QTableWidgetItem;
     statusItem->setData(Qt::UserRole, qlonglong(id));
     table->setItem(row, 0, statusItem);
@@ -1693,7 +1741,7 @@ void NativeWindow::refreshLiveRow(int row, const Json& record) {
     actions->adjustSize();
     liveActionsWidth = std::max(liveActionsWidth, actions->sizeHint().width());
     table->setCellWidget(row, 4, actions);
-    table->setRowHeight(row, 56);
+    table->setRowHeight(row, airWarning ? 78 : 56);
 }
 
 // Uno spot è un file scelto al momento e accodato alla diretta, come il pulsante dell'anteprima.
@@ -1785,6 +1833,7 @@ bool activateNativeApp(char** argv, const fs::path& root) {
 
 // L'avvio standard crea QApplication; il socket locale permette di richiamare la stessa finestra.
 int runNativeApp(int /*argc*/, char** argv, Studio& studio, const fs::path& resources) {
+    NativeLogScope logging(*studio.store.logger);
     // Le opzioni del motore sono già state lette; Qt riceve solo il nome eseguibile.
     int qtArgc = 1;
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);

@@ -5,6 +5,7 @@
 #include "media_job.hpp"
 #include "scene_service.hpp"
 #include "version.hpp"
+#include "screen_capture.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <cmath>
@@ -164,6 +165,60 @@ struct Api {
     unsigned short port;
     ProxyLibrary proxies{studio.store.root / "proxies"};
 
+    void events(boost::beast::tcp_stream& stream, const http::request<http::string_body>& request) {
+        const auto parameters = query(std::string(request.target()));
+        auto watched = [&](const std::string& name) {
+            auto entry = parameters.find("watch");
+            if (entry == parameters.end()) return false;
+            std::istringstream topics(entry->second);
+            std::string topic;
+            while (std::getline(topics, topic, ',')) {
+                topic.erase(std::remove_if(topic.begin(), topic.end(), [](unsigned char c) { return std::isspace(c); }), topic.end());
+                std::transform(topic.begin(), topic.end(), topic.begin(), [](unsigned char c) { return std::tolower(c); });
+                if (topic == name) return true;
+            }
+            return false;
+        };
+        const bool rows = watched("rows"), stats = watched("stats"), live = watched("live");
+        http::response<http::empty_body> response{http::status::ok, request.version()};
+        response.set(http::field::content_type, "text/event-stream");
+        response.set(http::field::cache_control, "no-cache, no-store");
+        response.set("X-Accel-Buffering", "no");
+        response.chunked(true);
+        response.keep_alive(true);
+        http::response_serializer<http::empty_body> serializer{response};
+        http::write_header(stream, serializer);
+        auto send = [&](const std::string& data) {
+            asio::write(stream, http::make_chunk(asio::buffer(data)));
+        };
+        send("retry: 1000\n\n");
+        if (!rows && !stats && !live) { asio::write(stream, http::make_chunk_last()); return; }
+        uint64_t version = 0;
+        auto since = std::string(request["Last-Event-ID"]);
+        if (since.empty()) {
+            if (auto found = parameters.find("since"); found != parameters.end()) since = found->second;
+        }
+        if (!since.empty() && std::all_of(since.begin(), since.end(), [](unsigned char c) { return std::isdigit(c); }))
+            try { version = std::stoull(since); } catch (...) {}
+        auto sampleAt = std::chrono::steady_clock::now();
+        for (;;) {
+            const auto current = studio.store.changes.version();
+            if (rows && current != version)
+                send("id: " + std::to_string(current) + "\nevent: rows\ndata: " + std::to_string(current) + "\n\n");
+            version = current;
+            const auto now = std::chrono::steady_clock::now();
+            if (now >= sampleAt) {
+                if (stats) send("event: stats\ndata: " + metrics(studio.store.root).dump() + "\n\n");
+                if (live) send("event: live\ndata: " + studio.live().dump() + "\n\n");
+                send(": keep-alive\n\n");
+                sampleAt = now + std::chrono::seconds(1);
+            }
+            const auto remaining = std::max(std::chrono::milliseconds(1),
+                std::chrono::duration_cast<std::chrono::milliseconds>(sampleAt - std::chrono::steady_clock::now()));
+            studio.store.changes.wait(version, {}, remaining);
+        }
+    }
+
     // Autentica prima di instradare le richieste; token e controllo Host proteggono l’accesso al
     // servizio locale.
     http::response<http::string_body> handle(const http::request<http::string_body>& req) {
@@ -233,7 +288,11 @@ struct Api {
             body = Json::parse(req.body());
         Json result;
         std::smatch match;
-        if (path == "/api/bootstrap") {
+        if ((path == "/updates" || path == "/api/updates") && method == http::verb::get) {
+            res.set(http::field::content_type, "text/event-stream");
+            res.prepare_payload();
+            return res;
+        } else if (path == "/api/bootstrap") {
             result.set("token", token);
             result.set("version", ORBIS_VERSION);
             result.set("dataDir", studio.store.root.string());
@@ -278,6 +337,8 @@ struct Api {
                 return res;
             } else if (method != http::verb::post)
                 throw std::runtime_error("Metodo non consentito");
+            else if (action == "air-dismiss")
+                studio.dismissAir(std::stol(match[1]));
             else if (action == "stop")
                 session->stop();
             else if (action == "button") {
@@ -384,17 +445,19 @@ struct Api {
             std::vector<std::string> args = {ffmpeg(), "-v", "error", "-nostdin"};
             auto kind = q["kind"], target = q["target"];
             if (kind == "SCREEN") {
-                if (!target.starts_with(":"))
-                    throw std::runtime_error("DISPLAY X11 non valido");
-                args.insert(args.end(), {"-f", "x11grab"});
+                auto input = screenInput(target, 5);
+                args.insert(args.end(), input.begin(), input.end());
+                target.clear();
             } else if (kind == "CAMERA") {
                 if (!target.starts_with("/dev/video"))
                     throw std::runtime_error("Dispositivo V4L2 non valido");
                 args.insert(args.end(), {"-f", "v4l2"});
             } else if (!fs::is_regular_file(target))
                 throw std::runtime_error("File inesistente");
+            if (!target.empty())
+                args.insert(args.end(), {"-i", target});
             args.insert(args.end(),
-                        {"-i", target, "-an", "-frames:v", "1", "-vf", "scale=640:-2", "-c:v",
+                        {"-an", "-frames:v", "1", "-vf", "scale=640:-2", "-c:v",
                          "mjpeg", "-threads", "1", "-f", "image2pipe", "pipe:1"});
             res.set(http::field::content_type, "image/jpeg");
             res.body() = capture(args, 10);
@@ -587,12 +650,13 @@ struct Api {
 void serve(Studio& studio, unsigned short port, const fs::path& web, const std::string& token) {
     asio::io_context io;
     tcp::acceptor acceptor(io, {asio::ip::make_address("127.0.0.1"), port});
-    asio::thread_pool pool(8);
+    asio::thread_pool pool(8), eventPool(4);
+    std::atomic<int> eventConnections{0};
     Api api{studio, web, token, port};
     for (;;) {
         tcp::socket socket(io);
         acceptor.accept(socket);
-        asio::post(pool, [socket = std::move(socket), &api]() mutable {
+        asio::post(pool, [socket = std::move(socket), &api, &eventPool, &eventConnections]() mutable {
             try {
                 boost::beast::tcp_stream stream(std::move(socket));
                 stream.expires_after(std::chrono::seconds(30));
@@ -611,6 +675,20 @@ void serve(Studio& studio, unsigned short port, const fs::path& web, const std::
                     j.set("response", "error");
                     j.set("message", e.what());
                     res.body() = j.dump();
+                    res.prepare_payload();
+                }
+                if (res.result() == http::status::ok && res[http::field::content_type] == "text/event-stream") {
+                    if (eventConnections.fetch_add(1) < 4) {
+                        asio::post(eventPool, [stream = std::move(stream), req = std::move(req), &api, &eventConnections]() mutable {
+                            try { api.events(stream, req); } catch (...) {}
+                            --eventConnections;
+                        });
+                        return;
+                    }
+                    --eventConnections;
+                    res.result(http::status::too_many_requests);
+                    res.set(http::field::content_type, "text/plain");
+                    res.body() = "Too many update streams";
                     res.prepare_payload();
                 }
                 res.keep_alive(false);

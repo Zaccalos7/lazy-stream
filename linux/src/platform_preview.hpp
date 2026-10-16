@@ -11,11 +11,14 @@ class PlatformPreview : public QWebEngineView {
     QString currentEmbed;
     QTimer refresh;
     bool querying = false;
+    std::stop_source queries;
     Qt::WindowStates previousWindowState;
     void resolve();
 
   public:
     explicit PlatformPreview(QWidget* parent);
+    ~PlatformPreview() override;
+    void cancel();
     void watch(const Json& value);
     void loadEmbed(const QUrl& url);
   signals:

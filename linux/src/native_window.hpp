@@ -48,6 +48,7 @@ class NativeWindow : public QMainWindow {
     QString configurationSignature;
     QString cleanupDismissed;
     bool sampling = false;
+    std::jthread changeWatcher;
     bool sidebarClosed = false;
     QStringList navigationKeys;
     QStringList navigationPages;

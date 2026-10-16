@@ -1,3 +1,4 @@
+#include "async_logger.hpp"
 #include "history_cleanup_service.hpp"
 #include "native_controls.hpp"
 #include "native_theme.hpp"
@@ -649,15 +650,12 @@ void NativeWindow::buildPreview() {
                              const QStringList& supported, bool numeric) {
         auto input = new QComboBox(params);
         input->setObjectName(QString("param_") + field);
+        (void)supported;
         const auto entries = catalog.get(group);
         for (size_t i = 0; i < entries.size(); ++i) {
             auto entry = entries.at(i);
             input->addItem(text(entry.get("label")), numeric ? QVariant(int(entry.get("id").num()))
                                                              : QVariant(text(entry.get("name"))));
-            if (!supported.contains(text(entry.get("name"))))
-                qobject_cast<QStandardItemModel*>(input->model())
-                    ->item(input->count() - 1)
-                    ->setEnabled(false);
         }
         form->addRow(t(label), input);
         connect(input, &QComboBox::currentIndexChanged, previewParameterTimer,
@@ -739,6 +737,7 @@ void NativeWindow::buildPreview() {
     dismiss->setToolTip(t("close"));
     noticeRow->addWidget(dismiss);
     connect(dismiss, &QToolButton::clicked, this, [this, platformNotice] {
+        studio.dismissAir(watched);
         platformNotice->setProperty("dismissedFor", qlonglong(watched));
         platformNotice->hide();
     });
@@ -1056,7 +1055,8 @@ void NativeWindow::updatePreview() {
         previewParameterTimer->stop();
         return;
     }
-    const bool publicPage = snapshot.get("platform").str("Custom") != "Custom";
+    const auto playerPlatform = snapshot.get("playerPlatform").str(snapshot.get("platform").str("Custom"));
+    const bool publicPage = playerPlatform != "Custom";
     if (!publicPage) {
         if (auto player = preview->findChild<PlatformPreview*>())
             delete player;
@@ -1064,7 +1064,7 @@ void NativeWindow::updatePreview() {
         body->findChild<QFrame*>("platformNotice")->hide();
     }
     body->findChild<QLabel*>("facebookPreviewNotice")
-        ->setVisible(snapshot.get("platform").str() == "Facebook");
+        ->setVisible(playerPlatform == "Facebook");
     if (publicPage && preview->property("playerFor").toLongLong() != watched) {
         if (auto old = preview->findChild<PlatformPreview*>())
             delete old;
@@ -1072,23 +1072,19 @@ void NativeWindow::updatePreview() {
         auto player = new PlatformPreview(preview);
         player->setGeometry(preview->rect());
         connect(player, &PlatformPreview::diagnostic, this, [this, id = watched](QString message) {
-            const auto root = studio.store.root / "logs";
-            fs::create_directories(root);
-            QFile file(
-                QString::fromStdString((root / (std::to_string(id) + ".preview.log")).string()));
-            if (file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-                file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
-                file.write(QByteArray::fromStdString(
-                    now() + " " + redactStreamText(message.toStdString()) + "\n"));
-            }
+            studio.store.logger->write("preview:" + std::to_string(id),
+                redactStreamText(message.toStdString()),
+                studio.store.root / "logs" / (std::to_string(id) + ".preview.log"));
         });
         connect(player, &PlatformPreview::playerState, this, [this, player](const QString& state) {
             auto notice = body->findChild<QFrame*>("platformNotice");
             if (!notice)
                 return;
             auto message = notice->findChild<QLabel*>("platformNoticeText");
-            const bool youtube = player->property("platform").toString() == "YouTube";
-            const bool unverified = state == "UNVERIFIED" && youtube;
+            player->setProperty("playerFailed", state == "FAILED");
+            if (player->property("platform").toString() == "YouTube")
+                return;
+            const bool unverified = false;
             const bool failed = state == "FAILED";
             message->setText(unverified ? t("youtubeUnverified") + " " + t("youtubeUnverifiedHelp")
                              : failed   ? t("embedFailed")
@@ -1097,8 +1093,21 @@ void NativeWindow::updatePreview() {
                                notice->property("dismissedFor").toLongLong() != watched);
         });
         auto channel = studio.store.get("channels", snapshot.get("channelId").num());
-        player->setProperty("platform", text(snapshot.get("platform")));
+        player->setProperty("platform", QString::fromStdString(playerPlatform));
         player->watch(channel);
+    }
+    if (playerPlatform == "YouTube") {
+        const auto air = snapshot.get("air");
+        auto notice = body->findChild<QFrame*>("platformNotice");
+        const bool offAir = air.get("offAir").flag(), unverified = air.get("unverified").flag();
+        auto player = preview->findChild<PlatformPreview*>();
+        const bool failed = player && player->property("playerFailed").toBool() &&
+                            notice->property("dismissedFor").toLongLong() != watched;
+        notice->findChild<QLabel*>("platformNoticeText")->setText(
+            offAir ? t("youtubeOffAir") + " " + t("youtubeOffAirHelp") :
+            unverified ? t("youtubeUnverified") + " " + t("youtubeUnverifiedHelp") :
+            failed ? t("embedFailed") : "");
+        notice->setVisible(offAir || unverified || failed);
     }
     header->findChild<QPushButton*>("liveNow")->setVisible(publicPage);
     header->findChild<QLabel*>("previewLiveIndicator")->setVisible(!publicPage);

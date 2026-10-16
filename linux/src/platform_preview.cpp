@@ -1,5 +1,5 @@
 #include "platform_preview.hpp"
-#include "media_job.hpp"
+#include "platform_lookup.hpp"
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QFileInfo>
@@ -86,7 +86,13 @@ PlatformPreview::PlatformPreview(QWidget* parent) : QWebEngineView(parent) {
     hide();
 }
 
+PlatformPreview::~PlatformPreview() { cancel(); }
+
+void PlatformPreview::cancel() { queries.request_stop(); refresh.stop(); }
+
 void PlatformPreview::watch(const Json& value) {
+    queries.request_stop();
+    queries = std::stop_source{};
     channel = value.clone();
     currentEmbed.clear();
     resolve();
@@ -94,12 +100,18 @@ void PlatformPreview::watch(const Json& value) {
 }
 
 void PlatformPreview::resolve() {
-    if (querying)
+    if (querying || queries.stop_requested())
         return;
+    const auto stop = queries.get_token();
     querying = true;
     auto watcher = new QFutureWatcher<Json>(this);
-    connect(watcher, &QFutureWatcher<Json>::finished, this, [this, watcher] {
+    connect(watcher, &QFutureWatcher<Json>::finished, this, [this, watcher, stop] {
         querying = false;
+        if (stop.stop_requested()) {
+            watcher->deleteLater();
+            if (!queries.stop_requested()) resolve();
+            return;
+        }
         auto result = watcher->result();
         emit diagnostic(QString::fromStdString(result.dump()));
         watcher->deleteLater();
@@ -116,9 +128,9 @@ void PlatformPreview::resolve() {
         }
     });
     const auto snapshot = channel.clone();
-    watcher->setFuture(QtConcurrent::run([snapshot] {
+    watcher->setFuture(QtConcurrent::run([snapshot, stop] {
         try {
-            return platformPlayer(snapshot);
+            return platformPlayer(snapshot, stop);
         } catch (...) {
             Json result;
             result.set("air", "UNVERIFIED");

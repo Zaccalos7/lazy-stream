@@ -7,6 +7,7 @@ extern "C" {
 #include <libavformat/avio.h>
 #include <libavformat/avformat.h>
 #include <libavutil/dict.h>
+#include <libavutil/avutil.h>
 #include <libavutil/error.h>
 #include <libavutil/log.h>
 }
@@ -251,7 +252,7 @@ void NativePublisher::open() {
     av_dict_free(&options);
     if (result < 0)
         throw std::runtime_error("Native publisher connect: " + avError(result));
-    impl->log("libavformat " + std::to_string(avformat_version()) + " publish accepted");
+    impl->log(std::string("FFmpeg ") + av_version_info() + " libavformat publish accepted");
 #else
     throw std::runtime_error("Native publisher requires the FFmpeg 9.0.2 development libraries");
 #endif

@@ -1,3 +1,4 @@
+#include "composition_preview.hpp"
 #include "native_forms.hpp"
 #include "native_theme.hpp"
 #include "native_window.hpp"
@@ -153,6 +154,7 @@ class CanvasView : public QGraphicsView {
     std::function<void(QString)> fileDropped;
     std::function<void(Json)> sourceDropped;
     QString emptyHint;
+    QImage compositionFrame;
 
     explicit CanvasView(QGraphicsScene* scene, QWidget* parent) : QGraphicsView(scene, parent) {
         setObjectName("sceneCanvas");
@@ -166,6 +168,8 @@ class CanvasView : public QGraphicsView {
         QGraphicsView::drawBackground(painter, area);
         painter->setPen(QPen(QColor("#151515"), 0));
         const auto bounds = scene()->sceneRect();
+        if (!compositionFrame.isNull())
+            painter->drawImage(bounds, compositionFrame);
         for (int i = 1; i < 3; ++i) {
             painter->drawLine(QPointF(bounds.width() * i / 3, 0),
                               QPointF(bounds.width() * i / 3, bounds.height()));
@@ -860,6 +864,39 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             }
         });
     });
+    const auto previewPath = studio.store.root / "previews" /
+        ("composer-" + QUuid::createUuid().toString(QUuid::WithoutBraces).toStdString() + ".jpg");
+    CompositionPreview compositionPreview(studio.store, previewPath);
+    QString previewSignature;
+    auto previewTimer = new QTimer(&dialog);
+    connect(previewTimer, &QTimer::timeout, &dialog, [&] {
+        if (isLayout) return;
+        Json composition;
+        composition.set("width", width->value());
+        composition.set("height", height->value());
+        auto items = Json::array();
+        for (auto node : graphics->items(Qt::AscendingOrder))
+            if (auto tile = dynamic_cast<SourceTile*>(node)) {
+                if (!tile->source.get("sourceTarget").str().empty())
+                    items.push(tile->value());
+            }
+        composition.set("items", items);
+        const auto signature = QString::fromStdString(composition.dump());
+        if (signature != previewSignature) {
+            previewSignature = signature;
+            compositionPreview.update(composition);
+            if (!items.size()) view->compositionFrame = {};
+        }
+        QImage frame(QString::fromStdString(previewPath.string()));
+        if (!frame.isNull() && items.size()) {
+            view->compositionFrame = frame;
+            for (auto node : graphics->items())
+                if (auto tile = dynamic_cast<SourceTile*>(node))
+                    tile->setBrush(QColor(40, 110, 180, tile->isSelected() ? 35 : 0));
+        }
+        view->viewport()->update();
+    });
+    if (!isLayout) previewTimer->start(500);
     QTimer::singleShot(0, &dialog, fit);
     dialog.exec();
     // La scena viene distrutta dopo i pannelli: non notificare selezione/geometria a widget già

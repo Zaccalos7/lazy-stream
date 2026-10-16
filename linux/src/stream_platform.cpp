@@ -41,6 +41,40 @@ bool isIvsChannelEndpoint(const std::string& host) {
 }
 } // namespace
 
+StreamPlatform streamPlatform(const std::string& outputUrl, const std::string& declared) {
+    const auto detected = detectStreamPlatform(outputUrl);
+    if (detected != StreamPlatform::Generic) return detected;
+    auto name = declared;
+    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+    if (name == "youtube") return StreamPlatform::YouTube;
+    if (name == "twitch") return StreamPlatform::Twitch;
+    if (name == "kick") return StreamPlatform::Kick;
+    if (name == "facebook" || name == "facebook gaming") return StreamPlatform::Facebook;
+    if (name == "tiktok") return StreamPlatform::TikTok;
+    return StreamPlatform::Generic;
+}
+
+StreamDeliveryProfile deliveryFor(StreamPlatform platform) {
+    StreamDeliveryProfile profile;
+    if (platform == StreamPlatform::Generic) profile.audioSampleRate = 44100;
+    if (platform == StreamPlatform::Twitch || platform == StreamPlatform::Kick) {
+        profile.connectSeconds = 20;
+        profile.stallSeconds = 15;
+        profile.uniformFormat = platform == StreamPlatform::Kick;
+        profile.audioSampleRate = platform == StreamPlatform::Twitch ? 44100 : 48000;
+    } else if (platform == StreamPlatform::YouTube || platform == StreamPlatform::Facebook ||
+               platform == StreamPlatform::TikTok) {
+        profile.buffered = profile.uniformFormat = true;
+        profile.stallSeconds = 20;
+        profile.reconnectAttempts = platform == StreamPlatform::TikTok ? 3 : 5;
+        profile.maxLeadMilliseconds = platform == StreamPlatform::TikTok ? 3000 : 4000;
+        profile.prerollMilliseconds = 2000;
+        profile.constantBitrate = platform != StreamPlatform::TikTok;
+        profile.portrait = platform == StreamPlatform::TikTok;
+    }
+    return profile;
+}
+
 // L'ordine coincide con StreamPlatforms.Detect: gli endpoint IVS di Kick appartengono alla rete
 // Twitch, quindi vanno riconosciuti prima di classificare il dominio live-video.net.
 StreamPlatform detectStreamPlatform(const std::string& outputUrl) {

@@ -371,12 +371,6 @@ void NativeWindow::editProfile(Json profile, std::function<void(Json)> apply) {
             values.append({str(rows.at(i).get("label")),
                            numeric ? rows.at(i).get("id") : rows.at(i).get("name")});
         auto input = dialog.choice(key, t(label), values);
-        for (size_t i = 0; i < rows.size(); ++i)
-            if (!supported.contains(str(rows.at(i).get("name")))) {
-                auto model = qobject_cast<QStandardItemModel*>(input->model());
-                model->item(i)->setEnabled(false);
-                model->item(i)->setToolTip(t("invalidParameter"));
-            }
         if (!profile.has(key)) {
             for (size_t i = 0; i < rows.size(); ++i)
                 if (supported.contains(str(rows.at(i).get("name")))) {
@@ -388,9 +382,13 @@ void NativeWindow::editProfile(Json profile, std::function<void(Json)> apply) {
     };
     codec("videoCodec", "codec", "VideoCodecs", {"libx264"}, true);
     codec("videoCodecName", "videoCodecName", "VideoCodecNames",
-          {"libx264", "h264_nvenc", "h264_qsv"}, false);
+          {"libx264", "h264_nvenc", "h264_qsv", "h264_vaapi"}, false);
     codec("pixelFormat", "pixelFormat", "PixelFormats", {"yuv420p"}, false);
-    dialog.choice("videoFormat", t("videoFormat"), {{"FLV", Json::string("flv")}});
+    QList<QPair<QString, Json>> formats;
+    for (const auto& format : {"mp4", "mkv", "avi", "mov", "flv", "webm", "ts"})
+        formats.append({QString(format).toUpper(), Json::string(format)});
+    auto format = dialog.choice("videoFormat", t("videoFormat"), formats);
+    if (!profile.has("videoFormat")) format->setCurrentIndex(4);
     dialog
         .choice("encoderQuality", t("encoderQuality"),
                 {{t("encoderQualityAuto"), Json::string("auto")},
