@@ -45,6 +45,8 @@ class NativeWindow : public QMainWindow {
     int liveActionsWidth = 0;
     QLabel* pageLabel = nullptr;
     QLabel* emptyState = nullptr;
+    QString configurationSignature;
+    QString cleanupDismissed;
     bool sampling = false;
     bool sidebarClosed = false;
     QStringList navigationKeys;
@@ -58,6 +60,10 @@ class NativeWindow : public QMainWindow {
     void showAbout();
     void buildChannels();
     void buildProfiles();
+    void refreshConfigurations();
+    void updatePager(int total);
+    void showOutcome(const QString& message);
+    void showErrorReport(Json history, int videoIndex = -1);
     void buildLive(bool history);
     void refreshHistory();
     void unlockVideos();
@@ -122,7 +128,7 @@ class NativeWindow : public QMainWindow {
         return translations.languages();
     }
 
-    void editScene(Json scene, std::function<void(Json)> saved = {});
+    bool editScene(Json scene, std::function<void(Json)> saved = {});
 };
 
 int runNativeApp(int argc, char** argv, Studio& studio, const fs::path& resources);

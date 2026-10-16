@@ -1,5 +1,13 @@
 # Cronologia del port Linux
 
+## Modifiche in sviluppo — 2026-10-16
+
+- Gestione Live con filtri compatti e pagine numerate; wizard profilo → canale → compositore ampio, con schede adattive fino a cinque colonne e comandi di navigazione distinti.
+- Avvio scena sopra il canvas, sorgenti usate/disponibili e overlay a sinistra, livelli a destra. Trascinamento dal catalogo al canvas e aggiunta di un video tramite percorso.
+- Sender FFmpeg allineato a Windows per analisi delle intestazioni AVC/AAC e app/playpath Facebook; keyframe periodici, flush FLV e CBR x264 sulle piattaforme che lo richiedono.
+- Registri separati per sessione, producer e publisher, consultabili dai dettagli della diretta e dall'API. Comandi, PID, exit code, errori e riconnessioni conservati con credenziali oscurate prima della scrittura; watchdog per avvio e progresso del publisher.
+- Test di navigazione del wizard, trasmissione RTMP da playlist e scena, errori di connessione, oscuramento dei log e conservazione dell'exit code.
+
 ## 0.0.10 — 2026-10-14
 
 - Lo stato Live richiede progresso effettivo del publisher FFmpeg; durante il collegamento resta Connessione/Riconnessione. Ridotti i tempi di analisi FLV e aggiunto un timeout della connessione di uscita.

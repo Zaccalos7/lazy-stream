@@ -17,6 +17,7 @@
 #include <QSlider>
 #include <QStyle>
 #include <QStyledItemDelegate>
+#include <QStandardItemModel>
 #include <QTableWidget>
 #include <QTimer>
 #include <QUuid>
@@ -270,78 +271,49 @@ void NativeWindow::editChannel(Json channel) {
 
 // Le opzioni sono quelle del motore FFmpeg, con limiti coerenti con la validazione del backend.
 void NativeWindow::editProfile(Json profile) {
-    NativeForm dialog(this, t("videoAndAudioSettings"), profile);
-    dialog.text("title", t("title"));
-    dialog.check("isActive", t("active"), false);
-    dialog.number("videoWidth", t("width"), 1280, 16, 7680);
-    dialog.number("videoHeight", t("height"), 720, 16, 7680);
-    dialog.number("frameRate", t("frameRate"), 30, 1, 120, 2);
-    dialog.number("videoBitrate", t("bitrate") + " (kbps)", 4500, 100, 100000);
-    dialog.number("audioBitrate", t("audioBitrate") + " (kbps)", 128, 32, 512);
-    dialog.number("gopSize", t("gopSize") + " (s)", 2, 0.1, 10, 1);
-    dialog.choice(
-        "videoCodecName", t("videoCodecName"),
-        {{"libx264", Json::string("libx264")}, {"h264_nvenc", Json::string("h264_nvenc")}});
-    dialog.text("preset", t("additionalVideoOptions"));
-    dialog.check("lowLatency", t("lowLatency"), true);
-    dialog.check("adaptiveBitrate", t("adaptiveBitrate"));
-    dialog.choice("encoderQuality", t("encoderQuality"),
-                  {{t("encoderQualityAuto"), Json::string("auto")},
-                   {t("encoderQualityLight"), Json::string("light")},
-                   {t("encoderQualityBalanced"), Json::string("balanced")},
-                   {t("encoderQualityHigh"), Json::string("high")}});
-    auto options = new QPlainTextEdit(str(profile.get("videoSettingsOptions")), &dialog);
-    if (profile.get("videoSettingsOptions").isObject())
-        options->setPlainText(QString::fromStdString(profile.get("videoSettingsOptions").dump()));
-    options->setObjectName("videoSettingsOptions");
-    options->setPlaceholderText("{\"preset\":\"veryfast\",\"tune\":\"zerolatency\"}");
-    options->setMaximumHeight(85);
-    dialog.form->addRow(t("additionalVideoOptions"), options);
-    auto presets = new QComboBox(&dialog);
-    presets->setObjectName("profilePresets");
-    presets->addItem(t("loadVideoAndAudioSettings"), QString{});
-    auto all = studio.store.list("profiles");
-    for (size_t i = 0; i < all.size(); ++i)
-        if (all.at(i).get("isDefaultConfiguration").flag())
-            presets->addItem(str(all.at(i).get("title")), QString::fromStdString(all.at(i).dump()));
-    dialog.form->insertRow(0, t("configuration"), presets);
-    connect(presets, &QComboBox::currentIndexChanged, &dialog, [&] {
-        if (presets->currentData().toString().isEmpty())
-            return;
-        auto preset = Json::parse(presets->currentData().toString().toStdString());
-        for (auto field :
-             {"videoWidth", "videoHeight", "frameRate", "videoBitrate", "audioBitrate", "gopSize"})
-            if (auto spin = dialog.findChild<QDoubleSpinBox*>(field))
-                spin->setValue(preset.get(field).num(spin->value()));
-        if (auto low = dialog.findChild<QCheckBox*>("lowLatency"))
-            low->setChecked(preset.get("lowLatency").flag(true));
-    });
-    connect(dialog.buttons, &QDialogButtonBox::accepted, &dialog, [&] {
-        run([&] {
-            auto value = dialog.value();
-            value.set("isDefaultConfiguration", false);
-            if (!options->toPlainText().trimmed().isEmpty())
-                value.set("videoSettingsOptions",
-                          Json::parse(options->toPlainText().toStdString()));
-            if (value.get("preset").str().empty())
-                value.set("preset", "veryfast");
-            validate("profiles", value);
-            studio.store.save("profiles", value, profile.get("id").num());
-            dialog.accept();
-        });
-    });
-    auto tune = new QPushButton(t("encoderQualityAuto"), &dialog);
-    dialog.form->addRow(tune);
-    connect(tune, &QPushButton::clicked, &dialog, [&, tune] {
-        auto value = dialog.value();
-        QPointer<QPushButton> safe(tune);
-        runAsync([value] { return tuneEncoder(value); },
-                 [safe](Json result) {
-                     if (safe)
-                         safe->setToolTip(QString::fromStdString(result.dump()));
-                 });
-    });
-    dialog.exec();
+    NativeForm dialog(this, t(profile.has("id") ? "editModalTitle" : "addNewAudioVideoConfiguration"), profile);
+    dialog.setObjectName("profileEditor"); dialog.resize(std::max(900,std::min(1320,width()-40)), std::min(900,screen()->availableGeometry().height()-40));
+    dialog.buttons->button(QDialogButtonBox::Save)->setText(t("save")); dialog.buttons->button(QDialogButtonBox::Cancel)->setText(t("cancel"));
+    auto active=dialog.check("isActive",t("active"),false); active->hide();
+    auto presets=new QWidget(&dialog); auto presetRow=new QHBoxLayout(presets); presetRow->setContentsMargins(0,0,0,0);
+    auto presetHint=new QLabel(t("clickButtonToLoadVideoSettings"),presets); presetHint->setWordWrap(true); presetHint->setObjectName("muted"); presetRow->addWidget(presetHint);
+    const auto templates=studio.store.list("profiles");
+    dialog.form->addRow(presets);
+    dialog.text("title",t("videoSettingTitle"))->setPlaceholderText(t("titlePlaceholder"));
+    dialog.section(t("video"));
+    const auto catalog=Json::parse(readFile(resources/"codec-catalog.json"));
+    auto codec=[&](const char* key,const char* label,const char* group,const QStringList& supported,bool numeric) {
+        QList<QPair<QString,Json>> values; const auto rows=catalog.get(group);
+        for(size_t i=0;i<rows.size();++i) values.append({str(rows.at(i).get("label")),numeric ? rows.at(i).get("id") : rows.at(i).get("name")});
+        auto input=dialog.choice(key,t(label),values);
+        for(size_t i=0;i<rows.size();++i) if(!supported.contains(str(rows.at(i).get("name")))) {auto model=qobject_cast<QStandardItemModel*>(input->model()); model->item(i)->setEnabled(false); model->item(i)->setToolTip(t("invalidParameter"));}
+        if(!profile.has(key)) {for(size_t i=0;i<rows.size();++i) if(supported.contains(str(rows.at(i).get("name")))) {input->setCurrentIndex(i);break;}}
+        return input;
+    };
+    codec("videoCodec","codec","VideoCodecs",{"libx264"},true);
+    codec("videoCodecName","videoCodecName","VideoCodecNames",{"libx264","h264_nvenc","h264_qsv"},false);
+    codec("pixelFormat","pixelFormat","PixelFormats",{"yuv420p"},false);
+    dialog.choice("videoFormat",t("videoFormat"),{{"FLV",Json::string("flv")}});
+    dialog.choice("encoderQuality",t("encoderQuality"),{{t("encoderQualityAuto"),Json::string("auto")},{t("encoderQualityLight"),Json::string("light")},{t("encoderQualityBalanced"),Json::string("balanced")},{t("encoderQualityHigh"),Json::string("high")}})->setToolTip(t("encoderQualityHelp"));
+    auto rate=dialog.number("videoBitrate",t("bitrate"),4500,100,100000,3); rate->setProperty("jsonScale",1000.); rate->setRange(.1,100); rate->setValue(profile.get("videoBitrate").num(4500)/1000); rate->setSuffix(" Mbit/s");
+    dialog.number("gopSize",t("gopSize"),2,1,10)->setSuffix(" s");
+    for(const auto& field:{"videoWidth","videoHeight","frameRate"}) {auto input=dialog.number(field,t(field==QString("videoWidth") ? "width" : field==QString("videoHeight") ? "height" : "frameRate"),0,0,field==QString("frameRate") ? 240 : 7680,field==QString("frameRate") ? 3 : 0); input->setProperty("nullable",true); input->setSpecialValueText(t("keepSource")); input->setSingleStep(field==QString("frameRate") ? 1 : 2);}
+    dialog.grid({{"videoCodec",t("codec")},{"videoCodecName",t("videoCodecName")},{"encoderQuality",t("encoderQuality")},{"pixelFormat",t("pixelFormat")},{"videoFormat",t("videoFormat")},{"videoBitrate",t("bitrate")},{"gopSize",t("gopSize")},{"videoWidth",t("width")},{"videoHeight",t("height")},{"frameRate",t("frameRate")}},4);
+    dialog.section(t("audio")+" · "+t("additionalVideoOptions"));
+    codec("audioCodec","audioCodec","AudioCodecs",{"aac"},true);
+    dialog.number("audioBitrate",t("audioBitrate"),128,32,512)->setSuffix(" kbit/s");
+    QList<QPair<QString,Json>> presetValues,tuneValues; for(const auto& name:{"ultrafast","superfast","veryfast","faster","fast","medium","slow","slower","veryslow"}) presetValues.append({name,Json::string(name)});
+    for(const auto& name:{"zerolatency","film","animation","grain","stillimage","fastdecode"}) tuneValues.append({name,Json::string(name)});
+    auto preset=dialog.choice("preset","preset",presetValues); if(!profile.has("preset")) preset->setCurrentIndex(2);
+    auto tune=dialog.choice("tune","tune",tuneValues);
+    dialog.grid({{"audioCodec",t("audioCodec")},{"audioBitrate",t("audioBitrate")},{"preset","preset"},{"tune","tune"}},4);
+    auto option=[&](const char* key,const char* help,bool fallback) {auto input=dialog.check(key,t(key),fallback); auto taken=dialog.form->takeRow(input); delete taken.fieldItem; auto card=new QFrame(&dialog); card->setObjectName("optionCard"); auto row=new QHBoxLayout(card); auto text=new QVBoxLayout; auto title=new QLabel(t(key),card); title->setObjectName("rowTitle"); text->addWidget(title); auto hint=new QLabel(t(help),card); hint->setObjectName("muted"); hint->setWordWrap(true); text->addWidget(hint); row->addLayout(text,1); input->setText({}); row->addWidget(input); dialog.form->addRow(card); return input;};
+    auto low=option("lowLatency","lowLatencyHelp",true); option("adaptiveBitrate","adaptiveBitrateHelp",true);
+    auto tuning=[preset,tune](bool on){preset->setEnabled(!on);tune->setEnabled(!on);}; connect(low,&QCheckBox::toggled,&dialog,tuning); tuning(low->isChecked());
+    for(const auto& platform:{"Twitch","YouTube","Kick","Facebook","TikTok"}) {auto button=new QPushButton(platform==QString("Facebook") ? "Facebook Gaming" : platform,presets); button->setIcon(platformMark(platform)); button->setObjectName(QString("preset_")+platform); button->setProperty("brand",QString(platform).toLower()); presetRow->addWidget(button); connect(button,&QPushButton::clicked,&dialog,[&,platform]{for(size_t i=0;i<templates.size();++i) {auto record=templates.at(i); if(record.get("isDefaultConfiguration").flag() && str(record.get("platform"))==platform) {for(const auto& key:{"videoWidth","videoHeight","frameRate","gopSize","audioBitrate"}) dialog.findChild<QDoubleSpinBox*>(key)->setValue(record.get(key).num()); rate->setValue(record.get("videoBitrate").num(4500)/1000); low->setChecked(record.get("lowLatency").flag(true)); break;}}});}
+    if(profile.has("id")) {auto remove=dialog.buttons->addButton(t("delete"),QDialogButtonBox::DestructiveRole); remove->setIcon(studioIcon("delete")); connect(remove,&QPushButton::clicked,&dialog,[&]{run([&]{if(confirm("deleteConfiguration")){studio.store.remove("profiles",profile.get("id").num());dialog.reject();}});});}
+    connect(dialog.buttons,&QDialogButtonBox::accepted,&dialog,[&]{run([&]{auto result=dialog.value(); result.set("isDefaultConfiguration",false); validate("profiles",result); studio.store.save("profiles",result,profile.get("id").num()); dialog.accept();});});
+    dialog.exec(); sample();
 }
 
 // La selezione impone due passaggi come Windows e non rende disponibili configurazioni disattivate.
