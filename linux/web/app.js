@@ -260,6 +260,7 @@ function closeModal() {
   modalOpen = false;
   deckActive = false;
 }
+$('#modal [value=cancel]').addEventListener('click', closeModal);
 $('#modal').addEventListener('close', () => {
   if (!$('#modal').open) {
     ++modalGeneration;
@@ -502,10 +503,7 @@ function channels(root) {
   }
   const platformFilter = field('Piattaforma', 'platformFilter', channelFilters.platform, 'select', [
     ['', 'Tutte'],
-    ...['Custom', 'Twitch', 'YouTube', 'Kick', 'Facebook', 'TikTok'].map((platform) => [
-      platform,
-      platform,
-    ]),
+    ...['Custom', 'Twitch', 'YouTube', 'Kick', 'Facebook'].map((platform) => [platform, platform]),
   ]);
   const activeFilter = field('Stato', 'activeFilter', channelFilters.active, 'select', [
     ['', 'Tutti'],
@@ -567,27 +565,6 @@ function channels(root) {
   root.append(grid);
   if (!data.channels?.length) empty(root, 'Aggiungi il primo canale.');
 }
-/** Replica la scelta della chiave temporanea da LiveStreamKeys.cs usando nome e dominio ingest. */
-function asksForKey(channel) {
-  if (
-    [channel.platform, channel.platformStreamName].some(
-      (value) => value?.trim().toLowerCase() === 'tiktok',
-    )
-  )
-    return true;
-  try {
-    const host = new URL(channel.streamUrl).hostname.toLowerCase();
-    return [
-      'tiktokcdn.com',
-      'tiktokcdn-eu.com',
-      'tiktokcdn-us.com',
-      'tiktokv.com',
-      'tiktok.com',
-    ].some((domain) => host === domain || host.endsWith('.' + domain));
-  } catch {
-    return false;
-  }
-}
 /** Prepara il modulo del canale e invia i campi al server, mantenendo la validazione finale nel backend. */
 function editChannel(c) {
   // Gli ingest iniziali vengono da MainChannelSettingModel.Platforms; gli account possono sostituirli.
@@ -595,10 +572,9 @@ function editChannel(c) {
     Twitch: 'rtmp://live.twitch.tv/app',
     YouTube: 'rtmps://a.rtmps.youtube.com/live2',
     Kick: 'rtmps://fa723fc1b171.global-contribute.live-video.net/app',
-    Facebook: 'rtmps://rtmp-api.facebook.com:443/rtmp',
-    TikTok: 'rtmp://push-rtmp-l11-va01.tiktokcdn.com/stage',
+    Facebook: 'rtmps://live-api-s.facebook.com:443/rtmp',
   };
-  const knownPlatforms = ['Custom', 'Twitch', 'YouTube', 'Kick', 'Facebook', 'TikTok'];
+  const knownPlatforms = ['Custom', 'Twitch', 'YouTube', 'Kick', 'Facebook'];
   const initialPlatform =
     c.platform ||
     knownPlatforms.find((name) => name.toLowerCase() === c.platformStreamName?.toLowerCase()) ||
@@ -616,17 +592,7 @@ function editChannel(c) {
     knownPlatforms.map((name) => [name, name]),
   );
   const urlField = field('Server RTMP/RTMPS', 'streamUrl', c.streamUrl);
-  const keyField = field(
-    t('key', 'Chiave'),
-    'streamKey',
-    c.streamKey?.startsWith('asked-at-every-live:') ? '' : c.streamKey,
-    'password',
-  );
-  const keyHint = el(
-    'p',
-    { class: 'caption' },
-    t('keyEachLiveHint', 'TikTok chiede una chiave nuova a ogni live.'),
-  );
+  const keyField = field(t('key', 'Chiave'), 'streamKey', c.streamKey, 'password');
   const advanced = el(
     'details',
     {},
@@ -667,20 +633,15 @@ function editChannel(c) {
     field(t('channelName', 'Nome canale'), 'channelName', c.channelName),
     urlField,
     keyField,
-    keyHint,
     field(t('description', 'Descrizione'), 'description', c.description, 'textarea'),
     advanced,
   );
   const platformSelect = platformField.querySelector('select');
   const urlInput = urlField.querySelector('input');
-  const keyInput = keyField.querySelector('input');
+  keyField.querySelector('input').required = true;
   const syncPlatform = (changed) => {
     if (changed && (!urlInput.value || Object.values(ingestPresets).includes(urlInput.value)))
       urlInput.value = ingestPresets[platformSelect.value] || '';
-    const temporary = asksForKey({ platform: platformSelect.value, streamUrl: urlInput.value });
-    keyField.hidden = temporary;
-    keyHint.hidden = !temporary;
-    keyInput.required = !temporary;
   };
   platformSelect.addEventListener('change', () => syncPlatform(true));
   urlInput.addEventListener('input', () => syncPlatform(false));
@@ -699,7 +660,7 @@ function editChannel(c) {
       v[k] = value(k);
     v.platformStreamName = v.platform.toLowerCase();
     if (!v.streamUrl) v.streamUrl = ingestPresets[v.platform] || '';
-    if (!asksForKey(v) && !v.streamKey) throw Error('La chiave di stream è richiesta');
+    if (!v.streamKey) throw Error('La chiave di stream è richiesta');
     for (const k of [
       'scenePkid',
       'profileId',
@@ -904,7 +865,7 @@ function editProfile(p) {
     ),
   );
   const presets = el('div', { class: 'toolbar preset-bar' });
-  for (const platform of ['Twitch', 'YouTube', 'Kick', 'Facebook', 'TikTok'])
+  for (const platform of ['Twitch', 'YouTube', 'Kick', 'Facebook'])
     presets.append(
       button(platform, () => {
         const source = (data.profiles || []).find(
@@ -924,6 +885,11 @@ function editProfile(p) {
         ])
           fields.querySelector(`[name=${key}]`).value = source[key] ?? '';
         fields.querySelector('[name=lowLatency]').checked = source.lowLatency !== false;
+        fields.querySelector('[name=videoSettingsOptions]').value = JSON.stringify(
+          source.videoSettingsOptions || [],
+          null,
+          2,
+        );
         if (fields.querySelector('[name=title]').value === 'Nuovo profilo')
           fields.querySelector('[name=title]').value = platform;
       }),
@@ -948,7 +914,10 @@ function editProfile(p) {
       'audioBitrate',
       'gopSize',
     ])
-      v[k] = number(k);
+      v[k] =
+        ['videoWidth', 'videoHeight', 'frameRate'].includes(k) && value(k) === ''
+          ? null
+          : number(k);
     await api('profiles' + (p.id ? '/' + p.id : ''), p.id ? 'PUT' : 'POST', v);
     closeModal();
   });
@@ -1769,23 +1738,13 @@ function wizardSettings(draft) {
   });
   return root;
 }
-/** Riprende _StartWizardConfiguration.cshtml: canali attivi e chiave temporanea per TikTok. */
+/** Riprende _StartWizardConfiguration.cshtml: canali attivi per le piattaforme supportate. */
 function wizardConfiguration(draft) {
   const root = el('div');
   renderWindowsPage(root, '_StartWizardConfiguration');
   const channels = (data.channels || []).filter((channel) => channel.isActive !== false);
   if (!channels.some((channel) => channel.id === draft.channelId))
     draft.channelId = channels[0]?.id || 0;
-  const keyLabel = root.querySelector('[data-wizard-live-key]');
-  const keyInput = keyLabel.querySelector('input');
-  keyInput.value = draft.streamKey || '';
-  const updateKey = () => {
-    const temporary = asksForKey(channels.find((channel) => channel.id === draft.channelId) || {});
-    keyLabel.hidden = !temporary;
-    keyInput.disabled = !temporary;
-    keyInput.required = temporary;
-    if (!temporary) keyInput.value = '';
-  };
   for (const channel of channels) {
     const input = el('input', {
       type: 'radio',
@@ -1795,9 +1754,6 @@ function wizardConfiguration(draft) {
     });
     input.addEventListener('change', () => {
       draft.channelId = channel.id;
-      draft.streamKey = '';
-      keyInput.value = '';
-      updateKey();
     });
     root
       .querySelector('[data-wizard-configurations]')
@@ -1821,18 +1777,13 @@ function wizardConfiguration(draft) {
     closeModal();
     navigate('channels');
   });
-  updateKey();
   return root;
 }
-/** Valida le due scelte prima di cambiare dialogo, conservando una chiave temporanea solo in memoria. */
+/** Valida le due scelte prima di cambiare dialogo. */
 function wizardRequest(draft) {
   if (!draft.profileId || !draft.channelId)
     throw Error('Scegli un profilo attivo e una configurazione canale attiva');
-  const channel = data.channels?.find((item) => item.id === draft.channelId);
-  draft.streamKey = value('streamKey');
-  if (asksForKey(channel || {}) && !draft.streamKey.trim())
-    throw Error('La chiave TikTok di questa diretta è richiesta');
-  return { channelId: draft.channelId, profileId: draft.profileId, streamKey: draft.streamKey };
+  return { channelId: draft.channelId, profileId: draft.profileId };
 }
 /** Sequenza Windows: profilo, destinazione, compositore; Indietro conserva tutte le scelte. */
 function startWizard(channelId = 0, sceneId = 0) {
@@ -1840,7 +1791,6 @@ function startWizard(channelId = 0, sceneId = 0) {
   const draft = {
     channelId,
     profileId: data.channels?.find((channel) => channel.id === channelId)?.profileId,
-    streamKey: '',
   };
   let scene = sceneId ? structuredClone(data.scenes?.find((item) => item.id === sceneId)) : null;
   const settingsStep = () => {
@@ -1870,13 +1820,12 @@ function startWizard(channelId = 0, sceneId = 0) {
           scene = structuredClone(data.scenes.find((item) => item.id === chosen));
         if (!scene) {
           const profile = data.profiles.find((item) => item.id === draft.profileId);
-          const portrait = asksForKey(data.channels.find((item) => item.id === draft.channelId));
           const width = Number(profile.videoWidth) || 1280,
             height = Number(profile.videoHeight) || 720;
           scene = {
             name: 'Nuova diretta',
-            width: portrait ? Math.min(width, height) : width,
-            height: portrait ? Math.max(width, height) : height,
+            width,
+            height,
             items: [],
             isLayout: false,
           };
@@ -1898,7 +1847,6 @@ function startWizard(channelId = 0, sceneId = 0) {
     );
     $('#modal-footer').prepend(
       button(t('back', 'Indietro'), () => {
-        draft.streamKey = value('streamKey');
         settingsStep();
       }),
     );
@@ -2477,16 +2425,6 @@ function renderLiveRows(root) {
 async function replayHistory(item, beginning = false, fromIndex = null) {
   const request = structuredClone(item.request);
   if (!request) throw Error('Snapshot della diretta non disponibile');
-  const channel = data.channels?.find((value) => value.id === item.channelId);
-  if (
-    asksForKey(
-      channel || { platform: item.platform || request.platform, streamUrl: request.streamUrl },
-    )
-  ) {
-    const key = prompt('Nuova chiave TikTok per questa diretta:');
-    if (!key?.trim()) return;
-    request.streamKey = key.trim();
-  }
   const restart = beginning || item.status === 'ENDED';
   request.startIndex = request.scene
     ? 0
@@ -2916,8 +2854,6 @@ function historyPage(root) {
           {},
           button('Riavvia snapshot', async () => {
             const r = structuredClone(h.request);
-            if (asksForKey(data.channels?.find((c) => c.id === h.channelId) || {}))
-              r.streamKey = prompt('Nuova chiave TikTok:') || '';
             r.offsetSeconds = h.offsetSeconds || 0;
             const started = await api('live/start', 'POST', r);
             watched = started.id;
