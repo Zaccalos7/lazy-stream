@@ -67,6 +67,23 @@ bool hasAudio(const Json& p) {
 // scene.
 Json fileScene(const std::string& file) {
     Json s;
+    auto metadata = probe(file);
+    s.set("sourceInfo", metadata);
+    auto streams = metadata.get("streams");
+    for (size_t i = 0; i < streams.size(); ++i)
+        if (streams.at(i).get("codec_type").str() == "video") {
+            s.set("width", streams.at(i).get("width"));
+            s.set("height", streams.at(i).get("height"));
+            auto rate = streams.at(i).get("avg_frame_rate").str();
+            auto slash = rate.find('/');
+            if (!rate.empty()) {
+                double denominator =
+                    slash == std::string::npos ? 1 : std::atof(rate.c_str() + slash + 1);
+                if (denominator > 0)
+                    s.set("frameRate", std::atof(rate.c_str()) / denominator);
+            }
+            break;
+        }
     s.set("name", fs::path(file).filename().string());
     auto items = Json::array();
     Json item;
@@ -195,8 +212,8 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
          "-y"};
     int w = profile.get("videoWidth").num(scene.get("width").num(1280)),
         h = profile.get("videoHeight").num(scene.get("height").num(720));
-    double fps = profile.get("frameRate").num(30);
-    if (w < 16 || h < 16 || w > 7680 || h > 7680 || w % 2 || h % 2 || fps < 1 || fps > 120)
+    double fps = profile.get("frameRate").num(scene.get("frameRate").num(30));
+    if (w < 16 || h < 16 || w > 7680 || h > 7680 || w % 2 || h % 2 || fps < 1 || fps > 240)
         throw std::runtime_error("Canvas o FPS non validi");
     double sw = scene.get("width").num(w), sh = scene.get("height").num(h);
     if (sw <= 0 || sh <= 0)
@@ -330,6 +347,8 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
         add(a, {"-preset", profile.get("preset").str("veryfast")});
         if (profile.get("lowLatency").flag(true))
             add(a, {"-tune", "zerolatency"});
+        else if (!profile.get("tune").str().empty())
+            add(a, {"-tune", profile.get("tune").str()});
         if (profile.get("constantBitrate").flag())
             add(a, {"-minrate", bitrate, "-x264-params", "nal-hrd=cbr:force-cfr=1:scenecut=0"});
     }
@@ -444,6 +463,12 @@ Session::Session(Store& s, Json r, long pk)
     frame = store.root / "previews" / (std::to_string(id) + ".jpg");
     if (r.has("scene")) {
         original = r.get("scene").clone();
+        auto items = original.get("items");
+        for (size_t i = 0; i < items.size(); ++i)
+            if (kind(items.at(i)) == "FILE" && !items.at(i).get("sourceTarget").str().empty()) {
+                original.set("sourceInfo", probe(items.at(i).get("sourceTarget").str()));
+                break;
+            }
         playlist.push_back(original);
     } else {
         auto files = r.get("files");
@@ -460,6 +485,13 @@ Session::Session(Store& s, Json r, long pk)
         original = playlist[index];
     }
     offset = r.get("offsetSeconds").num();
+    videoResults = Json::array();
+    for (size_t i = 0; i < playlist.size(); ++i) {
+        Json result;
+        result.set("status", i < size_t(index) ? "ENDED" : "OFFLINE");
+        result.set("error", "");
+        videoResults.push(result);
+    }
 }
 
 // Ferma e attende il worker prima di distruggere i dati a cui il thread accede.
@@ -504,6 +536,8 @@ Json Session::snapshot() {
     if (publisherPid > 0)
         s.set("publisherMetrics", processMetrics(publisherPid));
     s.set("profile", profile);
+    s.set("output", outputProfile);
+    s.set("videoResults", videoResults);
     s.set("outputKbps", outputKbps);
     s.set("reconnectAttempts", double(reconnectAttempts));
     return s;
@@ -566,6 +600,22 @@ void Session::run() {
     int relayPipe[2]{-1, -1};
     Process publisher, producer;
     FlvRelay relay;
+    auto recordVideo = [&](const std::string& status, const std::string& message = "") {
+        Json results;
+        {
+            std::lock_guard lock(mutex);
+            if (index >= 0 && index < int(videoResults.size())) {
+                auto video = videoResults.at(index);
+                video.set("status", status);
+                video.set("error", message);
+                video.set("offsetSeconds", offset);
+            }
+            results = videoResults.clone();
+        }
+        auto history = store.get("history", id);
+        history.set("videoResults", results);
+        store.save("history", history, id);
+    };
     const auto publisherLog = store.root / "logs" / (std::to_string(id) + ".publisher.log");
     const auto producerLog = store.root / "logs" / (std::to_string(id) + ".log");
     const auto sessionLog = store.root / "logs" / (std::to_string(id) + ".session.log");
@@ -644,6 +694,7 @@ void Session::run() {
                             std::lock_guard lock(mutex);
                             state = "LIVE";
                         }
+                        recordVideo("LIVE");
                         auto h = store.get("history", id);
                         h.set("status", "LIVE");
                         store.save("history", h, id);
@@ -699,6 +750,8 @@ void Session::run() {
                 segmentIndex = index;
             }
             phase = "producer-build";
+            if (!isTakeover)
+                recordVideo(publishing ? "LIVE" : "STARTING");
             if (detectStreamPlatform(output) == StreamPlatform::YouTube ||
                 detectStreamPlatform(output) == StreamPlatform::Facebook ||
                 detectStreamPlatform(output) == StreamPlatform::TikTok)
@@ -707,6 +760,16 @@ void Session::run() {
                            " offset=" + number(startOffset) +
                            " sources=" + std::to_string(scene.get("items").size()));
             auto build = buildProducer(scene, params, startOffset, frame);
+            {
+                std::lock_guard lock(mutex);
+                outputProfile = params.clone();
+                outputProfile.set("videoWidth",
+                                  params.get("videoWidth").num(scene.get("width").num(1280)));
+                outputProfile.set("videoHeight",
+                                  params.get("videoHeight").num(scene.get("height").num(720)));
+                outputProfile.set("frameRate",
+                                  params.get("frameRate").num(scene.get("frameRate").num(30)));
+            }
             double takeoverDuration = 0;
             if (isTakeover) {
                 std::lock_guard lock(mutex);
@@ -822,6 +885,8 @@ void Session::run() {
                 throw std::runtime_error("Codifica fallita, exit=" + std::to_string(result));
             if (interrupted)
                 continue;
+            if (!isTakeover)
+                recordVideo("ENDED");
             {
                 std::lock_guard lock(mutex);
                 if (isTakeover) {
@@ -924,6 +989,9 @@ void Session::run() {
     try {
         auto h = store.get("history", id);
         auto s = snapshot();
+        if (s.get("status").str() == "ERROR" || s.get("status").str() == "STOPPED")
+            recordVideo(s.get("status").str(), s.get("error").str());
+        h.set("videoResults", snapshot().get("videoResults"));
         h.set("status", s.get("status"));
         h.set("error", s.get("error"));
         h.set("offsetSeconds", s.get("offsetSeconds"));
