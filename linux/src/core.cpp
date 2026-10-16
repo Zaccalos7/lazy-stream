@@ -510,7 +510,7 @@ Process::~Process() {
 // Avvia argomenti separati tramite helper, senza shell; gruppo e pipe consentono controllo e
 // lettura dell’output.
 void Process::start(const std::vector<std::string>& args, int input, const fs::path& log,
-                    bool pipeOutput) {
+                    bool pipeOutput, std::function<std::string(const std::string&)> redact) {
     if (args.empty())
         throw std::runtime_error("Comando vuoto");
     stop();
@@ -520,6 +520,13 @@ void Process::start(const std::vector<std::string>& args, int input, const fs::p
     int fds[2]{-1, -1};
     if (pipeOutput && pipe2(fds, O_CLOEXEC))
         throw std::runtime_error("pipe fallita");
+    int errors[2]{-1, -1};
+    if (redact && pipe2(errors, O_CLOEXEC)) {
+        for (auto fd : fds)
+            if (fd >= 0)
+                close(fd);
+        throw std::runtime_error("Pipe diagnostica fallita");
+    }
     posix_spawn_file_actions_t actions;
     posix_spawn_file_actions_init(&actions);
     if (input >= 0)
@@ -532,9 +539,14 @@ void Process::start(const std::vector<std::string>& args, int input, const fs::p
         posix_spawn_file_actions_addclose(&actions, fds[1]);
     } else
         posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, "/dev/null", O_WRONLY, 0);
-    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO,
-                                     log.empty() ? "/dev/null" : log.c_str(),
-                                     O_WRONLY | O_CREAT | O_APPEND, 0600);
+    if (redact) {
+        posix_spawn_file_actions_adddup2(&actions, errors[1], STDERR_FILENO);
+        posix_spawn_file_actions_addclose(&actions, errors[0]);
+        posix_spawn_file_actions_addclose(&actions, errors[1]);
+    } else
+        posix_spawn_file_actions_addopen(&actions, STDERR_FILENO,
+                                         log.empty() ? "/dev/null" : log.c_str(),
+                                         O_WRONLY | O_CREAT | O_APPEND, 0600);
     posix_spawnattr_t attr;
     posix_spawnattr_init(&attr);
     posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGMASK);
@@ -553,14 +565,47 @@ void Process::start(const std::vector<std::string>& args, int input, const fs::p
     posix_spawnattr_destroy(&attr);
     if (fds[1] >= 0)
         close(fds[1]);
+    if (errors[1] >= 0)
+        close(errors[1]);
     if (result) {
         if (fds[0] >= 0)
             close(fds[0]);
+        if (errors[0] >= 0)
+            close(errors[0]);
         throw std::runtime_error("Impossibile avviare " + args[0] +
                                  "; verifica orbis-stream-runner");
     }
     pid = child;
     output = fds[0];
+    exitCode = 0;
+    if (redact)
+        logReader = std::thread([fd = errors[0], log, redact] {
+            std::ofstream file(log, std::ios::app);
+            std::error_code permissionError;
+            fs::permissions(log, fs::perms::owner_read | fs::perms::owner_write, permissionError);
+            std::string pending;
+            char buffer[4096];
+            for (;;) {
+                auto count = read(fd, buffer, sizeof(buffer));
+                if (count < 0 && errno == EINTR)
+                    continue;
+                if (count <= 0)
+                    break;
+                pending.append(buffer, count);
+                size_t end;
+                while ((end = pending.find_first_of("\r\n")) != std::string::npos) {
+                    file << redact(pending.substr(0, end)) << '\n';
+                    pending.erase(0, end + 1);
+                }
+                // Bound malformed diagnostic lines without writing a partial secret.
+                if (pending.size() > 1024 * 1024)
+                    pending = "[diagnostic line exceeded limit]";
+                file.flush();
+            }
+            if (!pending.empty())
+                file << redact(pending) << '\n';
+            close(fd);
+        });
 }
 
 // Controlla il figlio senza bloccare, permettendo al ciclo streaming di rilevare un’uscita
@@ -571,6 +616,9 @@ bool Process::running() {
     int status;
     auto n = waitpid(pid, &status, WNOHANG);
     if (n == pid) {
+        exitCode = WIFEXITED(status)     ? WEXITSTATUS(status)
+                   : WIFSIGNALED(status) ? 128 + WTERMSIG(status)
+                                         : 128;
         pid = -1;
         return false;
     }
@@ -580,12 +628,15 @@ bool Process::running() {
 // Attende la conclusione e restituisce l’esito per distinguere un risultato completo da un errore.
 int Process::wait() {
     if (pid < 0)
-        return 0;
+        return exitCode;
     int status = 0;
     while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {
     }
     pid = -1;
-    return WIFEXITED(status) ? WEXITSTATUS(status) : 128;
+    exitCode = WIFEXITED(status)     ? WEXITSTATUS(status)
+               : WIFSIGNALED(status) ? 128 + WTERMSIG(status)
+                                     : 128;
+    return exitCode;
 }
 
 // Termina il gruppo prima con SIGTERM e poi con SIGKILL, evitando figli bloccati durante la
@@ -604,6 +655,8 @@ void Process::stop() {
         close(output);
         output = -1;
     }
+    if (logReader.joinable())
+        logReader.join();
 }
 
 // Raccoglie stdout con timeout e limite di dimensione, così un comando esterno non blocca o satura

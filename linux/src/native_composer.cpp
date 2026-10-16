@@ -2,6 +2,8 @@
 #include "native_theme.hpp"
 #include "native_window.hpp"
 #include "scene_service.hpp"
+#include <QApplication>
+#include <QDrag>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
@@ -22,6 +24,49 @@
 
 namespace orbis {
 namespace {
+// The catalog supports both click-to-add and the same drag payload used by the canvas.
+class SourceButton : public QPushButton {
+    Json source;
+    QPoint pressed;
+
+  public:
+    SourceButton(QString label, Json source, QWidget* parent)
+        : QPushButton(label, parent), source(source) {}
+
+  protected:
+    void mousePressEvent(QMouseEvent* event) override {
+        pressed = event->pos();
+        QPushButton::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override {
+        if (!(event->buttons() & Qt::LeftButton) ||
+            (event->pos() - pressed).manhattanLength() < QApplication::startDragDistance())
+            return;
+        auto drag = new QDrag(this);
+        auto mime = new QMimeData;
+        mime->setData("application/x-orbis-source", QByteArray::fromStdString(source.dump()));
+        drag->setMimeData(mime);
+        drag->exec(Qt::CopyAction);
+        setDown(false);
+    }
+};
+
+class OverlayList : public QListWidget {
+  public:
+    using QListWidget::QListWidget;
+
+  protected:
+    QMimeData* mimeData(const QList<QListWidgetItem*>& items) const override {
+        auto mime = new QMimeData;
+        QList<QUrl> urls;
+        for (auto item : items)
+            urls.append(QUrl::fromLocalFile(item->data(Qt::UserRole).toString()));
+        mime->setUrls(urls);
+        return mime;
+    }
+};
+
 // Un elemento grafico conserva il JSON della sorgente: spostamento e ridimensionamento aggiornano
 // la geometria salvata.
 class SourceTile : public QGraphicsRectItem {
@@ -106,6 +151,7 @@ class SourceTile : public QGraphicsRectItem {
 class CanvasView : public QGraphicsView {
   public:
     std::function<void(QString)> fileDropped;
+    std::function<void(Json)> sourceDropped;
     QString emptyHint;
 
     explicit CanvasView(QGraphicsScene* scene, QWidget* parent) : QGraphicsView(scene, parent) {
@@ -114,6 +160,18 @@ class CanvasView : public QGraphicsView {
         setRenderHint(QPainter::Antialiasing);
         setMinimumSize(420, 260);
         setBackgroundBrush(Qt::black);
+    }
+
+    void drawBackground(QPainter* painter, const QRectF& area) override {
+        QGraphicsView::drawBackground(painter, area);
+        painter->setPen(QPen(QColor("#151515"), 0));
+        const auto bounds = scene()->sceneRect();
+        for (int i = 1; i < 3; ++i) {
+            painter->drawLine(QPointF(bounds.width() * i / 3, 0),
+                              QPointF(bounds.width() * i / 3, bounds.height()));
+            painter->drawLine(QPointF(0, bounds.height() * i / 3),
+                              QPointF(bounds.width(), bounds.height() * i / 3));
+        }
     }
 
     // L'aiuto sul canvas vuoto non diventa una sorgente né entra nei dati salvati.
@@ -165,20 +223,28 @@ class CanvasView : public QGraphicsView {
     }
 
     void dragEnterEvent(QDragEnterEvent* event) override {
-        if (event->mimeData()->hasUrls())
+        if (event->mimeData()->hasUrls() ||
+            event->mimeData()->hasFormat("application/x-orbis-source"))
             event->acceptProposedAction();
         else
             QGraphicsView::dragEnterEvent(event);
     }
 
     void dragMoveEvent(QDragMoveEvent* event) override {
-        if (event->mimeData()->hasUrls())
+        if (event->mimeData()->hasUrls() ||
+            event->mimeData()->hasFormat("application/x-orbis-source"))
             event->acceptProposedAction();
         else
             QGraphicsView::dragMoveEvent(event);
     }
 
     void dropEvent(QDropEvent* event) override {
+        if (event->mimeData()->hasFormat("application/x-orbis-source") && sourceDropped) {
+            sourceDropped(
+                Json::parse(event->mimeData()->data("application/x-orbis-source").toStdString()));
+            event->acceptProposedAction();
+            return;
+        }
         for (const auto& url : event->mimeData()->urls())
             if (url.isLocalFile() && fileDropped)
                 fileDropped(url.toLocalFile());
@@ -189,11 +255,48 @@ class CanvasView : public QGraphicsView {
 
 // L'editor nativo lavora su una copia: annullare non modifica layout o scene già utilizzati dalle
 // dirette.
-void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
+bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     const bool isLayout = scene.get("isLayout").flag();
     NativeForm dialog(this, t(isLayout ? "saveLayout" : "composeTitle"), scene);
     dialog.setObjectName("sceneEditor");
-    dialog.resize(1160, qMin(900, dialog.screen()->availableGeometry().height() - 60));
+    dialog.resize(saved ? std::max(width(), dialog.screen()->availableGeometry().width()) - 28
+                        : 1160,
+                  saved ? dialog.screen()->availableGeometry().height() - 28
+                        : qMin(900, dialog.screen()->availableGeometry().height() - 60));
+    if (saved) {
+        dialog.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+        auto title = dialog.findChild<QLabel*>("heroTitle");
+        dialog.layout->removeWidget(title);
+        auto header = new QFrame(&dialog);
+        header->setObjectName("composerHeading");
+        auto row = new QHBoxLayout(header);
+        auto titles = new QVBoxLayout;
+        title->setObjectName("dialogTitle");
+        titles->addWidget(title);
+        auto description = new QLabel(t("composeSubtitle"), header);
+        description->setObjectName("muted");
+        description->setWordWrap(true);
+        titles->addWidget(description);
+        row->addLayout(titles, 1);
+        auto back = new QPushButton(t("back"), header);
+        back->setAutoDefault(false);
+        back->setObjectName("composerBack");
+        back->setIcon(studioIcon("back"));
+        connect(back, &QPushButton::clicked, &dialog, [&] {
+            dialog.setProperty("backRequested", true);
+            dialog.reject();
+        });
+        row->addWidget(back);
+        auto close = new QPushButton(header);
+        close->setAutoDefault(false);
+        close->setObjectName("composerClose");
+        close->setIcon(studioIcon("close"));
+        close->setAccessibleName(t("close"));
+        connect(close, &QPushButton::clicked, &dialog, &QDialog::reject);
+        row->addWidget(close);
+        dialog.layout->insertWidget(0, header);
+        dialog.layout->setContentsMargins(15, 0, 15, 15);
+    }
     // Un pulsante personalizzato conserva il verbo anche quando Qt ritraduce i pulsanti standard.
     auto standardSave = dialog.buttons->button(QDialogButtonBox::Save);
     dialog.buttons->removeButton(standardSave);
@@ -215,9 +318,9 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     auto sourceScroll = new QScrollArea(workspace);
     sourceScroll->setWidgetResizable(true);
     auto sourcePanel = new QWidget;
-    sourcePanel->setMinimumWidth(250);
+    sourcePanel->setMinimumWidth(220);
     auto sourceLayout = new QVBoxLayout(sourcePanel);
-    sourceLayout->setContentsMargins(8, 0, 14, 0);
+    sourceLayout->setContentsMargins(0, 0, 8, 0);
     sourceLayout->setSpacing(12);
     sourceScroll->setWidget(sourcePanel);
     auto mainPanel = new QWidget(workspace);
@@ -234,14 +337,27 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     layerPanel->setMinimumWidth(220);
     auto layerColumn = new QVBoxLayout(layerPanel);
     layerScroll->setWidget(layerPanel);
-    workspace->setSizes({260, 680, 220});
+    workspace->setSizes({230, dialog.width() - 490, 240});
+    auto availableCard = new QFrame(sourcePanel);
+    availableCard->setObjectName("card");
+    auto availableColumn = new QVBoxLayout(availableCard);
+    availableColumn->setContentsMargins(14, 14, 14, 14);
+    sourceLayout->addWidget(availableCard);
+    auto overlaysCard = new QFrame(sourcePanel);
+    overlaysCard->setObjectName("card");
+    auto overlaysColumn = new QVBoxLayout(overlaysCard);
+    overlaysColumn->setContentsMargins(14, 14, 14, 14);
+    sourceLayout->addWidget(overlaysCard);
     auto sourceTitle = new QLabel(t(isLayout ? "slots" : "availableSources"), sourcePanel);
     sourceTitle->setObjectName("cardTitle");
-    sourceLayout->addWidget(sourceTitle);
+    availableColumn->addWidget(sourceTitle);
     auto explanation = new QLabel(t(isLayout ? "slotsHint" : "canvasComposeHint"), sourcePanel);
     explanation->setObjectName("muted");
     explanation->setWordWrap(true);
-    sourceLayout->addWidget(explanation);
+    if (isLayout)
+        availableColumn->addWidget(explanation);
+    else
+        explanation->hide();
     auto name = dialog.text("name", t(isLayout ? "layoutName" : "sceneName"));
     if (name->text().trimmed().isEmpty())
         name->setText(t(isLayout ? "newLayout" : "newScene"));
@@ -277,6 +393,12 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     mainLayout->removeWidget(formScroll);
     formScroll->hide();
     mainLayout->insertWidget(0, bar);
+    if (saved) {
+        dialog.buttons->removeButton(commit);
+        barRow->addWidget(commit, 0, Qt::AlignBottom);
+        dialog.buttons->hide();
+        connect(commit, &QPushButton::clicked, dialog.buttons, &QDialogButtonBox::accepted);
+    }
     connect(resolution, &QComboBox::currentTextChanged, &dialog, [&](const QString& value) {
         auto parts = value.split('x');
         width->setValue(parts[0].toInt());
@@ -331,7 +453,7 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             const int index = layerRow->count();
             layerRow->addWidget(button, index / 4, index % 4);
         } else if (!(isLayout && (name == "addVideoFile" || name == "sources")))
-            sourceLayout->addWidget(button);
+            (name == "uploadOverlay" ? overlaysColumn : availableColumn)->addWidget(button);
         else
             button->hide();
         connect(button, &QPushButton::clicked, &dialog, [&, fn] { run(fn); });
@@ -378,6 +500,22 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     };
     action("addVideoFile",
            [&] { addFile(QFileDialog::getOpenFileName(&dialog, t("video")), false); });
+    if (!isLayout) {
+        auto fileRow = new QWidget(availableCard);
+        auto line = new QHBoxLayout(fileRow);
+        line->setContentsMargins(0, 0, 0, 0);
+        auto path = new QLineEdit(fileRow);
+        path->setObjectName("composerVideoPath");
+        path->setPlaceholderText("/home/user/Videos/intro.mp4");
+        auto add = new QPushButton(t("add"), fileRow);
+        add->setAutoDefault(false);
+        add->setObjectName("composerAddVideo");
+        line->addWidget(path, 1);
+        line->addWidget(add);
+        availableColumn->addWidget(fileRow);
+        connect(add, &QPushButton::clicked, &dialog,
+                [&, path] { run([&] { addFile(path->text().trimmed(), false); }); });
+    }
     action("uploadOverlay", [&] {
         addFile(QFileDialog::getOpenFileName(
                     &dialog, t("overlays"), {},
@@ -391,6 +529,8 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         item.set("label", t("slot").toStdString());
         addSource(item);
     });
+    if (!isLayout)
+        sourcePanel->findChild<QPushButton*>("addSlot")->hide();
     auto addPickedSource = [&](Json picked) {
         for (auto node : graphics->items())
             if (auto tile = dynamic_cast<SourceTile*>(node);
@@ -417,10 +557,11 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         }
         addSource(item);
     };
+    view->sourceDropped = [&](Json picked) { run([&] { addPickedSource(picked); }); };
     auto catalog = new QWidget(sourcePanel);
     auto catalogColumn = new QVBoxLayout(catalog);
     catalogColumn->setContentsMargins(0, 0, 0, 0);
-    sourceLayout->insertWidget(2, catalog);
+    availableColumn->insertWidget(1, catalog);
     auto refreshCatalog = [&] {
         while (auto row = catalogColumn->takeAt(0)) {
             if (row->widget())
@@ -430,8 +571,8 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         auto available = sources();
         for (size_t i = 0; i < available.size(); ++i) {
             auto picked = available.at(i);
-            auto button =
-                new QPushButton(QString::fromStdString(picked.get("label").str()), catalog);
+            auto button = new SourceButton(QString::fromStdString(picked.get("label").str()),
+                                           picked, catalog);
             button->setObjectName("catalogSource");
             button->setIcon(
                 studioIcon(picked.get("kind").str() == "MICROPHONE" ? "volume" : "screen"));
@@ -447,7 +588,8 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         action("refreshSources", refreshCatalog);
     } else
         catalog->hide();
-    auto overlayLibrary = new QListWidget(sourcePanel);
+    auto overlayLibrary = new OverlayList(sourcePanel);
+    overlayLibrary->setDragEnabled(true);
     overlayLibrary->setObjectName("composerOverlays");
     overlayLibrary->setViewMode(QListView::IconMode);
     overlayLibrary->setIconSize(QSize(72, 48));
@@ -466,8 +608,12 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
                 row->setData(Qt::UserRole, path);
             }
     };
-    sourceLayout->addWidget(new QLabel(t("overlays"), sourcePanel));
-    sourceLayout->addWidget(overlayLibrary);
+    overlaysColumn->insertWidget(0, new QLabel(t("overlays"), overlaysCard));
+    auto overlayHint = new QLabel(t("overlaysHint"), overlaysCard);
+    overlayHint->setObjectName("muted");
+    overlayHint->setWordWrap(true);
+    overlaysColumn->insertWidget(1, overlayHint);
+    overlaysColumn->addWidget(overlayLibrary);
     connect(overlayLibrary, &QListWidget::itemClicked, &dialog, [&](QListWidgetItem* row) {
         Json item;
         item.set("sourceKind", "OVERLAY");
@@ -553,6 +699,8 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     });
     auto selectionChanged = [&] {
         inspector->setEnabled(selected() != nullptr);
+        inspector->setVisible(selected() != nullptr);
+        propertiesTitle->setVisible(selected() != nullptr);
         if (auto tile = selected()) {
             auto value = tile->value();
             for (auto it = fields.begin(); it != fields.end(); ++it) {
@@ -597,15 +745,24 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         if (auto tile = selected())
             delete tile;
     });
-    auto layersTitle = new QLabel(t("layers") + " · " + t("layersHint"), layerPanel);
-    layersTitle->setWordWrap(true);
-    layerColumn->addWidget(layersTitle);
+    auto layersHeader = new QFrame(layerPanel);
+    layersHeader->setObjectName("card");
+    auto layersHeading = new QVBoxLayout(layersHeader);
+    auto layersTitle = new QLabel(t("layers"), layersHeader);
+    layersTitle->setObjectName("cardTitle");
+    layersHeading->addWidget(layersTitle);
+    auto layersHint = new QLabel(t("layersHint"), layersHeader);
+    layersHint->setObjectName("muted");
+    layersHint->setWordWrap(true);
+    layersHeading->addWidget(layersHint);
+    layerColumn->addWidget(layersHeader);
     auto layers = new QListWidget(layerPanel);
     layers->setObjectName("sceneLayers");
     layers->setAccessibleName(t("layers"));
     layers->setMinimumHeight(160);
     layerColumn->addWidget(layers, 1);
     layerColumn->addWidget(layerActions);
+    layerColumn->addStretch();
     auto refreshLayers = [&] {
         layers->blockSignals(true);
         layers->clear();
@@ -618,6 +775,8 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         }
         for (auto button : layerActions->findChildren<QPushButton*>())
             button->setEnabled(!graphics->selectedItems().isEmpty());
+        layers->setVisible(layers->count() > 0);
+        layerActions->setVisible(layers->count() > 0);
         layers->blockSignals(false);
     };
     connect(graphics, &QGraphicsScene::changed, &dialog, refreshLayers);
@@ -639,14 +798,25 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         auto used = new QListWidget(sourcePanel);
         used->setObjectName("composerUsedSources");
         used->setMaximumHeight(120);
-        sourceLayout->insertWidget(0, new QLabel(t("usedSources"), sourcePanel));
-        sourceLayout->insertWidget(1, used);
-        auto refreshUsed = [&, used] {
+        auto usedCard = new QFrame(sourcePanel);
+        usedCard->setObjectName("card");
+        usedCard->setMinimumHeight(126);
+        auto usedColumn = new QVBoxLayout(usedCard);
+        usedColumn->addWidget(new QLabel(t("usedSources"), usedCard));
+        auto emptyUsed = new QLabel(t("sourcesEmptyUsed"), usedCard);
+        emptyUsed->setObjectName("muted");
+        emptyUsed->setWordWrap(true);
+        usedColumn->addWidget(emptyUsed);
+        usedColumn->addWidget(used);
+        sourceLayout->insertWidget(0, usedCard);
+        auto refreshUsed = [&, used, emptyUsed] {
             used->clear();
             for (auto node : graphics->items(Qt::AscendingOrder))
                 if (auto tile = dynamic_cast<SourceTile*>(node);
                     tile && !tile->source.get("sourceTarget").str().empty())
                     used->addItem(QString::fromStdString(tile->source.get("label").str()));
+            emptyUsed->setVisible(used->count() == 0);
+            used->setVisible(used->count() > 0);
         };
         connect(graphics, &QGraphicsScene::changed, &dialog, refreshUsed);
         refreshUsed();
@@ -687,5 +857,6 @@ void NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     // La scena viene distrutta dopo i pannelli: non notificare selezione/geometria a widget già
     // liberati.
     disconnect(graphics, nullptr, &dialog, nullptr);
+    return dialog.property("backRequested").toBool();
 }
 } // namespace orbis

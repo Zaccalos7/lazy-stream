@@ -528,12 +528,12 @@ void NativeWindow::setTheme(const QString& theme) {
 }
 
 void NativeWindow::rebuild() {
-    const bool livePage = page == "dashboard" || page == "liveMenu" || page == "live" ||
-                          page == "preview" || page == "layouts" || page == "history";
-    bodyLayout->setContentsMargins(livePage ? QMargins(14, 2, 14, 36) : QMargins(32, 26, 32, 26));
-    bodyLayout->setSpacing(page == "dashboard" ? 0 : livePage ? 12 : 18);
+    bodyLayout->setContentsMargins(14, 2, 14, 36);
+    bodyLayout->setSpacing(page == "dashboard" ? 0 : 12);
     body->setProperty("dashboard", page == "dashboard");
+    if (cleanupLabel) delete cleanupLabel->parentWidget();
     table = nullptr;
+    configurationSignature.clear();
     search = nullptr;
     channelFilter = statusFilter = platformFilter = livePicker = nullptr;
     preview = previewFacts = cleanupLabel = pageLabel = emptyState = nullptr;
@@ -840,9 +840,42 @@ void NativeWindow::addPager(int size) {
     previous->setObjectName("previousPage");
     next->setObjectName("nextPage");
     pageLabel = new QLabel(row);
+    if (page == "live" || page == "history") {
+        layout->addStretch();
+        previous->setText({});
+        previous->setIcon(studioIcon("back"));
+        previous->setAccessibleName(t("back"));
+        previous->setFixedWidth(32);
+        next->setText({});
+        next->setIcon(studioIcon("next"));
+        next->setAccessibleName(t("next"));
+        next->setFixedWidth(32);
+        pageLabel->hide();
+    }
     layout->addWidget(previous);
     layout->addWidget(pageLabel);
+    if (page == "live" || page == "history") {
+        auto numbers = new QWidget(row);
+        numbers->setObjectName("livePageNumbers");
+        auto numberRow = new QHBoxLayout(numbers);
+        numberRow->setContentsMargins(0, 0, 0, 0);
+        numberRow->setSpacing(4);
+        for (int i = 0; i < 5; ++i) {
+            auto button = new QPushButton(numbers);
+            button->setCheckable(true);
+            button->setFixedWidth(32);
+            button->setObjectName(QString("livePage%1").arg(i));
+            numberRow->addWidget(button);
+            connect(button, &QPushButton::clicked, this, [this, button] {
+                currentPage = button->property("page").toInt();
+                refreshRows();
+            });
+        }
+        layout->addWidget(numbers);
+    }
     layout->addWidget(next);
+    if (page == "live" || page == "history")
+        layout->addStretch();
     bodyLayout->addWidget(row);
     connect(previous, &QPushButton::clicked, this, [this] {
         currentPage = std::max(0, currentPage - 1);
@@ -1003,33 +1036,6 @@ void NativeWindow::buildDashboard() {
 }
 
 // Filtri e ricerca restano fuori dalle righe per conservare il focus durante il campionamento.
-void NativeWindow::buildChannels() {
-    addAction("addConfiguration", [this] { editChannel(); });
-    search = new QLineEdit(body);
-    search->setObjectName("search");
-    search->setPlaceholderText(t("search"));
-    bodyLayout->addWidget(search);
-    connect(search, &QLineEdit::textChanged, this, [this] { refreshRows(); });
-    platformFilter = new QComboBox(body);
-    platformFilter->addItem("—", "");
-    for (const auto& platform : {"Custom", "Twitch", "YouTube", "Kick", "Facebook", "TikTok"})
-        platformFilter->addItem(platform, platform);
-    bodyLayout->addWidget(platformFilter);
-    connect(platformFilter, &QComboBox::currentIndexChanged, this, [this] { refreshRows(); });
-    table = makeTable({t("channel"), t("platform"), t("streamUrl"), t("active"), t("settings")});
-}
-
-// Mostra i profili personalizzati; i profili seed restano disponibili come preset nei dialoghi.
-void NativeWindow::buildProfiles() {
-    addAction("addNewAudioVideoConfiguration", [this] { editProfile(); });
-    search = new QLineEdit(body);
-    search->setPlaceholderText(t("search"));
-    bodyLayout->addWidget(search);
-    connect(search, &QLineEdit::textChanged, this, [this] { refreshRows(); });
-    table = makeTable(
-        {t("title"), t("resolution"), t("frameRate"), t("bitrate"), t("active"), t("settings")});
-}
-
 // Layout e scene condividono l’editor ma restano distinti, perché solo i layout ammettono slot
 // vuoti.
 void NativeWindow::buildScenes(bool layouts) {
@@ -1183,6 +1189,10 @@ void NativeWindow::refreshRows() {
     // Non distrugge menu o selettori mentre l’utente sta scegliendo un’azione.
     if (QApplication::activePopupWidget())
         return;
+    if (page == "channels" || page == "profiles") {
+        refreshConfigurations();
+        return;
+    }
     if (page == "history") {
         refreshHistory();
         return;
@@ -1257,6 +1267,7 @@ void NativeWindow::refreshRows() {
     if (pageLabel) {
         const int total = std::max(1, int((selected.size() + pageSize - 1) / pageSize));
         currentPage = std::clamp(currentPage, 0, total - 1);
+        updatePager(total);
         pageLabel->parentWidget()->setVisible(!selected.empty());
         pageLabel->parentWidget()
             ->findChild<QPushButton*>("previousPage")
@@ -1857,17 +1868,7 @@ void NativeWindow::buildMetrics() {
 // Le impostazioni aprono sezioni e dialoghi interni, conservando un’unica finestra applicativa.
 void NativeWindow::buildSettings() {
     addDestinationCards({{"videoAndAudio", "profiles", "additionalVideoOptionsDescription"},
-                         {"channelSettings", "channels", "channelSettingsDescription"},
-                         {"sceneDeck", "buttons", "sceneDeckHint"},
-                         {"overlays", "overlays", "overlaysHint"}});
-    addAction("sceneMedia", [this] { navigate("scene-media"); });
-    addAction("nativeExport", [this] { exportData(); });
-    addAction("nativeImport", [this] { importData(); });
-    addAction("about", [this] {
-        QMessageBox::information(
-            this, t("about"),
-            QString("OrbisStream %1\nC++ · Qt 6\n%2").arg(ORBIS_VERSION, t("aboutVersion")));
-    });
+                         {"channelSettings", "channels", "channelSettingsDescription"}});
 }
 
 // Il secondo processo attende un riscontro senza aprire il database o inizializzare la GUI.

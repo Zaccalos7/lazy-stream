@@ -119,6 +119,25 @@ class ChoiceWizardPage : public QWizardPage {
     }
 };
 
+// Cards fill the available width, up to five columns as in the Windows wizard.
+class ChoiceList : public QListWidget {
+  public:
+    using QListWidget::QListWidget;
+
+  protected:
+    void resizeEvent(QResizeEvent* event) override {
+        QListWidget::resizeEvent(event);
+        const int available = viewport()->width() - 4;
+        const int columns = std::clamp(available / 340, 1, 5);
+        const int cell = available / columns;
+        setSpacing(0);
+        setGridSize(QSize(cell - 4, 86));
+        for (int i = 0; i < count(); ++i)
+            item(i)->setSizeHint(QSize(std::max(160, cell - 10), 76));
+        doItemsLayout();
+    }
+};
+
 void decorateChoices(QListWidget* list) {
     list->setItemDelegate(new ChoiceDelegate(list));
     list->setWrapping(true);
@@ -128,7 +147,8 @@ void decorateChoices(QListWidget* list) {
         auto row = new QWidget(list);
         row->setAttribute(Qt::WA_TransparentForMouseEvents);
         auto layout = new QHBoxLayout(row);
-        layout->setContentsMargins(14, 12, 14, 12);
+        layout->setContentsMargins(14, 8, 14, 8);
+        layout->setSpacing(10);
         auto selected = new QRadioButton(row);
         selected->setAutoExclusive(false);
         selected->setChecked(list->currentRow() == i);
@@ -136,17 +156,20 @@ void decorateChoices(QListWidget* list) {
         QObject::connect(list, &QListWidget::currentRowChanged, selected,
                          [selected, i](int index) { selected->setChecked(index == i); });
         auto icon = new QLabel(row);
-        icon->setPixmap(item->icon().pixmap(28, 28));
+        icon->setPixmap(item->icon().pixmap(20, 20));
         layout->addWidget(icon);
         auto column = new QVBoxLayout;
         const auto lines = item->text().split('\n');
         auto title = new QLabel(lines.first(), row);
         title->setWordWrap(true);
         title->setTextFormat(Qt::PlainText);
-        auto detail = new QLabel(lines.mid(1).join(" · "), row);
+        title->setStyleSheet("font-weight: 600;");
+        auto detail = new QLabel(lines.mid(1).join('\n').trimmed(), row);
         detail->setWordWrap(true);
         detail->setTextFormat(Qt::PlainText);
         detail->setObjectName("muted");
+        detail->setStyleSheet("font-size: 11px;");
+        column->setSpacing(2);
         column->addWidget(title);
         column->addWidget(detail);
         layout->addLayout(column, 1);
@@ -328,7 +351,32 @@ void NativeWindow::startWizard(bool playlist) {
     wizard.setObjectName("startWizard");
     wizard.setWindowTitle(t(playlist ? "startPlaylistTitle" : "startNewLiveTitle"));
     wizard.setWizardStyle(QWizard::ModernStyle);
-    wizard.resize(qMin(1280, width() - 40), qMin(820, height() - 40));
+    wizard.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
+    wizard.resize(std::max(width(), screen()->availableGeometry().width()) - 28,
+                  screen()->availableGeometry().height() - 28);
+    auto pageHeading = [&](QFormLayout* form, const QString& step, QWidget* page) {
+        form->setContentsMargins(16, 0, 16, 0);
+        auto header = new QFrame(page);
+        header->setObjectName("wizardHeading");
+        auto row = new QHBoxLayout(header);
+        row->setContentsMargins(0, 16, 0, 16);
+        auto title = new QLabel(wizard.windowTitle(), header);
+        title->setObjectName("dialogTitle");
+        row->addWidget(title, 1);
+        auto close = new QPushButton(header);
+        close->setObjectName("closeWizard");
+        close->setAutoDefault(false);
+        close->setIcon(studioIcon("close"));
+        close->setAccessibleName(t("close"));
+        row->addWidget(close);
+        connect(close, &QPushButton::clicked, &wizard, &QDialog::reject);
+        form->addRow(header);
+        if (!step.isEmpty()) {
+            auto label = new QLabel(step, page);
+            label->setStyleSheet("font-weight: 600; margin-top: 14px;");
+            form->addRow(label);
+        }
+    };
     wizard.setOption(QWizard::NoBackButtonOnStartPage);
     wizard.setButtonText(QWizard::NextButton, t("next"));
     wizard.setButtonText(QWizard::BackButton, t("back"));
@@ -336,21 +384,26 @@ void NativeWindow::startWizard(bool playlist) {
     wizard.setButtonText(QWizard::FinishButton,
                          t(playlist ? "startPlaylistButton" : "composeNext"));
     auto first = new ChoiceWizardPage;
-    first->setTitle(t("wizardStep1Title"));
     auto firstForm = new QFormLayout(first);
-    auto profile = new QListWidget(first);
+    pageHeading(firstForm, t("wizardStep1Title"), first);
+    firstForm->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    auto profile = new ChoiceList(first);
     profile->setObjectName("wizardProfile");
     profile->setAccessibleName(t("videoAndAudio"));
     profile->setWordWrap(true);
     profile->setTextElideMode(Qt::ElideNone);
     for (auto entry : choices(profiles, "title", true)) {
         const auto value = studio.store.get("profiles", entry.second.num());
-        const auto detail = QString("%1 × %2 · %3 fps · %4 kbps · %5")
-                                .arg(value.get("videoWidth").num())
-                                .arg(value.get("videoHeight").num())
-                                .arg(value.get("frameRate").num())
-                                .arg(value.get("videoBitrate").num())
-                                .arg(str(value.get("videoCodecName")));
+        const auto detail =
+            QString("%5 · %1×%2 · %3 fps · %4 Mbit/s · FLV · GOP %6 · %7 %8 kbit/s")
+                .arg(value.get("videoWidth").num())
+                .arg(value.get("videoHeight").num())
+                .arg(value.get("frameRate").num())
+                .arg(value.get("videoBitrate").num(4500) / 1000)
+                .arg(QString::fromStdString(value.get("videoCodecName").str("libx264")))
+                .arg(value.get("gopSize").num(2))
+                .arg(t("audioBitrate"))
+                .arg(value.get("audioBitrate").num(128));
         auto item = new QListWidgetItem(entry.first + "\n" + detail, profile);
         item->setSizeHint(QSize(310, 96));
         item->setData(Qt::UserRole, entry.second.num());
@@ -364,7 +417,8 @@ void NativeWindow::startWizard(bool playlist) {
     for (int i = 0; i < profile->count(); ++i) {
         auto record =
             studio.store.get("profiles", profile->item(i)->data(Qt::UserRole).toLongLong());
-        profile->item(i)->setIcon(platformMark(str(record.get("defaultPlatformConfiguration"))));
+        profile->item(i)->setIcon(platformMark(QString::fromStdString(
+            record.get("platform").str(record.get("defaultPlatformConfiguration").str()))));
     }
     profile->setCurrentRow(0);
     decorateChoices(profile);
@@ -382,9 +436,10 @@ void NativeWindow::startWizard(bool playlist) {
     firstForm->addRow(profile);
     wizard.addPage(first);
     auto second = new ChoiceWizardPage;
-    second->setTitle(t("wizardStep2Title"));
     auto secondForm = new QFormLayout(second);
-    auto channel = new QListWidget(second);
+    pageHeading(secondForm, t("wizardStep2Title"), second);
+    secondForm->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    auto channel = new ChoiceList(second);
     channel->setObjectName("wizardChannel");
     channel->setAccessibleName(t("channel"));
     channel->setWordWrap(true);
@@ -393,7 +448,8 @@ void NativeWindow::startWizard(bool playlist) {
         const auto value = studio.store.get("channels", entry.second.num());
         auto item = new QListWidgetItem(platformMark(str(value.get("platform"))),
                                         entry.first + " · " + str(value.get("platform")) + "\n" +
-                                            str(value.get("streamUrl")),
+                                            str(value.get("streamUrl")) + "\n" +
+                                            str(value.get("description")),
                                         channel);
         item->setSizeHint(QSize(310, 96));
         item->setData(Qt::UserRole, entry.second.num());
@@ -454,10 +510,13 @@ void NativeWindow::startWizard(bool playlist) {
     changed();
     wizard.addPage(second);
     auto folder = new QLineEdit(&wizard);
+    folder->hide();
     folder->setObjectName("wizardFolder");
     auto repeat = new QCheckBox(t("nativeLoop"), &wizard);
+    repeat->hide();
     repeat->setObjectName("wizardLoop");
     auto countdown = new QDoubleSpinBox(&wizard);
+    countdown->hide();
     countdown->setRange(0, 60);
     countdown->setDecimals(0);
     countdown->setValue(0);
@@ -471,8 +530,8 @@ void NativeWindow::startWizard(bool playlist) {
     layoutPicker->hide();
     if (playlist) {
         auto third = new ChoiceWizardPage;
-        third->setTitle(t("startPlaylistTitle"));
         auto form = new QFormLayout(third);
+        pageHeading(form, {}, third);
         auto hint = new QLabel(
             t("playlistOnlyVideos") + " MP4, MKV, MOV, AVI, WebM, M4V, TS, FLV, MPEG, MPG.", third);
         hint->setWordWrap(true);
@@ -508,6 +567,7 @@ void NativeWindow::startWizard(bool playlist) {
 
         form->addRow(hint);
         form->addRow(t("playlistFolder"), folder);
+        folder->show();
         repeat->hide();
         countdown->hide();
         auto choose = new QPushButton(t("playlistFolder") + "…", third);
@@ -609,7 +669,7 @@ void NativeWindow::startWizard(bool playlist) {
                 scene.set("id", 0.0);
             }
             scene.set("isLayout", false);
-            editScene(scene, [this, request, &sceneStarted](Json scene) mutable {
+            const bool back = editScene(scene, [this, request, &sceneStarted](Json scene) mutable {
                 sceneStarted = true;
                 request.set("scene", scene);
                 runAsync([this, request] { return Json::number(studio.start(request)); },
@@ -618,6 +678,8 @@ void NativeWindow::startWizard(bool playlist) {
                              navigate("live");
                          });
             });
+            if (!back && !sceneStarted)
+                return;
         }
     } while (!playlist && !sceneStarted);
 }
@@ -783,6 +845,21 @@ void NativeWindow::showLiveDetails(Json history) {
                 replay(history, true, index);
         }
     });
+    auto logs = new QPlainTextEdit(&dialog);
+    logs->setObjectName("liveLogs");
+    logs->setReadOnly(true);
+    logs->setLineWrapMode(QPlainTextEdit::NoWrap);
+    auto refreshLogs = [this, logs, history] {
+        const auto content =
+            QString::fromStdString(readStreamLogs(studio.store.root, history.get("id").num()));
+        if (logs->toPlainText() != content)
+            logs->setPlainText(content);
+    };
+    refreshLogs();
+    layout->addWidget(logs, 1);
+    auto timer = new QTimer(&dialog);
+    connect(timer, &QTimer::timeout, &dialog, refreshLogs);
+    timer->start(1000);
     auto close = new QPushButton(t("close"), &dialog);
     close->setIcon(studioIcon("close"));
     layout->addWidget(close);

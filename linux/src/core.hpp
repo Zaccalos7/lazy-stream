@@ -2,6 +2,7 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <functional>
 #include <json-c/json.h>
 #include <map>
 #include <memory>
@@ -84,13 +85,15 @@ class Store {
 class Process {
     int pid = -1;
     int output = -1;
+    int exitCode = 0;
+    std::thread logReader;
 
   public:
     Process() = default;
     Process(const Process&) = delete;
     ~Process();
     void start(const std::vector<std::string>& args, int input = -1, const fs::path& log = {},
-               bool capture = true);
+               bool capture = true, std::function<std::string(const std::string&)> redact = {});
 
     int fd() const {
         return output;
@@ -109,6 +112,9 @@ std::string capture(const std::vector<std::string>& args, int timeoutSeconds = 1
 std::string ffmpeg();
 std::string ffprobe();
 Json probe(const std::string& file);
+std::string redactStreamText(std::string message, const Json& request = Json{});
+std::string readStreamLogs(const fs::path& root, long id);
+std::vector<std::string> buildPublisher(const std::string& output);
 Json sources();
 Json metrics(const fs::path& root);
 Json processMetrics(long pid);

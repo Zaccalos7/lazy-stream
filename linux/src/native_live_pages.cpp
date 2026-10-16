@@ -1,5 +1,6 @@
 #include "history_cleanup_service.hpp"
 #include "native_theme.hpp"
+#include "native_controls.hpp"
 #include "native_window.hpp"
 #include <QApplication>
 #include <QCheckBox>
@@ -84,10 +85,13 @@ void NativeWindow::buildLive(bool history) {
                 config = channels.at(i);
                 break;
             }
-        auto enabled = new QCheckBox(t("autoCleanupEnabled"), cleanup);
+        auto enabled = new ToggleSwitch(cleanup);
+        auto enabledColumn = new QVBoxLayout;
+        enabledColumn->addWidget(caption(t("autoCleanupEnabled"), cleanup));
+        enabledColumn->addWidget(enabled);
         enabled->setObjectName("autoCleanupEnabled");
         enabled->setChecked(config.get("autoCleanupEnabled").flag());
-        row->addWidget(enabled);
+        row->addLayout(enabledColumn);
         auto picks = new QWidget(cleanup);
         auto choices = new QHBoxLayout(picks);
         choices->setContentsMargins(0, 0, 0, 0);
@@ -111,8 +115,9 @@ void NativeWindow::buildLive(bool history) {
             age->addItem(labels[i], values[i]);
         age->setCurrentIndex(
             std::max(0, age->findData(int(config.get("autoCleanupOlderThanMonths").num()))));
-        choices->addWidget(interval);
-        choices->addWidget(age);
+        auto intervalColumn = new QVBoxLayout; intervalColumn->addWidget(caption(t("autoCleanupIntervalMonths"), picks)); intervalColumn->addWidget(interval);
+        auto ageColumn = new QVBoxLayout; ageColumn->addWidget(caption(t("autoCleanupOlderThanMonths"), picks)); ageColumn->addWidget(age);
+        choices->addLayout(intervalColumn); choices->addLayout(ageColumn);
         addAction(
             "save",
             [this, config, enabled, interval, age] {
@@ -132,28 +137,23 @@ void NativeWindow::buildLive(bool history) {
         age->setVisible(true);
         picks->setVisible(enabled->isChecked());
         connect(enabled, &QCheckBox::toggled, picks, &QWidget::setVisible);
-        connect(enabled, &QCheckBox::toggled, this, [this, config](bool on) {
-            if (!on && config.has("id"))
-                run([&] {
-                    auto value = studio.store.get("channels", config.get("id").num());
-                    value.set("autoCleanupEnabled", false);
-                    studio.store.save("channels", value, value.get("id").num());
-                });
-        });
         addAction(
             "runCleanupNow",
-            [this, age] { studio.historyCleanup->tryStart(age->currentData().toInt()); }, cleanup,
+            [this, age] { cleanupDismissed.clear(); studio.historyCleanup->tryStart(age->currentData().toInt()); }, cleanup,
             "restart");
         heading->layout()->addWidget(cleanup);
-        auto progress = new QFrame(body);
+        auto progress = new QFrame(this);
         progress->setObjectName("cleanupProgress");
         auto column = new QVBoxLayout(progress);
         cleanupLabel = caption({}, progress);
         cleanupBar = new QProgressBar(progress);
         column->addWidget(cleanupLabel);
         column->addWidget(cleanupBar);
-        bodyLayout->addWidget(progress);
-        progress->hide();
+        cleanupBar->setTextVisible(false); cleanupBar->setFixedHeight(6);
+        auto close = new QToolButton(progress); close->setObjectName("closeCleanup"); close->setIcon(studioIcon("close")); close->setToolTip(t("close"));
+        column->insertWidget(0, close, 0, Qt::AlignRight);
+        connect(close, &QToolButton::clicked, this, [this, progress] { cleanupDismissed = "dismissed"; progress->hide(); });
+        progress->setFixedWidth(460); progress->hide();
     }
     auto filters = new QWidget(body);
     auto row = new QHBoxLayout(filters);
@@ -172,7 +172,9 @@ void NativeWindow::buildLive(bool history) {
         column->addWidget(caption(t(key), filters));
         column->addWidget(control);
         control->setAccessibleName(t(key));
-        row->addLayout(column, 1);
+        if (!history || key != QString("searchByTitle"))
+            control->setFixedWidth(162);
+        row->addLayout(column, history && key == QString("searchByTitle") ? 1 : 0);
     };
     if (history) {
         addField("channel", channelFilter);
@@ -229,6 +231,9 @@ void NativeWindow::buildLive(bool history) {
             refreshRows();
         });
     }
+    if (!history)
+        row->addStretch();
+    filters->setObjectName(history ? "historyFilters" : "liveFilters");
     bodyLayout->addWidget(filters);
     for (auto pick : {channelFilter, statusFilter})
         connect(pick, &QComboBox::currentIndexChanged, this, [this] {
@@ -266,15 +271,15 @@ void NativeWindow::refreshHistory() {
         if (!channelFilter->currentData().toString().isEmpty() &&
             text(row.get("channelName")) != channelFilter->currentData().toString())
             continue;
-        if (!statusFilter->currentData().toString().isEmpty() &&
-            text(row.get("status")) != statusFilter->currentData().toString())
-            continue;
         auto files = row.get("request").get("files");
         const auto count = std::max<size_t>(1, files.size());
         for (size_t n = 0; n < count; ++n) {
             auto item = row.clone();
             auto path = files.at(n).str(row.get("source").str());
-            item.set("historyPath", path);
+            item.set("historyPath", path); item.set("videoIndex", double(n));
+            const auto result = row.get("videoResults").at(n);
+            if (result.has("status")) { item.set("status", result.get("status")); item.set("error", result.get("error")); }
+            if (!statusFilter->currentData().toString().isEmpty() && text(item.get("status")) != statusFilter->currentData().toString()) continue;
             if (files.size())
                 item.set("title", fs::path(path).filename().string());
             if (search->text().isEmpty() ||
@@ -291,9 +296,10 @@ void NativeWindow::refreshHistory() {
     pageLabel->parentWidget()
         ->findChild<QPushButton*>("nextPage")
         ->setEnabled(currentPage + 1 < pages);
-    pageLabel->parentWidget()->setVisible(!selected.empty());
+    updatePager(pages);
     emptyState->setVisible(selected.empty());
     table->setVisible(!selected.empty());
+    body->findChild<QPushButton*>("clearFilters")->setVisible(!search->text().trimmed().isEmpty() || !channelFilter->currentData().toString().isEmpty() || !statusFilter->currentData().toString().isEmpty());
     table->setRowCount(0);
     for (size_t i = currentPage * 20; i < std::min(selected.size(), size_t((currentPage + 1) * 20));
          ++i) {
@@ -322,7 +328,7 @@ void NativeWindow::refreshHistory() {
         auto badge = new QLabel(values[1], statusCell);
         auto token = text(record.get("status")).toLower();
         badge->setProperty("badge",
-                           token == "starting" || token == "reconnecting" ? "offline" : token);
+                           token == "starting" || token == "reconnecting" ? "connecting" : token);
         statusRow->addWidget(badge);
         statusRow->addStretch();
         table->setCellWidget(row, 1, statusCell);
@@ -334,7 +340,21 @@ void NativeWindow::refreshHistory() {
         platformRow->addWidget(mark);
         platformRow->addWidget(new QLabel(values[3], platform));
         platformRow->addStretch();
+        if (record.get("platformKnown").str().empty()) {
+            auto unknown = caption("–", platform); platformRow->addWidget(unknown);
+            mark->hide();
+            for (auto child : platform->findChildren<QLabel*>()) if (child != unknown && child != mark) child->hide();
+        }
         table->setCellWidget(row, 3, platform);
+        if (values[6].size() > 120) {
+            auto full = new QPushButton(t("viewFullMessage"), table); full->setObjectName("viewFullMessage");
+            connect(full, &QPushButton::clicked, this, [this, message=values[6]] { showOutcome(message); }); table->setCellWidget(row, 6, full);
+        }
+        auto actions = new QWidget(table); auto actionsRow = new QHBoxLayout(actions); actionsRow->setContentsMargins(4,0,4,0); actionsRow->setSpacing(4);
+        if (record.get("status").str() == "ERROR" && !values[6].isEmpty()) {
+            auto report = new QToolButton(actions); report->setObjectName("reportError"); report->setProperty("rowAction", true); report->setIcon(studioIcon("report")); report->setToolTip(t("reportError")); report->setAccessibleName(t("reportError"));
+            actionsRow->addWidget(report); connect(report, &QToolButton::clicked, this, [this, record] { showErrorReport(record, record.get("videoIndex").num()); });
+        }
         auto remove = new QToolButton(table);
         remove->setObjectName("deleteLiveHistory");
         remove->setProperty("rowAction", true);
@@ -349,21 +369,26 @@ void NativeWindow::refreshHistory() {
                                                          record.get("startedAt").str());
             });
         });
-        table->setCellWidget(row, 7, remove);
+        actionsRow->addWidget(remove); actionsRow->addStretch(); table->setCellWidget(row, 7, actions);
         table->setRowHeight(row, 48);
     }
     auto progress = studio.historyCleanup->progress();
-    cleanupLabel->parentWidget()->setVisible(progress.get("running").flag() ||
-                                             !progress.get("error").str().empty());
+    auto popup = cleanupLabel->parentWidget();
+    popup->adjustSize(); popup->move(std::max(12,(width()-popup->width())/2), std::max(12,height()-popup->height()-24));
+    popup->setVisible(cleanupDismissed.isEmpty() && progress.has("totalVideos")); popup->raise();
     cleanupLabel->setText(
         progress.get("error").str().empty()
-            ? t("cleanupProgressCount")
+            ? (progress.get("running").flag() ? t("cleanupRunning") : t("cleanupInProgress")) + "\n" + t("cleanupProgressCount")
                       .replace("{0}", QString::number(progress.get("deletedVideos").num()))
                       .replace("{1}", QString::number(progress.get("totalVideos").num())) +
                   "\n" + text(progress.get("currentVideo"))
             : t("cleanupError").replace("{0}", text(progress.get("error"))));
+    cleanupBar->setVisible(progress.get("error").str().empty());
     cleanupBar->setMaximum(std::max(1, int(progress.get("totalVideos").num())));
     cleanupBar->setValue(progress.get("deletedVideos").num());
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    table->setColumnWidth(1, 105); table->setColumnWidth(2, 125); table->setColumnWidth(3, 130); table->setColumnWidth(4, 240); table->setColumnWidth(5, 170); table->setColumnWidth(6, 155); table->setColumnWidth(7, 80);
     body->findChild<QPushButton*>("runCleanupNow")->setEnabled(!progress.get("running").flag());
 }
 

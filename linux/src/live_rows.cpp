@@ -116,9 +116,9 @@ Json liveRows(Store& store, const Json& sessions) {
                 break;
             }
         }
-        row.set("source", isScene ? sceneSource
-                                  : files.size() > 1 ? fs::path(path).parent_path().string()
-                                                     : path);
+        row.set("source", isScene            ? sceneSource
+                          : files.size() > 1 ? fs::path(path).parent_path().string()
+                                             : path);
         if (current.has("takeover") && current.get("takeover").has("scene")) {
             const auto takeover = current.get("takeover");
             row.set("takeoverLabel", takeover.get("label").str());

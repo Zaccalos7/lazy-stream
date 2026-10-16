@@ -577,7 +577,10 @@ QIcon studioIcon(const QString& name, const QColor& color) {
 
 // I marchi disegnano il path ufficiale della piattaforma: il colore è quello del brand, con il
 // fondo bianco del logo di Facebook e le ombre ciano e rosse della nota di TikTok.
-QIcon platformMark(const QString& platform) {
+QIcon platformMark(const QString& value) {
+    auto platform = value.trimmed().toLower();
+    if (platform == "facebook gaming")
+        platform = "facebook";
     static const QMap<QString, QString> marks = {{"twitch", twitchMark},
                                                  {"youtube", youtubeMark},
                                                  {"kick", kickMark},
@@ -671,6 +674,13 @@ void applyNativeTheme(const QString& theme) {
         QLabel#sectionLabel { font-size: 11px; font-weight: 600; }
         QLabel#pageTitle { font-size: 24px; font-weight: 700; }
         QLabel#heroTitle { font-size: 24px; font-weight: 700; }
+        QLabel#dialogTitle { font-size: 18px; font-weight: 700; }
+        QWizard#startWizard { background: #262628; border: 1px solid #505055; border-top: 3px solid #0a84ff; border-radius: 14px; }
+        QFrame#wizardHeading { border-bottom: 1px solid #38383c; }
+        QDialog#sceneEditor { background: #262628; }
+        QFrame#composerHeading { border-bottom: 1px solid #38383c; }
+        QWidget#livePageNumbers QPushButton { padding: 7px 0; background: transparent; border: none; }
+        QWidget#livePageNumbers QPushButton:checked { background: #0a84ff; color: white; }
         QLabel#metricValue { font-size: 28px; font-weight: 600; }
         QLabel#statusPill { color: #92e4cf; background: #19382f; padding: 7px 12px; border-radius: 12px; }
         QListWidget#navigation { background: transparent; border: none; outline: none; }
@@ -738,7 +748,7 @@ void applyNativeTheme(const QString& theme) {
         QPushButton[card="true"] QLabel { background: transparent; border: none; }
         QPushButton[compact="true"] { padding: 6px 10px; }
         QListWidget#wizardProfile, QListWidget#wizardChannel { background: transparent; border: none; }
-        QListWidget#wizardProfile::item, QListWidget#wizardChannel::item { background: #323234; border: 1px solid #505055; border-radius: 9px; padding: 14px; margin-bottom: 8px; }
+        QListWidget#wizardProfile::item, QListWidget#wizardChannel::item { background: #323234; border: 1px solid #505055; border-radius: 12px; padding: 0; }
         QListWidget#wizardProfile::item:selected, QListWidget#wizardChannel::item:selected { background: #193f66; border: 2px solid #0a84ff; }
         QListWidget#wizardProfile::item:hover, QListWidget#wizardChannel::item:hover { border-color: #8d8d94; }
         QLabel[badge="live"] { color: #ffffff; background: #0a84ff; border-radius: 9px; padding: 2px 8px; font-size: 10px; font-weight: 600; }

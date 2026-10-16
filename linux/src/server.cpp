@@ -500,9 +500,8 @@ struct Api {
                 return res;
             }
         } else if (std::regex_match(path, match, std::regex("/api/logs/([0-9]+)"))) {
-            auto file = studio.store.root / "logs" / (match[1].str() + ".log");
             res.set(http::field::content_type, "text/plain; charset=utf-8");
-            res.body() = fs::exists(file) ? readFile(file) : "Nessun messaggio FFmpeg";
+            res.body() = readStreamLogs(studio.store.root, std::stol(match[1].str()));
             res.prepare_payload();
             return res;
         } else if (std::regex_match(
