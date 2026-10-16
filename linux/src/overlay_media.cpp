@@ -1,7 +1,7 @@
 #include "overlay_media.hpp"
-#include <fstream>
 #include <array>
 #include <cstring>
+#include <fstream>
 #include <unistd.h>
 
 namespace orbis {
@@ -23,8 +23,10 @@ OverlayMedia OverlayMedia::of(const Json& probe) {
         return {};
     const bool alpha = video.get("tags").get("alpha_mode").str() == "1" ||
                        video.get("tags").get("ALPHA_MODE").str() == "1";
-    return {true, false, alpha && codec == "vp9" ? "libvpx-vp9" :
-                        alpha && codec == "vp8" ? "libvpx" : ""};
+    return {true, false,
+            alpha && codec == "vp9"   ? "libvpx-vp9"
+            : alpha && codec == "vp8" ? "libvpx"
+                                      : ""};
 }
 
 WebpOverlayInput::WebpOverlayInput(const fs::path& source) : path(source) {
@@ -78,6 +80,7 @@ WebpOverlayInput::WebpOverlayInput(const fs::path& source) : path(source) {
     }
     throw std::runtime_error("Chunk ANIM WebP non valido");
 }
+
 WebpOverlayInput::~WebpOverlayInput() {
     if (!directory.empty()) {
         std::error_code ignored;

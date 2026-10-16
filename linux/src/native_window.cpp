@@ -1,6 +1,5 @@
-#include "async_logger.hpp"
-#include <cstdio>
 #include "native_window.hpp"
+#include "async_logger.hpp"
 #include "history_cleanup_service.hpp"
 #include "live_rows.hpp"
 #include "native_dashboard.hpp"
@@ -48,6 +47,7 @@
 #include <QVBoxLayout>
 #include <QtConcurrent>
 #include <algorithm>
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
 
@@ -55,19 +55,25 @@ namespace orbis {
 namespace {
 std::atomic<AsyncLogger*> qtLog{nullptr};
 QtMessageHandler previousQtHandler = nullptr;
+
 void applicationMessage(QtMsgType type, const QMessageLogContext& context, const QString& message) {
     if (auto logger = qtLog.load()) {
         logger->write("qt:" + std::to_string(type), redactStreamText(message.toStdString()));
-        if (type == QtFatalMsg) logger->flush();
+        if (type == QtFatalMsg)
+            logger->flush();
     }
-    if (previousQtHandler) previousQtHandler(type, context, message);
-    else std::fprintf(stderr, "%s\n", qPrintable(message));
+    if (previousQtHandler)
+        previousQtHandler(type, context, message);
+    else
+        std::fprintf(stderr, "%s\n", qPrintable(message));
 }
+
 struct NativeLogScope {
     explicit NativeLogScope(AsyncLogger& logger) {
         qtLog = &logger;
         previousQtHandler = qInstallMessageHandler(applicationMessage);
     }
+
     ~NativeLogScope() {
         qInstallMessageHandler(previousQtHandler);
         qtLog = nullptr;
@@ -366,13 +372,20 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     frames->setInterval(200);
     connect(frames, &QTimer::timeout, this, &NativeWindow::updatePreview);
     frames->start();
+    auto pictures = new QTimer(this);
+    pictures->setInterval(33);
+    pictures->setTimerType(Qt::PreciseTimer);
+    connect(pictures, &QTimer::timeout, this, &NativeWindow::updatePreviewFrame);
+    pictures->start();
     rebuild();
     sample();
     changeWatcher = std::jthread([this](std::stop_token stop) {
         auto version = this->studio.store.changes.version();
         while (!stop.stop_requested()) {
-            const auto latest = this->studio.store.changes.wait(version, stop, std::chrono::hours(1));
-            if (stop.stop_requested()) break;
+            const auto latest =
+                this->studio.store.changes.wait(version, stop, std::chrono::hours(1));
+            if (stop.stop_requested())
+                break;
             version = latest;
             QMetaObject::invokeMethod(this, [this] { sample(); }, Qt::QueuedConnection);
         }
@@ -381,9 +394,11 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
 
 // I lavori Qt devono terminare prima che vengano distrutti Studio e SQLite.
 NativeWindow::~NativeWindow() {
-    for (auto player : findChildren<PlatformPreview*>()) player->cancel();
+    for (auto player : findChildren<PlatformPreview*>())
+        player->cancel();
     changeWatcher.request_stop();
-    if (changeWatcher.joinable()) changeWatcher.join();
+    if (changeWatcher.joinable())
+        changeWatcher.join();
     QThreadPool::globalInstance()->waitForDone();
     // Un lavoro già avviato può creare una sessione: fermarla dopo aver atteso i worker.
     studio.stopAll();
@@ -848,7 +863,18 @@ void NativeWindow::addAction(const char* key, const std::function<void()>& actio
 QTableWidget* NativeWindow::makeTable(const QStringList& headers) {
     auto result = new QTableWidget(0, headers.size(), body);
     result->setObjectName("recordsTable");
-    result->setHorizontalHeaderLabels(headers);
+    QStringList uppercaseHeaders;
+    for (const auto& header : headers)
+        uppercaseHeaders.append(header.toUpper());
+    result->setHorizontalHeaderLabels(uppercaseHeaders);
+    auto headingFont = qApp->font();
+    headingFont.setPixelSize(10);
+    headingFont.setWeight(QFont::DemiBold);
+    headingFont.setCapitalization(QFont::AllUppercase);
+    headingFont.setLetterSpacing(QFont::AbsoluteSpacing, .4);
+    result->horizontalHeader()->setFont(headingFont);
+    result->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    result->horizontalHeader()->setFixedHeight(36);
     result->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     result->setSelectionBehavior(QAbstractItemView::SelectRows);
     result->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -1531,13 +1557,16 @@ void NativeWindow::refreshLiveRow(int row, const Json& record) {
     const bool offAir = status == "LIVE" && air.get("offAir").flag();
     const bool unverified = status == "LIVE" && air.get("unverified").flag();
     const bool airWarning = offAir || unverified;
-    auto statusRow = new QBoxLayout(airWarning ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight, statusCell);
+    auto statusRow =
+        new QBoxLayout(airWarning ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight, statusCell);
     statusRow->setContentsMargins(8, 0, 8, 0);
     statusRow->setSpacing(2);
-    auto badge = new QLabel(t(statusKey), statusCell);
+    auto badge = new QLabel(QStringLiteral("● ") + t(statusKey).toUpper(), statusCell);
     badge->setToolTip(s(record.get("error")));
     statusCell->setToolTip(s(record.get("error")));
     badge->setProperty("badge", statusToken);
+    badge->ensurePolished();
+    badge->setFixedHeight(18);
     badge->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     statusRow->addWidget(badge);
     if (airWarning) {
@@ -1547,7 +1576,8 @@ void NativeWindow::refreshLiveRow(int row, const Json& record) {
         notice->setToolTip(t(offAir ? "youtubeOffAirHelp" : "youtubeUnverifiedHelp"));
         notice->setWordWrap(true);
         statusRow->addWidget(notice);
-    } else statusRow->addStretch();
+    } else
+        statusRow->addStretch();
     auto statusItem = new QTableWidgetItem;
     statusItem->setData(Qt::UserRole, qlonglong(id));
     table->setItem(row, 0, statusItem);
@@ -1575,6 +1605,9 @@ void NativeWindow::refreshLiveRow(int row, const Json& record) {
         else
             token->setText(
                 t("sceneSources").replace("{0}", QLocale().toString(record.get("total").num())));
+        token->setText(token->text().toUpper());
+        token->ensurePolished();
+        token->setFixedHeight(18);
         titleTop->addWidget(token);
     }
     auto strong = new QLabel(title, titleCell);

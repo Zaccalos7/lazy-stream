@@ -86,9 +86,14 @@ PlatformPreview::PlatformPreview(QWidget* parent) : QWebEngineView(parent) {
     hide();
 }
 
-PlatformPreview::~PlatformPreview() { cancel(); }
+PlatformPreview::~PlatformPreview() {
+    cancel();
+}
 
-void PlatformPreview::cancel() { queries.request_stop(); refresh.stop(); }
+void PlatformPreview::cancel() {
+    queries.request_stop();
+    refresh.stop();
+}
 
 void PlatformPreview::watch(const Json& value) {
     queries.request_stop();
@@ -109,7 +114,8 @@ void PlatformPreview::resolve() {
         querying = false;
         if (stop.stop_requested()) {
             watcher->deleteLater();
-            if (!queries.stop_requested()) resolve();
+            if (!queries.stop_requested())
+                resolve();
             return;
         }
         auto result = watcher->result();

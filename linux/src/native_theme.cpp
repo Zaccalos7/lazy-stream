@@ -436,6 +436,13 @@ QIcon studioIcon(const QString& name, const QColor& color) {
             QPolygonF camera;
             camera << QPointF(15, 10) << QPointF(21, 6) << QPointF(21, 18) << QPointF(15, 14);
             p.drawPolyline(camera);
+        } else if (name == "microphone") {
+            p.drawRoundedRect(QRectF(9, 2, 6, 11), 3, 3);
+            p.drawLine(6, 8, 6, 12);
+            p.drawLine(18, 8, 18, 12);
+            p.drawArc(QRectF(6, 6, 12, 12), 180 * 16, 180 * 16);
+            p.drawLine(12, 18, 12, 21);
+            p.drawLine(8, 21, 16, 21);
         } else if (name == "screen") {
             p.drawRect(QRectF(2, 4, 20, 14));
             p.drawLine(12, 18, 12, 21);
@@ -697,7 +704,10 @@ void applyNativeTheme(const QString& theme) {
     }
     qApp->setPalette(palette);
     auto font = qApp->font();
-    font.setPointSize(10);
+    font.setFamilies({"Helvetica Neue", "Helvetica", "Arial", "Liberation Sans", "Noto Sans"});
+    font.setStyleHint(QFont::SansSerif);
+    font.setPixelSize(13);
+    font.setLetterSpacing(QFont::PercentageSpacing, 99);
     qApp->setFont(font);
     auto stylesheet = QString::fromUtf8(R"(
         QWidget { color: #f5f5f7; }
@@ -748,7 +758,7 @@ void applyNativeTheme(const QString& theme) {
         QScrollArea { border: none; background: transparent; }
         QTableWidget { background: #262628; alternate-background-color: #2b2b2e; border: 1px solid #414145; border-radius: 10px; selection-background-color: #245987; gridline-color: #38383c; }
         QTableWidget::item { padding: 8px; border-bottom: 1px solid #38383c; }
-        QHeaderView::section { background: #323234; color: #c4c4cc; border: none; border-bottom: 1px solid #505055; padding: 12px 8px; font-weight: 600; }
+        QHeaderView::section { background: #323234; color: #98989d; border: none; border-bottom: 1px solid #38383c; padding: 10px 14px; font-size: 10px; font-weight: 600; }
         QTableCornerButton::section { background: #323234; border: none; }
         QMenu { background: #2b2b2e; border: 1px solid #405372; padding: 6px; }
         QMenu::item { padding: 9px 24px; border-radius: 5px; }

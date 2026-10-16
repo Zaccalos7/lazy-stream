@@ -1,21 +1,29 @@
 #include "composition_preview.hpp"
 #include "async_logger.hpp"
 #include <cmath>
+
 namespace orbis {
 CompositionPreview::CompositionPreview(Store& store, fs::path frame)
     : store(store), frame(std::move(frame)), worker([this] { run(); }) {}
+
 CompositionPreview::~CompositionPreview() {
-    { std::lock_guard lock(mutex); stopped = true; changed.notify_all(); }
+    {
+        std::lock_guard lock(mutex);
+        stopped = true;
+        changed.notify_all();
+    }
     worker.join();
     std::error_code ignored;
     fs::remove(frame, ignored);
 }
+
 void CompositionPreview::update(const Json& value) {
     std::lock_guard lock(mutex);
     scene = value.clone();
     ++revision;
     changed.notify_all();
 }
+
 void CompositionPreview::run() {
     uint64_t running = 0;
     Process process;
@@ -24,15 +32,19 @@ void CompositionPreview::run() {
         Json next;
         {
             std::unique_lock lock(mutex);
-            changed.wait_for(lock, std::chrono::milliseconds(100), [&] { return stopped || running != revision; });
-            if (stopped) break;
-            if (running == revision) continue;
+            changed.wait_for(lock, std::chrono::milliseconds(100),
+                             [&] { return stopped || running != revision; });
+            if (stopped)
+                break;
+            if (running == revision)
+                continue;
             running = revision;
             next = scene.clone();
         }
         process.stop();
         build = {};
-        if (!next.get("items").size()) continue;
+        if (!next.get("items").size())
+            continue;
         try {
             const double width = next.get("width").num(1920), height = next.get("height").num(1080);
             Json profile;

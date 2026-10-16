@@ -13,6 +13,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFile>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHeaderView>
@@ -182,7 +183,14 @@ void NativeWindow::buildLive(bool history) {
     channelFilter->addItem("—", "");
     auto addField = [&](const char* key, QWidget* control) {
         auto column = new QVBoxLayout;
-        column->addWidget(caption(t(key), filters));
+        auto label = caption(t(key), filters);
+        auto font = label->font();
+        font.setPixelSize(10);
+        font.setWeight(QFont::DemiBold);
+        font.setCapitalization(QFont::AllUppercase);
+        font.setLetterSpacing(QFont::AbsoluteSpacing, .4);
+        label->setFont(font);
+        column->addWidget(label);
         column->addWidget(control);
         control->setAccessibleName(t(key));
         if (!history || key != QString("searchByTitle"))
@@ -347,10 +355,12 @@ void NativeWindow::refreshHistory() {
         auto statusCell = new QWidget(table);
         auto statusRow = new QHBoxLayout(statusCell);
         statusRow->setContentsMargins(8, 0, 8, 0);
-        auto badge = new QLabel(values[1], statusCell);
+        auto badge = new QLabel(QStringLiteral("● ") + values[1].toUpper(), statusCell);
         auto token = text(record.get("status")).toLower();
         badge->setProperty("badge",
                            token == "starting" || token == "reconnecting" ? "connecting" : token);
+        badge->ensurePolished();
+        badge->setFixedHeight(18);
         statusRow->addWidget(badge);
         statusRow->addStretch();
         table->setCellWidget(row, 1, statusCell);
@@ -1055,7 +1065,8 @@ void NativeWindow::updatePreview() {
         previewParameterTimer->stop();
         return;
     }
-    const auto playerPlatform = snapshot.get("playerPlatform").str(snapshot.get("platform").str("Custom"));
+    const auto playerPlatform =
+        snapshot.get("playerPlatform").str(snapshot.get("platform").str("Custom"));
     const bool publicPage = playerPlatform != "Custom";
     if (!publicPage) {
         if (auto player = preview->findChild<PlatformPreview*>())
@@ -1063,8 +1074,7 @@ void NativeWindow::updatePreview() {
         preview->setProperty("playerFor", 0);
         body->findChild<QFrame*>("platformNotice")->hide();
     }
-    body->findChild<QLabel*>("facebookPreviewNotice")
-        ->setVisible(playerPlatform == "Facebook");
+    body->findChild<QLabel*>("facebookPreviewNotice")->setVisible(playerPlatform == "Facebook");
     if (publicPage && preview->property("playerFor").toLongLong() != watched) {
         if (auto old = preview->findChild<PlatformPreview*>())
             delete old;
@@ -1072,8 +1082,8 @@ void NativeWindow::updatePreview() {
         auto player = new PlatformPreview(preview);
         player->setGeometry(preview->rect());
         connect(player, &PlatformPreview::diagnostic, this, [this, id = watched](QString message) {
-            studio.store.logger->write("preview:" + std::to_string(id),
-                redactStreamText(message.toStdString()),
+            studio.store.logger->write(
+                "preview:" + std::to_string(id), redactStreamText(message.toStdString()),
                 studio.store.root / "logs" / (std::to_string(id) + ".preview.log"));
         });
         connect(player, &PlatformPreview::playerState, this, [this, player](const QString& state) {
@@ -1103,10 +1113,11 @@ void NativeWindow::updatePreview() {
         auto player = preview->findChild<PlatformPreview*>();
         const bool failed = player && player->property("playerFailed").toBool() &&
                             notice->property("dismissedFor").toLongLong() != watched;
-        notice->findChild<QLabel*>("platformNoticeText")->setText(
-            offAir ? t("youtubeOffAir") + " " + t("youtubeOffAirHelp") :
-            unverified ? t("youtubeUnverified") + " " + t("youtubeUnverifiedHelp") :
-            failed ? t("embedFailed") : "");
+        notice->findChild<QLabel*>("platformNoticeText")
+            ->setText(offAir       ? t("youtubeOffAir") + " " + t("youtubeOffAirHelp")
+                      : unverified ? t("youtubeUnverified") + " " + t("youtubeUnverifiedHelp")
+                      : failed     ? t("embedFailed")
+                                   : "");
         notice->setVisible(offAir || unverified || failed);
     }
     header->findChild<QPushButton*>("liveNow")->setVisible(publicPage);
@@ -1123,12 +1134,8 @@ void NativeWindow::updatePreview() {
     preview->setFixedHeight(std::clamp(int(preview->width() * aspect), 220, portrait ? 520 : 600));
     if (auto player = preview->findChild<PlatformPreview*>())
         player->setGeometry(preview->rect());
-    QPixmap frame(QString::fromStdString(
-        (studio.store.root / "previews" / (std::to_string(watched) + ".jpg")).string()));
-    if (!frame.isNull())
-        preview->setPixmap(
-            frame.scaled(preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    else
+    updatePreviewFrame();
+    if (preview->pixmap().isNull())
         preview->setText(t(statusKey(snapshot.get("status").str())) + " · " + t("previewWaiting"));
     previewFacts->setText(text(snapshot.get("scene").get("name")) + "\n" +
                           text(snapshot.get("channelName")) +
@@ -1176,5 +1183,40 @@ void NativeWindow::updatePreview() {
     fact("sourceAudio", sourceAudio);
     if (auto resume = previewDeck->findChild<QPushButton*>("sceneResume"))
         resume->setVisible(snapshot.get("takeover").has("scene"));
+}
+
+// Decode only new complete frames. The fast picture timer does not rebuild controls or query
+// SQLite.
+void NativeWindow::updatePreviewFrame() {
+    if (!preview || !preview->isVisible() || !watched)
+        return;
+    if (auto player = preview->findChild<PlatformPreview*>();
+        player && !player->property("playerFailed").toBool())
+        return;
+    const auto path = QString::fromStdString(
+        (studio.store.root / "previews" / (std::to_string(watched) + ".jpg")).string());
+    const QFileInfo info(path);
+    if (!info.exists() || info.size() < 4 || info.size() > 4 * 1024 * 1024)
+        return;
+    const auto stamp = QString::number(watched) + ':' +
+                       QString::number(info.lastModified().toMSecsSinceEpoch()) + ':' +
+                       QString::number(info.size());
+    if (preview->property("frameStamp").toString() == stamp &&
+        preview->property("frameSize").toSize() == preview->size())
+        return;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+    const auto bytes = file.readAll();
+    if (!bytes.startsWith(QByteArray::fromHex("ffd8")) ||
+        !bytes.endsWith(QByteArray::fromHex("ffd9")))
+        return;
+    QPixmap frame;
+    if (!frame.loadFromData(bytes, "JPEG"))
+        return;
+    preview->setPixmap(
+        frame.scaled(preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    preview->setProperty("frameStamp", stamp);
+    preview->setProperty("frameSize", preview->size());
 }
 } // namespace orbis

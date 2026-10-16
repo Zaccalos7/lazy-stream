@@ -1,5 +1,6 @@
 #pragma once
 #include "core.hpp"
+
 namespace orbis {
 Json encoderOptions(const Json& profile, const std::string& encoder);
 bool profileSwitch(const Json& profile, const std::string& field, const std::string& option);

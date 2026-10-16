@@ -113,7 +113,8 @@ class Process {
     void stop();
 };
 
-std::string capture(const std::vector<std::string>& args, int timeoutSeconds = 15, std::stop_token stop = {});
+std::string capture(const std::vector<std::string>& args, int timeoutSeconds = 15,
+                    std::stop_token stop = {});
 std::string ffmpeg();
 std::string ffprobe();
 Json probe(const std::string& file);
@@ -159,7 +160,10 @@ class FlvRelay {
     uint64_t timestamp() const {
         return last;
     }
-    uint64_t segmentBase() const { return base; }
+
+    uint64_t segmentBase() const {
+        return base;
+    }
 };
 
 class Session {

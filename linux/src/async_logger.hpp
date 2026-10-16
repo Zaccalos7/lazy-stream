@@ -8,7 +8,11 @@
 
 namespace orbis {
 class AsyncLogger {
-    struct Entry { std::filesystem::path file; std::string text; };
+    struct Entry {
+        std::filesystem::path file;
+        std::string text;
+    };
+
     std::filesystem::path root;
     std::mutex mutex;
     std::condition_variable changed;
@@ -17,6 +21,7 @@ class AsyncLogger {
     bool stopping = false, writing = false;
     std::thread writer;
     void run();
+
   public:
     explicit AsyncLogger(std::filesystem::path directory);
     ~AsyncLogger();

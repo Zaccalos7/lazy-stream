@@ -17,6 +17,7 @@
 #include <QListWidget>
 #include <QMimeData>
 #include <QPainter>
+#include <QPainterPath>
 #include <QSplitter>
 #include <QStyle>
 #include <QTimer>
@@ -161,13 +162,18 @@ class CanvasView : public QGraphicsView {
         setAcceptDrops(true);
         setRenderHint(QPainter::Antialiasing);
         setMinimumSize(420, 260);
-        setBackgroundBrush(Qt::black);
+        setBackgroundBrush(qApp->palette().color(QPalette::Base));
     }
 
     void drawBackground(QPainter* painter, const QRectF& area) override {
         QGraphicsView::drawBackground(painter, area);
-        painter->setPen(QPen(QColor("#151515"), 0));
         const auto bounds = scene()->sceneRect();
+        QPainterPath canvas;
+        canvas.addRoundedRect(bounds, 16, 16);
+        painter->save();
+        painter->setClipPath(canvas);
+        painter->fillRect(bounds, Qt::black);
+        painter->setPen(QPen(QColor("#151515"), 0));
         if (!compositionFrame.isNull())
             painter->drawImage(bounds, compositionFrame);
         for (int i = 1; i < 3; ++i) {
@@ -176,6 +182,7 @@ class CanvasView : public QGraphicsView {
             painter->drawLine(QPointF(0, bounds.height() * i / 3),
                               QPointF(bounds.width(), bounds.height() * i / 3));
         }
+        painter->restore();
     }
 
     // L'aiuto sul canvas vuoto non diventa una sorgente né entra nei dati salvati.
@@ -184,9 +191,22 @@ class CanvasView : public QGraphicsView {
             return;
         painter->save();
         painter->resetTransform();
+        const auto center = viewport()->rect().center();
+        const auto lines = emptyHint.split("\n\n");
+        painter->drawPixmap(center.x() - 14, center.y() - 55,
+                            studioIcon("screen", QColor("#707075")).pixmap(28, 28));
         painter->setPen(QColor("#b9b9c0"));
-        painter->drawText(viewport()->rect().adjusted(36, 24, -36, -24),
-                          Qt::AlignCenter | Qt::TextWordWrap, emptyHint);
+        auto titleFont = qApp->font();
+        titleFont.setBold(true);
+        painter->setFont(titleFont);
+        painter->drawText(QRect(20, center.y() - 23, viewport()->width() - 40, 22), Qt::AlignCenter,
+                          lines.value(0));
+        titleFont.setBold(false);
+        titleFont.setPixelSize(11);
+        painter->setFont(titleFont);
+        painter->setPen(QColor("#98989d"));
+        painter->drawText(QRect(36, center.y() + 5, viewport()->width() - 72, 60),
+                          Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap, lines.value(1));
         painter->restore();
     }
 
@@ -357,9 +377,13 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     auto overlaysColumn = new QVBoxLayout(overlaysCard);
     overlaysColumn->setContentsMargins(14, 14, 14, 14);
     sourceLayout->addWidget(overlaysCard);
-    auto sourceTitle = new QLabel(t(isLayout ? "slots" : "availableSources"), sourcePanel);
-    sourceTitle->setObjectName("cardTitle");
-    availableColumn->addWidget(sourceTitle);
+    auto sourceHeading = new QWidget(sourcePanel);
+    auto sourceHeadingRow = new QHBoxLayout(sourceHeading);
+    sourceHeadingRow->setContentsMargins(0, 0, 0, 0);
+    auto sourceTitle = new QLabel(t(isLayout ? "slots" : "availableSources"), sourceHeading);
+    sourceTitle->setObjectName("rowTitle");
+    sourceHeadingRow->addWidget(sourceTitle, 1);
+    availableColumn->addWidget(sourceHeading);
     auto explanation = new QLabel(t(isLayout ? "slotsHint" : "canvasComposeHint"), sourcePanel);
     explanation->setObjectName("muted");
     explanation->setWordWrap(true);
@@ -461,6 +485,11 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             button->setFixedSize(36, 36);
             const int index = layerRow->count();
             layerRow->addWidget(button, index / 4, index % 4);
+        } else if (name == "refreshSources") {
+            button->setText({});
+            button->setToolTip(t(key));
+            button->setFixedSize(24, 24);
+            sourceHeadingRow->addWidget(button);
         } else if (!(isLayout && (name == "addVideoFile" || name == "sources")))
             (name == "uploadOverlay" ? overlaysColumn : availableColumn)->addWidget(button);
         else
@@ -570,7 +599,12 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     auto catalog = new QWidget(sourcePanel);
     auto catalogColumn = new QVBoxLayout(catalog);
     catalogColumn->setContentsMargins(0, 0, 0, 0);
-    availableColumn->insertWidget(1, catalog);
+    catalogColumn->setSizeConstraint(QLayout::SetMinimumSize);
+    auto catalogScroll = new QScrollArea(sourcePanel);
+    catalogScroll->setWidgetResizable(true);
+    catalogScroll->setWidget(catalog);
+    catalogScroll->setMaximumHeight(int(dialog.height() * .35));
+    availableColumn->insertWidget(1, catalogScroll);
     auto refreshCatalog = [&] {
         while (auto row = catalogColumn->takeAt(0)) {
             if (row->widget())
@@ -578,19 +612,51 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             delete row;
         }
         auto available = sources();
-        for (size_t i = 0; i < available.size(); ++i) {
-            auto picked = available.at(i);
-            auto button = new SourceButton(QString::fromStdString(picked.get("label").str()),
-                                           picked, catalog);
-            button->setObjectName("catalogSource");
-            button->setToolTip(QString::fromStdString(picked.get("label").str()));
-            button->setText(button->fontMetrics().elidedText(button->text(), Qt::ElideRight, 140));
-            button->setMinimumHeight(42);
-            button->setIcon(
-                studioIcon(picked.get("kind").str() == "MICROPHONE" ? "volume" : "screen"));
-            connect(button, &QPushButton::clicked, &dialog,
-                    [&, picked] { run([&] { addPickedSource(picked); }); });
-            catalogColumn->addWidget(button);
+        for (const bool audio : {false, true}) {
+            bool heading = false;
+            for (size_t i = 0; i < available.size(); ++i) {
+                const auto picked = available.at(i);
+                if ((picked.get("kind").str() == "MICROPHONE") != audio)
+                    continue;
+                if (!heading) {
+                    auto group = new QLabel(t(audio ? "audio" : "video").toUpper(), catalog);
+                    group->setObjectName("sectionLabel");
+                    catalogColumn->addWidget(group);
+                    heading = true;
+                }
+                auto button = new SourceButton({}, picked, catalog);
+                button->setObjectName("catalogSource");
+                button->setFixedHeight(audio ? 35 : 50);
+                button->setToolTip(QString::fromStdString(picked.get("label").str()));
+                auto row = new QHBoxLayout(button);
+                row->setContentsMargins(10, 8, 10, 8);
+                row->setSpacing(10);
+                auto mark = new QLabel(button);
+                mark->setPixmap(
+                    studioIcon(audio ? "microphone" : "screen", QColor("#0a84ff")).pixmap(16, 16));
+                row->addWidget(mark);
+                auto column = new QVBoxLayout;
+                column->setSpacing(2);
+                auto name = new QLabel(
+                    button->fontMetrics().elidedText(
+                        QString::fromStdString(picked.get("label").str()), Qt::ElideRight, 140),
+                    button);
+                name->setObjectName("rowTitle");
+                column->addWidget(name);
+                if (picked.get("width").num() > 0 && picked.get("height").num() > 0) {
+                    auto size = new QLabel(QString::number(int(picked.get("width").num())) + "×" +
+                                               QString::number(int(picked.get("height").num())),
+                                           button);
+                    size->setObjectName("rowCaption");
+                    column->addWidget(size);
+                }
+                row->addLayout(column, 1);
+                for (auto label : button->findChildren<QLabel*>())
+                    label->setAttribute(Qt::WA_TransparentForMouseEvents);
+                connect(button, &QPushButton::clicked, &dialog,
+                        [&, picked] { run([&] { addPickedSource(picked); }); });
+                catalogColumn->addWidget(button);
+            }
         }
         if (!available.size())
             catalogColumn->addWidget(new QLabel(t("sourcesEmptyAvailable"), catalog));
@@ -599,7 +665,7 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         refreshCatalog();
         action("refreshSources", refreshCatalog);
     } else
-        catalog->hide();
+        catalogScroll->hide();
     auto overlayLibrary = new OverlayList(sourcePanel);
     overlayLibrary->setDragEnabled(true);
     overlayLibrary->setObjectName("composerOverlays");
@@ -761,7 +827,7 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     layersHeader->setObjectName("card");
     auto layersHeading = new QVBoxLayout(layersHeader);
     auto layersTitle = new QLabel(t("layers"), layersHeader);
-    layersTitle->setObjectName("cardTitle");
+    layersTitle->setObjectName("rowTitle");
     layersHeading->addWidget(layersTitle);
     auto layersHint = new QLabel(t("layersHint"), layersHeader);
     layersHint->setObjectName("muted");
@@ -814,7 +880,9 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         usedCard->setObjectName("card");
         usedCard->setMinimumHeight(126);
         auto usedColumn = new QVBoxLayout(usedCard);
-        usedColumn->addWidget(new QLabel(t("usedSources"), usedCard));
+        auto usedTitle = new QLabel(t("usedSources"), usedCard);
+        usedTitle->setObjectName("rowTitle");
+        usedColumn->addWidget(usedTitle);
         auto emptyUsed = new QLabel(t("sourcesEmptyUsed"), usedCard);
         emptyUsed->setObjectName("muted");
         emptyUsed->setWordWrap(true);
@@ -864,13 +932,15 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             }
         });
     });
-    const auto previewPath = studio.store.root / "previews" /
+    const auto previewPath =
+        studio.store.root / "previews" /
         ("composer-" + QUuid::createUuid().toString(QUuid::WithoutBraces).toStdString() + ".jpg");
     CompositionPreview compositionPreview(studio.store, previewPath);
     QString previewSignature;
     auto previewTimer = new QTimer(&dialog);
     connect(previewTimer, &QTimer::timeout, &dialog, [&] {
-        if (isLayout) return;
+        if (isLayout)
+            return;
         Json composition;
         composition.set("width", width->value());
         composition.set("height", height->value());
@@ -885,7 +955,8 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         if (signature != previewSignature) {
             previewSignature = signature;
             compositionPreview.update(composition);
-            if (!items.size()) view->compositionFrame = {};
+            if (!items.size())
+                view->compositionFrame = {};
         }
         QImage frame(QString::fromStdString(previewPath.string()));
         if (!frame.isNull() && items.size()) {
@@ -896,7 +967,8 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         }
         view->viewport()->update();
     });
-    if (!isLayout) previewTimer->start(500);
+    if (!isLayout)
+        previewTimer->start(500);
     QTimer::singleShot(0, &dialog, fit);
     dialog.exec();
     // La scena viene distrutta dopo i pannelli: non notificare selezione/geometria a widget già

@@ -29,9 +29,9 @@ class PacedOutput {
     void run();
 
   public:
-    PacedOutput(int64_t maxLead, int64_t preroll, bool pacing,
-                std::function<bool()> cancelled, std::function<void()> open,
-                std::function<void(const FlvChunk&)> write, std::function<void()> complete);
+    PacedOutput(int64_t maxLead, int64_t preroll, bool pacing, std::function<bool()> cancelled,
+                std::function<void()> open, std::function<void(const FlvChunk&)> write,
+                std::function<void()> complete);
     ~PacedOutput();
     void push(FlvChunk chunk);
     void finish();
@@ -45,6 +45,7 @@ class PacedOutput {
 class NativePublisher {
     struct Impl;
     std::unique_ptr<Impl> impl;
+
   public:
     NativePublisher(std::string url, std::function<bool()> cancelled,
                     std::function<void(const std::string&)> log, int timeoutSeconds = 30);

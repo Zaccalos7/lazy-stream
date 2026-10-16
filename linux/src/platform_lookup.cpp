@@ -2,11 +2,13 @@
 #include "stream_platform.hpp"
 #include <algorithm>
 #include <cctype>
-#include <regex>
 #include <chrono>
+#include <regex>
 
 namespace orbis {
-Json platformPlayer(const Json& channel) { return platformPlayer(channel, {}); }
+Json platformPlayer(const Json& channel) {
+    return platformPlayer(channel, {});
+}
 
 Json platformPlayer(const Json& channel, std::stop_token stop) {
     Json out;
@@ -64,19 +66,23 @@ Json platformPlayer(const Json& channel, std::stop_token stop) {
         static std::map<std::string, std::pair<Json, std::chrono::steady_clock::time_point>> cache;
         std::unique_lock lock(cacheMutex, std::defer_lock);
         while (!lock.try_lock()) {
-            if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
+            if (stop.stop_requested())
+                throw std::runtime_error("Operazione annullata");
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
         const auto now = std::chrono::steady_clock::now();
         const auto cached = cache.find(name);
-        if (cached != cache.end() && now - cached->second.second <
-            std::chrono::seconds(cached->second.first.get("air").str() == "LIVE" ? 45 : 10))
+        if (cached != cache.end() &&
+            now - cached->second.second <
+                std::chrono::seconds(cached->second.first.get("air").str() == "LIVE" ? 45 : 10))
             return cached->second.first.clone();
         auto found = lookupYouTube(name, [stop](const std::string& page) {
             return capture({"curl", "--fail", "--silent", "--show-error", "--location",
-                            "--compressed", "--max-time", "8", page}, 10, stop);
+                            "--compressed", "--max-time", "8", page},
+                           10, stop);
         });
-        if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
+        if (stop.stop_requested())
+            throw std::runtime_error("Operazione annullata");
         cache[name] = {found.clone(), now};
         if (cache.size() > 256)
             cache.erase(cache.begin());
@@ -107,9 +113,10 @@ std::string youtubeCandidate(const std::string& html) {
         scope = scope.substr(start, end == std::string::npos ? end : end - start);
     }
     std::smatch match;
-    for (const auto& pattern : {
-            R"rx("contentId"\s*:\s*"([A-Za-z0-9_-]{11})"\s*,\s*"contentType"\s*:\s*"LOCKUP_CONTENT_TYPE_VIDEO")rx",
-            R"rx("videoId"\s*:\s*"([A-Za-z0-9_-]{11})"\s*,\s*"thumbnail")rx"})
+    for (
+        const auto& pattern :
+        {R"rx("contentId"\s*:\s*"([A-Za-z0-9_-]{11})"\s*,\s*"contentType"\s*:\s*"LOCKUP_CONTENT_TYPE_VIDEO")rx",
+         R"rx("videoId"\s*:\s*"([A-Za-z0-9_-]{11})"\s*,\s*"thumbnail")rx"})
         if (std::regex_search(scope, match, std::regex(pattern)))
             return match[1].str();
     return {};
@@ -131,7 +138,8 @@ Json lookupYouTube(const std::string& name,
         throw std::runtime_error("Nome pubblico non valido");
     Json result;
     const auto channel = name.starts_with("UC") ? "https://www.youtube.com/channel/" + name
-        : "https://www.youtube.com/" + (name.starts_with("@") ? name : "@" + name);
+                                                : "https://www.youtube.com/" +
+                                                      (name.starts_with("@") ? name : "@" + name);
     result.set("publicUrl", channel + "/live");
     try {
         const auto streams = fetch(channel + "/streams");
@@ -145,8 +153,9 @@ Json lookupYouTube(const std::string& name,
             if (youtubeEnded(watch) == false) {
                 result.set("videoId", candidate);
                 result.set("publicUrl", "https://www.youtube.com/watch?v=" + candidate);
-                result.set("embed", "https://www.youtube.com/embed/" + candidate +
-                    "?autoplay=1&mute=1&playsinline=1&origin=http%3A%2F%2Flocalhost");
+                result.set("embed",
+                           "https://www.youtube.com/embed/" + candidate +
+                               "?autoplay=1&mute=1&playsinline=1&origin=http%3A%2F%2Flocalhost");
                 result.set("air", "LIVE");
                 return result;
             }
@@ -167,6 +176,7 @@ int64_t YouTubeAirState::since(long id, int64_t now) {
         live.since = now;
     return live.since;
 }
+
 void YouTubeAirState::observe(long id, const Json& result) {
     std::lock_guard lock(mutex);
     auto& live = lives[id];
@@ -180,26 +190,31 @@ void YouTubeAirState::observe(long id, const Json& result) {
     } else
         ++live.failures;
 }
+
 bool YouTubeAirState::ending(long id, std::optional<bool> ended) {
     std::lock_guard lock(mutex);
     auto& live = lives[id];
     live.endings = ended == true ? live.endings + 1 : 0;
     return live.endings >= 2;
 }
+
 void YouTubeAirState::missing(const std::vector<long>& present) {
     std::lock_guard lock(mutex);
     for (auto it = lives.begin(); it != lives.end();) {
-        if (std::find(present.begin(), present.end(), it->first) == present.end() && ++it->second.absent >= 2)
+        if (std::find(present.begin(), present.end(), it->first) == present.end() &&
+            ++it->second.absent >= 2)
             it = lives.erase(it);
         else
             ++it;
     }
 }
+
 void YouTubeAirState::dismiss(long id) {
     std::lock_guard lock(mutex);
     if (auto found = lives.find(id); found != lives.end())
         found->second.dismissed = true;
 }
+
 Json YouTubeAirState::state(long id) {
     std::lock_guard lock(mutex);
     Json result;

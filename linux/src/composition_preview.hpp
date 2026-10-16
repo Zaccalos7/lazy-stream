@@ -1,6 +1,7 @@
 #pragma once
 #include "core.hpp"
 #include <condition_variable>
+
 namespace orbis {
 // Preview uses the same composition graph, without streaming, H.264 encoding or audio playback.
 class CompositionPreview {
@@ -13,6 +14,7 @@ class CompositionPreview {
     bool stopped = false;
     std::thread worker;
     void run();
+
   public:
     CompositionPreview(Store& store, fs::path frame);
     ~CompositionPreview();

@@ -108,6 +108,7 @@ class NativeWindow : public QMainWindow {
     void addDestinationCards(const QList<QStringList>& entries);
     void addDashboardCards(const QList<QStringList>& entries, const QString& section = {});
     void updatePreview();
+    void updatePreviewFrame();
 
   protected:
     void closeEvent(QCloseEvent* event) override;

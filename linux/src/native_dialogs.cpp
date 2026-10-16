@@ -388,7 +388,8 @@ void NativeWindow::editProfile(Json profile, std::function<void(Json)> apply) {
     for (const auto& format : {"mp4", "mkv", "avi", "mov", "flv", "webm", "ts"})
         formats.append({QString(format).toUpper(), Json::string(format)});
     auto format = dialog.choice("videoFormat", t("videoFormat"), formats);
-    if (!profile.has("videoFormat")) format->setCurrentIndex(4);
+    if (!profile.has("videoFormat"))
+        format->setCurrentIndex(4);
     dialog
         .choice("encoderQuality", t("encoderQuality"),
                 {{t("encoderQualityAuto"), Json::string("auto")},

@@ -4,10 +4,10 @@
 #include <stdexcept>
 #ifdef ORBIS_FFMPEG9
 extern "C" {
-#include <libavformat/avio.h>
 #include <libavformat/avformat.h>
-#include <libavutil/dict.h>
+#include <libavformat/avio.h>
 #include <libavutil/avutil.h>
+#include <libavutil/dict.h>
 #include <libavutil/error.h>
 #include <libavutil/log.h>
 }
@@ -17,26 +17,30 @@ namespace orbis {
 namespace {
 int64_t ticks() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
 }
-}
+} // namespace
 
-PacedOutput::PacedOutput(int64_t lead, int64_t burst, bool pace,
-                         std::function<bool()> cancel, std::function<void()> initialize,
+PacedOutput::PacedOutput(int64_t lead, int64_t burst, bool pace, std::function<bool()> cancel,
+                         std::function<void()> initialize,
                          std::function<void(const FlvChunk&)> sink, std::function<void()> finalize)
     : maxLead(lead), preroll(burst), pacing(pace), cancelled(std::move(cancel)),
       open(std::move(initialize)), complete(std::move(finalize)), write(std::move(sink)) {
     sender = std::thread([this] { run(); });
 }
 
-PacedOutput::~PacedOutput() { abort(); }
+PacedOutput::~PacedOutput() {
+    abort();
+}
 
 void PacedOutput::push(FlvChunk chunk) {
     std::unique_lock lock(mutex);
     auto full = [&] {
-        return !queue.empty() && (queuedBytes + chunk.bytes.size() > 32 * 1024 * 1024 ||
-            queue.size() >= 4096 ||
-            int64_t(chunk.timestamp - std::min(chunk.timestamp, queue.front().timestamp)) > maxLead);
+        return !queue.empty() &&
+               (queuedBytes + chunk.bytes.size() > 32 * 1024 * 1024 || queue.size() >= 4096 ||
+                int64_t(chunk.timestamp - std::min(chunk.timestamp, queue.front().timestamp)) >
+                    maxLead);
     };
     while (full() && failure.empty() && !aborted && !cancelled())
         condition.wait_for(lock, std::chrono::milliseconds(50));
@@ -93,7 +97,7 @@ void PacedOutput::run() {
                 std::unique_lock lock(mutex);
                 while (!aborted && !cancelled() && std::chrono::steady_clock::now() < due)
                     condition.wait_until(lock, std::min(due, std::chrono::steady_clock::now() +
-                                                       std::chrono::milliseconds(50)));
+                                                                 std::chrono::milliseconds(50)));
                 if (aborted || cancelled())
                     break;
             }
@@ -165,7 +169,8 @@ Json PacedOutput::snapshot() {
     result.set("queuedBytes", double(queuedBytes));
     result.set("peakBytes", double(peakBytes));
     result.set("queuedTags", double(queue.size()));
-    result.set("leadMilliseconds", double(queue.empty() ? 0 : lastQueued - std::min(lastQueued, sentTimestamp)));
+    result.set("leadMilliseconds",
+               double(queue.empty() ? 0 : lastQueued - std::min(lastQueued, sentTimestamp)));
     result.set("lastAdvance", double(lastAdvance));
     result.set("done", completed);
     if (context)
@@ -176,6 +181,7 @@ Json PacedOutput::snapshot() {
 #ifdef ORBIS_FFMPEG9
 namespace {
 thread_local std::function<void(const std::string&)>* threadLog = nullptr;
+
 void nativeLog(void* context, int level, const char* format, va_list args) {
     if (level > AV_LOG_INFO)
         return;
@@ -186,12 +192,13 @@ void nativeLog(void* context, int level, const char* format, va_list args) {
     av_log_format_line2(context, level, format, args, text, sizeof(text), &prefix);
     (*threadLog)(text);
 }
+
 std::string avError(int error) {
     char text[AV_ERROR_MAX_STRING_SIZE];
     av_strerror(error, text, sizeof(text));
     return text;
 }
-}
+} // namespace
 #endif
 
 struct NativePublisher::Impl {
@@ -213,7 +220,10 @@ NativePublisher::NativePublisher(std::string url, std::function<bool()> cancelle
     impl->log = std::move(log);
     impl->timeout = timeout;
 }
-NativePublisher::~NativePublisher() { close(); }
+
+NativePublisher::~NativePublisher() {
+    close();
+}
 
 bool NativePublisher::available() {
 #ifdef ORBIS_FFMPEG9
@@ -226,13 +236,17 @@ bool NativePublisher::available() {
 void NativePublisher::open() {
 #ifdef ORBIS_FFMPEG9
     static std::once_flag initialized;
-    std::call_once(initialized, [] { avformat_network_init(); av_log_set_callback(nativeLog); });
+    std::call_once(initialized, [] {
+        avformat_network_init();
+        av_log_set_callback(nativeLog);
+    });
     threadLog = &impl->log;
     impl->deadline = ticks() + impl->timeout * 1000;
     AVIOInterruptCB interrupt{[](void* opaque) {
-        auto self = static_cast<Impl*>(opaque);
-        return int(self->cancelled() || ticks() > self->deadline.load());
-    }, impl.get()};
+                                  auto self = static_cast<Impl*>(opaque);
+                                  return int(self->cancelled() || ticks() > self->deadline.load());
+                              },
+                              impl.get()};
     AVDictionary* options = nullptr;
     av_dict_set(&options, "rw_timeout", "15000000", 0);
     av_dict_set(&options, "rtmp_live", "live", 0);
@@ -247,8 +261,8 @@ void NativePublisher::open() {
         av_dict_set(&options, "rtmp_playpath", impl->url.substr(path + 6).c_str(), 0);
         av_dict_set(&options, "rtmp_tcurl", (impl->url.substr(0, path) + "/rtmp").c_str(), 0);
     }
-    const int result = avio_open2(&impl->output, impl->url.c_str(), AVIO_FLAG_WRITE,
-                                  &interrupt, &options);
+    const int result =
+        avio_open2(&impl->output, impl->url.c_str(), AVIO_FLAG_WRITE, &interrupt, &options);
     av_dict_free(&options);
     if (result < 0)
         throw std::runtime_error("Native publisher connect: " + avError(result));

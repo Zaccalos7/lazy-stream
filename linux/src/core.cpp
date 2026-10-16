@@ -1,9 +1,9 @@
 #include "core.hpp"
 #include "async_logger.hpp"
-#include "screen_capture.hpp"
-#include "version.hpp"
 #include "database_schema.hpp"
 #include "history_cleanup_service.hpp"
+#include "screen_capture.hpp"
+#include "version.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -267,24 +267,29 @@ Store::Store(fs::path path) : root(std::move(path)) {
     auto profiles = list("profiles");
     for (const std::string platform : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}) {
         for (bool high : {true, false}) {
-            const auto display = platform == "YouTube" ? "Youtube" :
-                                 platform == "Facebook" ? "Facebook Gaming" : platform;
+            const auto display = platform == "YouTube"    ? "Youtube"
+                                 : platform == "Facebook" ? "Facebook Gaming"
+                                                          : platform;
             const auto title = std::string(high ? "Default " : "Default Low ") + display;
             bool exists = false;
             long legacyId = 0;
             for (size_t i = 0; i < profiles.size(); ++i) {
                 const auto p = profiles.at(i);
-                if (p.get("platform").str(p.get("defaultPlatformConfiguration").str()) == platform &&
-                    (high ? p.get("isDefaultConfiguration").flag() : p.get("title").str() == title))
-                {
-                    const bool legacy = high && p.get("title").str() == "Default " + platform &&
+                if (p.get("platform").str(p.get("defaultPlatformConfiguration").str()) ==
+                        platform &&
+                    (high ? p.get("isDefaultConfiguration").flag()
+                          : p.get("title").str() == title)) {
+                    const bool legacy =
+                        high && p.get("title").str() == "Default " + platform &&
                         p.get("videoBitrate").num() == 4500 && p.get("audioBitrate").num() == 128 &&
                         p.get("videoWidth").num() == (platform == "TikTok" ? 720 : 1280) &&
                         p.get("videoHeight").num() == (platform == "TikTok" ? 1280 : 720) &&
                         p.get("frameRate").num() == 30 && p.get("preset").str() == "veryfast" &&
                         !p.get("videoSettingsOptions").size();
-                    if (legacy) legacyId = p.get("id").num();
-                    else exists = true;
+                    if (legacy)
+                        legacyId = p.get("id").num();
+                    else
+                        exists = true;
                 }
             }
             if (exists)
@@ -299,17 +304,24 @@ Store::Store(fs::path path) : root(std::move(path)) {
             p.set("videoFormat", "flv");
             p.set("pixelFormat", "yuv420p");
             p.set("audioCodecName", "aac");
-            p.set("videoBitrate", high ? (platform == "Facebook" || platform == "TikTok" ? 4500.0 : 6000.0)
-                                      : (platform == "TikTok" ? 2500.0 : 3000.0));
-            p.set("videoWidth", high && platform == "Twitch" ? Json::parse("null") :
-                  Json::number(platform == "TikTok" ? (high ? 1080 : 720) : (high ? 1920 : 1280)));
-            p.set("videoHeight", high && platform == "Twitch" ? Json::parse("null") :
-                  Json::number(platform == "TikTok" ? (high ? 1920 : 1280) : (high ? 1080 : 720)));
-            p.set("frameRate", high && platform == "Twitch" ? Json::parse("null") : Json::number(30));
+            p.set("videoBitrate",
+                  high ? (platform == "Facebook" || platform == "TikTok" ? 4500.0 : 6000.0)
+                       : (platform == "TikTok" ? 2500.0 : 3000.0));
+            p.set("videoWidth", high && platform == "Twitch"
+                                    ? Json::parse("null")
+                                    : Json::number(platform == "TikTok" ? (high ? 1080 : 720)
+                                                                        : (high ? 1920 : 1280)));
+            p.set("videoHeight", high && platform == "Twitch"
+                                     ? Json::parse("null")
+                                     : Json::number(platform == "TikTok" ? (high ? 1920 : 1280)
+                                                                         : (high ? 1080 : 720)));
+            p.set("frameRate",
+                  high && platform == "Twitch" ? Json::parse("null") : Json::number(30));
             p.set("gopSize", 2.0);
             p.set("preset", high ? "veryfast" : platform == "Twitch" ? "ultrafast" : "superfast");
-            p.set("audioBitrate", platform == "Twitch" ? (high ? 160.0 : 96.0) :
-                                  platform == "Kick" && high ? 160.0 : 128.0);
+            p.set("audioBitrate", platform == "Twitch"         ? (high ? 160.0 : 96.0)
+                                  : platform == "Kick" && high ? 160.0
+                                                               : 128.0);
             p.set("lowLatency", true);
             auto options = Json::array();
             Json profileOption;
@@ -728,23 +740,29 @@ void Process::stop() {
 // Raccoglie stdout con timeout e limite di dimensione, così un comando esterno non blocca o satura
 // il server.
 std::string capture(const std::vector<std::string>& args, int timeout, std::stop_token stop) {
-    if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
+    if (stop.stop_requested())
+        throw std::runtime_error("Operazione annullata");
     Process p;
     p.start(args);
     std::string out;
     auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout);
     char buf[8192];
     while (std::chrono::steady_clock::now() < deadline) {
-        if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
+        if (stop.stop_requested())
+            throw std::runtime_error("Operazione annullata");
         pollfd fd{p.fd(), POLLIN, 0};
         if (poll(&fd, 1, 100) > 0) {
             auto n = read(p.fd(), buf, sizeof(buf));
-            if (n < 0 && errno == EINTR) continue;
-            if (n < 0) throw std::runtime_error("Lettura comando fallita");
+            if (n < 0 && errno == EINTR)
+                continue;
+            if (n < 0)
+                throw std::runtime_error("Lettura comando fallita");
             if (n == 0) {
                 while (p.running()) {
-                    if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
-                    if (std::chrono::steady_clock::now() >= deadline) throw std::runtime_error("Tempo scaduto: " + args[0]);
+                    if (stop.stop_requested())
+                        throw std::runtime_error("Operazione annullata");
+                    if (std::chrono::steady_clock::now() >= deadline)
+                        throw std::runtime_error("Tempo scaduto: " + args[0]);
                     std::this_thread::sleep_for(std::chrono::milliseconds(20));
                 }
                 if (p.wait() != 0)
