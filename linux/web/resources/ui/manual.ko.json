@@ -28,7 +28,7 @@
       "body": "두 단계: 첫 번째는 영상과 오디오 설정, 두 번째는 채널을 고릅니다. 다음은 앞으로, 뒤로는 되돌아갑니다.",
       "steps": [
         "라이브의 설정을 고릅니다.",
-        "채널을 고릅니다(TikTok은 키도 입력).",
+        "채널을 고릅니다.",
         "구성 / 다음이 캔버스를 엽니다."
       ],
       "figure": "wizard",
@@ -123,6 +123,19 @@
       ],
       "figure": "settings",
       "callout": "설정은 영상/오디오, 채널과 이 설명서를 모읍니다."
+    },
+    {
+      "id": "errorReports",
+      "title": "Report an error",
+      "body": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+      "steps": [
+        "In History or Live management, press the Report error icon beside a failed live.",
+        "A dialog opens with the error QR code. Stream keys are masked.",
+        "If there are several QR codes, capture every page so the complete error is included.",
+        "Take screenshots or photos, then press Open an issue on GitHub. Attach the images and describe what you were doing. You can also copy the report text."
+      ],
+      "figure": "errorReports",
+      "callout": "Capture the QR code and attach it to the GitHub issue."
     }
   ]
 }
