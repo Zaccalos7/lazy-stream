@@ -5,6 +5,12 @@
 #include <string_view>
 
 namespace orbis {
+StreamFrame frameOfLive(StreamFrame first, bool namedResolution) {
+    if (namedResolution || (first.width >= first.height && first.width >= 1280))
+        return {first.width / 2 * 2, first.height / 2 * 2, first.frameRate};
+    return {1920, 1080, first.frameRate};
+}
+
 namespace {
 std::string ingestHost(const std::string& url) {
     const auto schemeEnd = url.find("://");
@@ -43,20 +49,28 @@ bool isIvsChannelEndpoint(const std::string& host) {
 
 StreamPlatform streamPlatform(const std::string& outputUrl, const std::string& declared) {
     const auto detected = detectStreamPlatform(outputUrl);
-    if (detected != StreamPlatform::Generic) return detected;
+    if (detected != StreamPlatform::Generic)
+        return detected;
     auto name = declared;
-    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
-    if (name == "youtube") return StreamPlatform::YouTube;
-    if (name == "twitch") return StreamPlatform::Twitch;
-    if (name == "kick") return StreamPlatform::Kick;
-    if (name == "facebook" || name == "facebook gaming") return StreamPlatform::Facebook;
-    if (name == "tiktok") return StreamPlatform::TikTok;
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    if (name == "youtube")
+        return StreamPlatform::YouTube;
+    if (name == "twitch")
+        return StreamPlatform::Twitch;
+    if (name == "kick")
+        return StreamPlatform::Kick;
+    if (name == "facebook" || name == "facebook gaming")
+        return StreamPlatform::Facebook;
+    if (name == "tiktok")
+        return StreamPlatform::TikTok;
     return StreamPlatform::Generic;
 }
 
 StreamDeliveryProfile deliveryFor(StreamPlatform platform) {
     StreamDeliveryProfile profile;
-    if (platform == StreamPlatform::Generic) profile.audioSampleRate = 44100;
+    if (platform == StreamPlatform::Generic)
+        profile.audioSampleRate = 44100;
     if (platform == StreamPlatform::Twitch || platform == StreamPlatform::Kick) {
         profile.connectSeconds = 20;
         profile.stallSeconds = 15;
