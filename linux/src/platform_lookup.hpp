@@ -18,8 +18,10 @@ class YouTubeAirState {
         std::string video;
         int64_t since = -1;
     };
+
     std::mutex mutex;
     std::map<long, Live> lives;
+
   public:
     int64_t since(long id, int64_t now);
     void observe(long id, const Json& result);

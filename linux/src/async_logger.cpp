@@ -7,10 +7,16 @@ AsyncLogger::AsyncLogger(fs::path directory) : root(std::move(directory)) {
     fs::create_directories(root);
     writer = std::thread([this] { run(); });
 }
+
 AsyncLogger::~AsyncLogger() {
-    { std::lock_guard lock(mutex); stopping = true; changed.notify_all(); }
+    {
+        std::lock_guard lock(mutex);
+        stopping = true;
+        changed.notify_all();
+    }
     writer.join();
 }
+
 void AsyncLogger::write(const std::string& component, const std::string& message,
                         const fs::path& sessionFile) {
     const auto stamp = now();
@@ -27,10 +33,12 @@ void AsyncLogger::write(const std::string& component, const std::string& message
         queue.push_back({sessionFile, text});
     changed.notify_all();
 }
+
 void AsyncLogger::flush() {
     std::unique_lock lock(mutex);
     changed.wait(lock, [&] { return queue.empty() && !writing; });
 }
+
 void AsyncLogger::run() {
     std::string rotated;
     for (;;) {
@@ -52,7 +60,8 @@ void AsyncLogger::run() {
             if (rotated != day) {
                 for (auto& entry : fs::directory_iterator(root)) {
                     if (entry.path().filename().string().starts_with("application-") &&
-                        fs::file_time_type::clock::now() - entry.last_write_time() > std::chrono::hours(72)) {
+                        fs::file_time_type::clock::now() - entry.last_write_time() >
+                            std::chrono::hours(72)) {
                         std::error_code ignored;
                         fs::remove(entry.path(), ignored);
                     }
@@ -67,10 +76,16 @@ void AsyncLogger::run() {
                 }
                 file << entry.text;
                 std::error_code ignored;
-                fs::permissions(entry.file, fs::perms::owner_read | fs::perms::owner_write, ignored);
+                fs::permissions(entry.file, fs::perms::owner_read | fs::perms::owner_write,
+                                ignored);
             }
-        } catch (...) { /* Diagnostics cannot stop a live or terminate its writer thread. */ }
-        { std::lock_guard lock(mutex); writing = false; changed.notify_all(); }
+        } catch (...) { /* Diagnostics cannot stop a live or terminate its writer thread. */
+        }
+        {
+            std::lock_guard lock(mutex);
+            writing = false;
+            changed.notify_all();
+        }
     }
 }
 } // namespace orbis

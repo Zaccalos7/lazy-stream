@@ -9,6 +9,9 @@ case "${1:-}" in
     exit 2
     ;;
 esac
+if [[ ! -f "$task_root/build/ffmpeg-9.0.2/lib/pkgconfig/libavformat.pc" ]]; then
+  python3 "$task_root/scripts/prepare-ffmpeg.py"
+fi
 cmake -S "$task_root" -B "$task_root/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build "$task_root/build" --parallel "${ORBIS_BUILD_JOBS:-2}"
 if [[ "$("$task_root/build/orbis-stream" --version)" != "$(<"$task_root/VERSION")" ]]; then

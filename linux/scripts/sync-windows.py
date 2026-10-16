@@ -9,6 +9,7 @@ import shutil
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--source',type=pathlib.Path,default=pathlib.Path(__file__).resolve().parents[3]/'lazy-stream-windows')
+parser.add_argument("--inventory-only", action="store_true", help="Refresh source hashes without replacing Linux resources")
 args=parser.parse_args()
 source=args.source.resolve()
 root=pathlib.Path(__file__).resolve().parents[1]
@@ -16,10 +17,11 @@ core=source/'src/Orbis.Stream.Core'
 if not core.is_dir():
     parser.error('Cartella Orbis.Stream.Core non trovata')
 resources=root/'web/resources'
-for name,folder in [('ui',core/'Ui'),('messages',core/'Messages'),('flags',source/'src/Orbis.Stream.App/wwwroot/flags'),('manual',source/'src/Orbis.Stream.App/wwwroot/manual')]:
-    (resources/name).mkdir(parents=True,exist_ok=True)
-    shutil.copytree(folder,resources/name,dirs_exist_ok=True)
-shutil.copyfile(source/'LICENSE',resources/'LICENSE-windows.txt')
+if not args.inventory_only:
+    for name,folder in [('ui',core/'Ui'),('messages',core/'Messages'),('flags',source/'src/Orbis.Stream.App/wwwroot/flags'),('manual',source/'src/Orbis.Stream.App/wwwroot/manual')]:
+        (resources/name).mkdir(parents=True,exist_ok=True)
+        shutil.copytree(folder,resources/name,dirs_exist_ok=True)
+    shutil.copyfile(source/'LICENSE',resources/'LICENSE-windows.txt')
 inventory=[]
 routes=[]
 for path in sorted(source.rglob('*')):
@@ -59,4 +61,4 @@ for entry in inventory:
         if entry.get(key):lines += [label+': '+', '.join('`'+v+'`' for v in entry[key])+'.','']
     lines += ['SHA-256: `'+entry['sha256']+'`.','']
 (root/'docs/INVENTARIO_WINDOWS.md').write_text('\n'.join(lines)+'\n')
-print(f'{len(inventory)} file, {len(routes)} API, risorse UI/manuale/messaggi copiate in {resources}')
+print(f'{len(inventory)} file, {len(routes)} API; ' + ('solo inventario aggiornato' if args.inventory_only else f'risorse copiate in {resources}'))

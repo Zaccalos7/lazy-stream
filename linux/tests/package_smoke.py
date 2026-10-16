@@ -2,6 +2,7 @@
 """Verify that a release archive or .deb runs from its installed layout."""
 
 import pathlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -26,17 +27,31 @@ def main() -> None:
             app = next(root.glob("*/bin/orbis-stream"))
         if not app.is_file():
             raise RuntimeError("Executable not found in package")
+        ffmpeg = app.parent.parent / "libexec/orbis-stream/ffmpeg/ffmpeg"
+        ffprobe = ffmpeg.with_name("ffprobe")
+        env = os.environ.copy()
+        env["FFMPEG_PATH"] = str(ffmpeg)
+        env["FFPROBE_PATH"] = str(ffprobe)
+        for tool in (ffmpeg, ffprobe):
+            version = subprocess.check_output([str(tool), "-version"], text=True)
+            if "version 9.0.2" not in version.splitlines()[0]:
+                raise RuntimeError("Package does not include FFmpeg/FFprobe 9.0.2")
         if package.suffix == ".deb":
             binary_version = subprocess.check_output([str(app), "--version"], text=True).strip()
             if binary_version != package_version:
                 raise RuntimeError("Package and executable versions differ")
-        subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("native_launch.py")), str(app)], check=True, timeout=30)
+        subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("native_launch.py")), str(app)], check=True, timeout=30, env=env)
         subprocess.run(
             [sys.executable, str(pathlib.Path(__file__).with_name("integration.py")), str(app)],
             check=True,
             timeout=90,
+            env=env,
         )
-        print("Extracted release package: helper, resources, HTTP and streaming: OK")
+        subprocess.run(
+            [sys.executable, str(pathlib.Path(__file__).with_name("delivery.py")), str(app)],
+            check=True, timeout=90, env=env,
+        )
+        print("Extracted release package: helper, resources, HTTP, native FFmpeg 9 and complete delivery: OK")
 
 
 if __name__ == "__main__":

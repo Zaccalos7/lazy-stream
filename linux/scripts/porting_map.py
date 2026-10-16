@@ -15,15 +15,13 @@ OUTPUT = ROOT / "docs/PORTING_MAP.md"
 
 # These sources have no equivalent behavior in the current C++ port.
 MISSING = {
-    "src/Orbis.Stream.Core/Logging/FileLoggerProvider.cs": "Logger applicativo e rotazione mancanti",
-    "src/Orbis.Stream.Core/Services/YouTubeAirWatch.cs": "Monitoraggio automatico YouTube mancante",
-    "src/Orbis.Stream.Core/Services/YouTubeAirState.cs": "Stato automatico YouTube mancante",
-    "src/Orbis.Stream.Core/Streaming/Rtmp/Amf0.cs": "Protocollo RTMP nativo mancante",
-    "src/Orbis.Stream.Core/Streaming/Rtmp/RtmpPublisher.cs": "Publisher RTMP nativo mancante",
-    "src/Orbis.Stream.Core/Services/LiveChangeNotifier.cs": "Notifiche push live mancanti",
 }
 
 SERVICE_TARGETS = {
+    "LiveChangeNotifier": "src/change_notifier.hpp; src/server.cpp; src/native_window.cpp",
+    "ErrorReport": "src/native_dialogs.cpp; third_party/qrcodegen",
+    "YouTubeAirWatch": "src/youtube_air_watch.cpp; src/platform_lookup.cpp",
+    "YouTubeAirState": "src/platform_lookup.cpp; src/platform_lookup.hpp",
     "EncoderTuningService": "src/media_job.cpp",
     "MediaProxyService": "src/media_job.cpp",
     "ImageService": "src/media_job.cpp; src/server.cpp",
@@ -43,23 +41,48 @@ SERVICE_TARGETS = {
 }
 
 STREAM_TARGETS = {
+    "NvencOptions": "src/encoder_options.cpp; tests/streaming_tests.cpp",
+    "FfmpegProcessLog": "src/core.cpp; src/async_logger.cpp; src/stream.cpp",
     "FfmpegCommandBuilder": "src/stream.cpp",
     "FfmpegProbe": "src/core.cpp",
     "FlvPacedRelay": "src/stream.cpp",
     "FlvSink": "src/stream.cpp",
     "LivePreviewFrames": "src/stream.cpp",
-    "LivePlatformEmbeds": "src/media_job.cpp",
+    "LivePlatformEmbeds": "src/platform_lookup.cpp",
     "StreamPlatform": "src/stream_platform.cpp; src/stream.cpp; src/media_job.cpp",
     "LiveStreamKeys": "src/live_stream_keys.cpp; src/stream.cpp",
     "MonitorTarget": "src/stream.cpp",
-    "OverlayMedia": "src/stream.cpp",
-    "BitrateLadder": "src/stream.cpp",
+    "OverlayMedia": "src/overlay_media.cpp; src/stream.cpp",
+    "BitrateLadder": "src/rate_control.cpp; tests/streaming_tests.cpp",
     "LiveOutput": "src/stream.cpp",
     "HybridWaiter": "src/stream.cpp",
     "FfmpegStreamingSession": "src/stream.cpp",
 }
 
 TEST_TARGETS = {
+    "AnimatedWebpTests": "tests/delivery.py",
+    "AdaptiveBitrateSwitchTests": "tests/streaming_tests.cpp",
+    "YouTubeDeliveryTests": "tests/delivery.py",
+    "ErrorReportTests": "tests/native_tests.cpp",
+    "FileLoggerTests": "tests/streaming_tests.cpp",
+    "LivePlatformEmbedTests": "tests/streaming_tests.cpp; tests/integration.py; tests/platform_preview_tests.cpp",
+    "LiveHistoryCleanupTests": "tests/core_tests.cpp; tests/integration.py; tests/native_tests.cpp",
+    "I18nTests": "tests/native_tests.cpp",
+    "ManualTextTests": "tests/native_tests.cpp",
+    "SharedPublisherStateTests": "tests/integration.py; tests/native_shutdown.cpp",
+    "StreamingPlatformPageTests": "tests/native_tests.cpp",
+    "OverlayCommandTests": "tests/streaming_tests.cpp; tests/delivery.py",
+    "OverlayLiveTests": "tests/delivery.py",
+    "RelayTransportTests": "tests/delivery.py",
+    "RtmpPublisherTests": "tests/integration.py",
+    "SceneLiveTests": "tests/native_tests.cpp",
+    "SceneSwitchLiveTests": "tests/integration.py",
+    "TikTokTests": "tests/core_tests.cpp; tests/integration.py; tests/native_tests.cpp",
+    "YouTubeAirWatchTests": "tests/streaming_tests.cpp",
+    "YouTubeAirStateTests": "tests/streaming_tests.cpp",
+    "OverlayMediaTests": "tests/streaming_tests.cpp",
+    "WebpOverlayInputsTests": "tests/streaming_tests.cpp",
+    "BitrateLadderTests": "tests/streaming_tests.cpp",
     "DatabaseTests": "tests/core_tests.cpp",
     "PlaylistTests": "tests/integration.py",
     "PacedRelayTests": "tests/core_tests.cpp",
@@ -102,8 +125,14 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
     """Return a conservative target and status; a related file never counts as verified parity."""
     path = source["path"]
     name = Path(path).stem
+    if name == "FileLoggerProvider":
+        return "src/async_logger.cpp; tests/streaming_tests.cpp", "PARZIALE", "Coda limitata, file giornaliero e conservazione 3 giorni; integrazione logging Qt da verificare"
+    if "/Streaming/Rtmp/" in path:
+        return "src/paced_output.cpp; CMakeLists.txt; tests/integration.py", "PARZIALE", "Trasporto nativo mediante API pubbliche libavformat 9.0.2; RTMP locale provato, RTMPS su account da verificare"
+    if name == "WebpOverlayInputs":
+        return "src/overlay_media.cpp; tests/streaming_tests.cpp", "PARZIALE", "Copie private, loop ANIM FFmpeg 9; animazione, alpha e ricorrenza provate da delivery.py"
     if name == "FfmpegCodecCatalog":
-        return "web/resources/codec-catalog.json; scripts/sync-codec-catalog.py; src/native_live_pages.cpp", "PARZIALE", "Liste Windows importate; selezione limitata agli encoder/formati del motore Linux"
+        return "web/resources/codec-catalog.json; scripts/sync-codec-catalog.py; src/native_live_pages.cpp", "PARZIALE", "Cataloghi selezionabili; codec, pixel e AVOption risolti da FFmpeg 9.0.2; hardware dipendente da OS/driver"
     if source["sha256"] in copied:
         return copied[source["sha256"]], "COPIATO", "Byte identici all'inventario"
     if path in MISSING:
@@ -179,7 +208,7 @@ def main() -> None:
     lines = [
         "# Mappa file per file: Windows → Linux",
         "",
-        "Riferimento: `windows-inventory.json`, checkout Windows 2.1.2 del 12 ottobre 2026. "
+        "Riferimento: `windows-inventory.json`, checkout Windows locale aggiornato il 16 ottobre 2026. "
         "Generare di nuovo con `python3 scripts/porting_map.py` dopo aver aggiornato l'inventario.",
         "",
         "`COPIATO` significa hash identico; `PARZIALE` significa solo che esiste codice Linux "

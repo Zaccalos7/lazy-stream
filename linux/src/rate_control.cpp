@@ -3,8 +3,8 @@
 
 namespace orbis {
 RateControl::RateControl(bool buffered, int64_t lead)
-    : window(buffered ? 10000 : 6000), maxDrift(buffered ? 6000 : 2000),
-      backlog(lead / 2), probe(buffered ? 180000 : 120000), baseProbe(probe) {}
+    : window(buffered ? 10000 : 6000), maxDrift(buffered ? 6000 : 2000), backlog(lead / 2),
+      probe(buffered ? 180000 : 120000), baseProbe(probe) {}
 
 void RateControl::settle(int64_t now) {
     count = 0;
@@ -70,7 +70,8 @@ std::optional<int> RateControl::observe(DeliverySample sample, int nominal, int 
         if (target >= current)
             return {};
         if (probing) {
-            probe = sample.ticks - lastChange < probe ? std::min(probe * 2, int64_t(960000)) : baseProbe;
+            probe = sample.ticks - lastChange < probe ? std::min(probe * 2, int64_t(960000))
+                                                      : baseProbe;
             probing = false;
         }
         cap = target;

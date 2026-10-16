@@ -14,6 +14,7 @@ class RateControl {
     std::optional<int> cap;
     bool probing = false;
     void settle(int64_t now);
+
   public:
     RateControl(bool buffered, int64_t maxLead);
     std::optional<int> observe(DeliverySample sample, int nominalKbps, int audioKbps);

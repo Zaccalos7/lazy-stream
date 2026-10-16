@@ -38,8 +38,10 @@ def main():
     if f"VALIDSIG {SIGNER} " not in verified.stdout:
         raise RuntimeError("The release was not signed by the pinned FFmpeg release key")
     print(f"Verified FFmpeg {VERSION} ({SIGNER})", flush=True)
-    packages = ["nasm", "libx264-dev", "libvpx-dev", "libpulse-dev", "libxcb1-dev", "libxcb-shm0-dev",
-                "libxcb-xfixes0-dev", "libva-dev", "libvpl-dev", "libffmpeg-nvenc-dev"]
+    packages = ["nasm", "patchelf", "libx264-dev", "libvpx-dev", "libpulse-dev", "libxcb1-dev", "libxcb-shm0-dev",
+                "libxcb-xfixes0-dev", "libva-dev", "libvpl-dev", "libffmpeg-nvenc-dev",
+                "libx265-dev", "libaom-dev", "libsvtav1-dev", "libsvtav1enc-dev", "libopus-dev", "libmp3lame-dev",
+                "libvorbis-dev", "libtheora-dev"]
     environment = {**os.environ, "LC_ALL": "C"}
     plan = subprocess.check_output(["apt-get", "-s", "install", "--no-install-recommends", *packages],
                                    text=True, env=environment)
@@ -79,10 +81,12 @@ def main():
     arguments = [str(tree / "configure"), f"--prefix={prefix}", "--enable-gpl", "--enable-version3",
                  "--enable-shared", "--disable-static", "--disable-debug", "--disable-doc",
                  "--disable-ffplay", "--disable-autodetect", "--enable-openssl", "--enable-libx264",
-                 "--enable-libvpx", "--enable-libwebp", "--enable-libpulse", "--enable-libxcb",
+                 "--enable-libvpx", "--enable-libwebp", "--enable-libx265", "--enable-libaom",
+                 "--enable-libsvtav1", "--enable-libopus", "--enable-libmp3lame", "--enable-libvorbis",
+                 "--enable-libtheora", "--enable-libpulse", "--enable-libxcb",
                  "--enable-libxcb-shm", "--enable-libxcb-xfixes", "--enable-vaapi", "--enable-libvpl",
                  "--enable-ffnvcodec", "--enable-nvenc", "--enable-zlib", f"--extra-cflags=-I{sdk}/usr/include",
-                 f"--extra-ldflags=-L{lib} -Wl,-rpath,'$ORIGIN/../lib'"]
+                 f"--extra-ldflags=-L{lib}"]
     with (source / "configure.log").open("w") as log:
         result = subprocess.run(arguments, cwd=tree, env=environment, stdout=log, stderr=log)
     if result.returncode:
@@ -94,6 +98,13 @@ def main():
     # oneVPL may be absent from the base system; keep its runtime next to the FFmpeg libraries.
     for library in lib.glob("libvpl.so.*"):
         shutil.copy2(library.resolve(), prefix / "lib" / library.name)
+    patcher = shutil.which("patchelf", path=environment["PATH"])
+    for binary in (prefix / "bin").iterdir():
+        subprocess.run([patcher, "--set-rpath", "$ORIGIN/../lib:$ORIGIN/../../../lib/orbis-stream/ffmpeg",
+                        str(binary)], check=True)
+    for library in (prefix / "lib").glob("*.so.*"):
+        if not library.is_symlink():
+            subprocess.run([patcher, "--set-rpath", "$ORIGIN", str(library)], check=True)
     shutil.copy2(tree / "COPYING.GPLv3", prefix / "COPYING.GPLv3")
     (prefix / "SOURCE.txt").write_text(f"https://ffmpeg.org/releases/ffmpeg-{VERSION}.tar.xz\n"
         f"Release signing key: {SIGNER}\nSHA256: " +

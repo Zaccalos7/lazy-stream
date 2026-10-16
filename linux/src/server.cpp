@@ -4,8 +4,8 @@
 #include "live_stream_keys.hpp"
 #include "media_job.hpp"
 #include "scene_service.hpp"
-#include "version.hpp"
 #include "screen_capture.hpp"
+#include "version.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <cmath>
@@ -169,13 +169,18 @@ struct Api {
         const auto parameters = query(std::string(request.target()));
         auto watched = [&](const std::string& name) {
             auto entry = parameters.find("watch");
-            if (entry == parameters.end()) return false;
+            if (entry == parameters.end())
+                return false;
             std::istringstream topics(entry->second);
             std::string topic;
             while (std::getline(topics, topic, ',')) {
-                topic.erase(std::remove_if(topic.begin(), topic.end(), [](unsigned char c) { return std::isspace(c); }), topic.end());
-                std::transform(topic.begin(), topic.end(), topic.begin(), [](unsigned char c) { return std::tolower(c); });
-                if (topic == name) return true;
+                topic.erase(std::remove_if(topic.begin(), topic.end(),
+                                           [](unsigned char c) { return std::isspace(c); }),
+                            topic.end());
+                std::transform(topic.begin(), topic.end(), topic.begin(),
+                               [](unsigned char c) { return std::tolower(c); });
+                if (topic == name)
+                    return true;
             }
             return false;
         };
@@ -192,29 +197,41 @@ struct Api {
             asio::write(stream, http::make_chunk(asio::buffer(data)));
         };
         send("retry: 1000\n\n");
-        if (!rows && !stats && !live) { asio::write(stream, http::make_chunk_last()); return; }
+        if (!rows && !stats && !live) {
+            asio::write(stream, http::make_chunk_last());
+            return;
+        }
         uint64_t version = 0;
         auto since = std::string(request["Last-Event-ID"]);
         if (since.empty()) {
-            if (auto found = parameters.find("since"); found != parameters.end()) since = found->second;
+            if (auto found = parameters.find("since"); found != parameters.end())
+                since = found->second;
         }
-        if (!since.empty() && std::all_of(since.begin(), since.end(), [](unsigned char c) { return std::isdigit(c); }))
-            try { version = std::stoull(since); } catch (...) {}
+        if (!since.empty() && std::all_of(since.begin(), since.end(),
+                                          [](unsigned char c) { return std::isdigit(c); }))
+            try {
+                version = std::stoull(since);
+            } catch (...) {
+            }
         auto sampleAt = std::chrono::steady_clock::now();
         for (;;) {
             const auto current = studio.store.changes.version();
             if (rows && current != version)
-                send("id: " + std::to_string(current) + "\nevent: rows\ndata: " + std::to_string(current) + "\n\n");
+                send("id: " + std::to_string(current) +
+                     "\nevent: rows\ndata: " + std::to_string(current) + "\n\n");
             version = current;
             const auto now = std::chrono::steady_clock::now();
             if (now >= sampleAt) {
-                if (stats) send("event: stats\ndata: " + metrics(studio.store.root).dump() + "\n\n");
-                if (live) send("event: live\ndata: " + studio.live().dump() + "\n\n");
+                if (stats)
+                    send("event: stats\ndata: " + metrics(studio.store.root).dump() + "\n\n");
+                if (live)
+                    send("event: live\ndata: " + studio.live().dump() + "\n\n");
                 send(": keep-alive\n\n");
                 sampleAt = now + std::chrono::seconds(1);
             }
             const auto remaining = std::max(std::chrono::milliseconds(1),
-                std::chrono::duration_cast<std::chrono::milliseconds>(sampleAt - std::chrono::steady_clock::now()));
+                                            std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                sampleAt - std::chrono::steady_clock::now()));
             studio.store.changes.wait(version, {}, remaining);
         }
     }
@@ -456,9 +473,8 @@ struct Api {
                 throw std::runtime_error("File inesistente");
             if (!target.empty())
                 args.insert(args.end(), {"-i", target});
-            args.insert(args.end(),
-                        {"-an", "-frames:v", "1", "-vf", "scale=640:-2", "-c:v",
-                         "mjpeg", "-threads", "1", "-f", "image2pipe", "pipe:1"});
+            args.insert(args.end(), {"-an", "-frames:v", "1", "-vf", "scale=640:-2", "-c:v",
+                                     "mjpeg", "-threads", "1", "-f", "image2pipe", "pipe:1"});
             res.set(http::field::content_type, "image/jpeg");
             res.body() = capture(args, 10);
             res.prepare_payload();
@@ -656,48 +672,54 @@ void serve(Studio& studio, unsigned short port, const fs::path& web, const std::
     for (;;) {
         tcp::socket socket(io);
         acceptor.accept(socket);
-        asio::post(pool, [socket = std::move(socket), &api, &eventPool, &eventConnections]() mutable {
-            try {
-                boost::beast::tcp_stream stream(std::move(socket));
-                stream.expires_after(std::chrono::seconds(30));
-                boost::beast::flat_buffer buffer;
-                http::request_parser<http::string_body> parser;
-                parser.body_limit(65 * 1024 * 1024);
-                http::read(stream, buffer, parser);
-                auto req = parser.release();
-                http::response<http::string_body> res;
+        asio::post(
+            pool, [socket = std::move(socket), &api, &eventPool, &eventConnections]() mutable {
                 try {
-                    res = api.handle(req);
-                } catch (const std::exception& e) {
-                    res = {http::status::bad_request, req.version()};
-                    res.set(http::field::content_type, "application/json");
-                    Json j;
-                    j.set("response", "error");
-                    j.set("message", e.what());
-                    res.body() = j.dump();
-                    res.prepare_payload();
-                }
-                if (res.result() == http::status::ok && res[http::field::content_type] == "text/event-stream") {
-                    if (eventConnections.fetch_add(1) < 4) {
-                        asio::post(eventPool, [stream = std::move(stream), req = std::move(req), &api, &eventConnections]() mutable {
-                            try { api.events(stream, req); } catch (...) {}
-                            --eventConnections;
-                        });
-                        return;
+                    boost::beast::tcp_stream stream(std::move(socket));
+                    stream.expires_after(std::chrono::seconds(30));
+                    boost::beast::flat_buffer buffer;
+                    http::request_parser<http::string_body> parser;
+                    parser.body_limit(65 * 1024 * 1024);
+                    http::read(stream, buffer, parser);
+                    auto req = parser.release();
+                    http::response<http::string_body> res;
+                    try {
+                        res = api.handle(req);
+                    } catch (const std::exception& e) {
+                        res = {http::status::bad_request, req.version()};
+                        res.set(http::field::content_type, "application/json");
+                        Json j;
+                        j.set("response", "error");
+                        j.set("message", e.what());
+                        res.body() = j.dump();
+                        res.prepare_payload();
                     }
-                    --eventConnections;
-                    res.result(http::status::too_many_requests);
-                    res.set(http::field::content_type, "text/plain");
-                    res.body() = "Too many update streams";
-                    res.prepare_payload();
+                    if (res.result() == http::status::ok &&
+                        res[http::field::content_type] == "text/event-stream") {
+                        if (eventConnections.fetch_add(1) < 4) {
+                            asio::post(eventPool, [stream = std::move(stream), req = std::move(req),
+                                                   &api, &eventConnections]() mutable {
+                                try {
+                                    api.events(stream, req);
+                                } catch (...) {
+                                }
+                                --eventConnections;
+                            });
+                            return;
+                        }
+                        --eventConnections;
+                        res.result(http::status::too_many_requests);
+                        res.set(http::field::content_type, "text/plain");
+                        res.body() = "Too many update streams";
+                        res.prepare_payload();
+                    }
+                    res.keep_alive(false);
+                    http::write(stream, res);
+                    boost::system::error_code ec;
+                    stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+                } catch (...) {
                 }
-                res.keep_alive(false);
-                http::write(stream, res);
-                boost::system::error_code ec;
-                stream.socket().shutdown(tcp::socket::shutdown_both, ec);
-            } catch (...) {
-            }
-        });
+            });
     }
 }
 } // namespace orbis
