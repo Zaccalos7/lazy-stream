@@ -15,6 +15,11 @@ if [[ "$("$task_root/build/orbis-stream" --version)" != "$(<"$task_root/VERSION"
   printf 'Versione binaria diversa da linux/VERSION\n' >&2
   exit 1
 fi
+# Extracted development dependencies also serve the package smoke test before APT installation.
+task_webengine_libs="$task_root/build/qt-webengine/usr/lib/x86_64-linux-gnu"
+if [[ -f "$task_webengine_libs/libQt6WebEngineCore.so.6" ]]; then
+  export LD_LIBRARY_PATH="$task_webengine_libs${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
 ctest --test-dir "$task_root/build" --output-on-failure
 # Genera pacchetti solo dopo il successo dei test, evitando artefatti di una build non verificata.
 if [[ "${1:-}" == "--deb" ]]; then
