@@ -12,7 +12,7 @@ def main():
     destination = linux / "build" / "qt-webengine"
     environment = {**os.environ, "LC_ALL": "C"}
     plan = subprocess.check_output(
-        ["apt-get", "-s", "install", "--no-install-recommends", "qt6-webengine-dev"],
+        ["apt-get", "-s", "install", "--no-install-recommends", "qt6-webengine-dev", "qt6-image-formats-plugins"],
         text=True, env=environment,
     )
     packages = [line.split()[1] for line in plan.splitlines() if line.startswith("Inst ")]
@@ -35,6 +35,10 @@ def main():
         target = libraries / original.name
         if not target.exists() and not target.is_symlink():
             target.symlink_to(original)
+    # Qt also searches beside the development executable; installed builds use distro plugins.
+    image_formats = linux / "build/imageformats"
+    if not image_formats.exists() and not image_formats.is_symlink():
+        image_formats.symlink_to(libraries / "qt6/plugins/imageformats", target_is_directory=True)
     print(f"Qt WebEngine is ready in {destination}")
 
 

@@ -6,6 +6,7 @@ import json
 import pathlib
 import re
 import shutil
+from linux_resources import sanitize_resources
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--source',type=pathlib.Path,default=pathlib.Path(__file__).resolve().parents[3]/'lazy-stream-windows')
@@ -20,8 +21,11 @@ resources=root/'web/resources'
 if not args.inventory_only:
     for name,folder in [('ui',core/'Ui'),('messages',core/'Messages'),('flags',source/'src/Orbis.Stream.App/wwwroot/flags'),('manual',source/'src/Orbis.Stream.App/wwwroot/manual')]:
         (resources/name).mkdir(parents=True,exist_ok=True)
-        shutil.copytree(folder,resources/name,dirs_exist_ok=True)
+        # These two figures are real Qt captures of the supported-platform wizard.
+        ignore = shutil.ignore_patterns('wizard.webp', 'playlist.webp') if name == 'manual' else None
+        shutil.copytree(folder,resources/name,dirs_exist_ok=True,ignore=ignore)
     shutil.copyfile(source/'LICENSE',resources/'LICENSE-windows.txt')
+    sanitize_resources(resources)
 inventory=[]
 routes=[]
 for path in sorted(source.rglob('*')):

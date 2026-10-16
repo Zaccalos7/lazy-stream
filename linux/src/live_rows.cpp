@@ -25,13 +25,11 @@ std::string knownPlatformOf(const std::string& streamUrl, const std::string& pla
         return "kick";
     case StreamPlatform::Facebook:
         return "facebook";
-    case StreamPlatform::TikTok:
-        return "tiktok";
     default:
         break;
     }
     const auto named = lower(platform);
-    for (const char* known : {"twitch", "youtube", "kick", "facebook", "tiktok"})
+    for (const char* known : {"twitch", "youtube", "kick", "facebook"})
         if (named == known)
             return named;
     return {};
@@ -61,8 +59,8 @@ Json liveRows(Store& store, const Json& sessions) {
         for (size_t j = 0; j < sessions.size(); ++j)
             if (sessions.at(j).get("id").num() == row.get("id").num()) {
                 current = sessions.at(j);
-                for (const auto key :
-                     {"status", "position", "offsetSeconds", "outputKbps", "error", "videoResults", "air"})
+                for (const auto key : {"status", "position", "offsetSeconds", "outputKbps", "error",
+                                       "videoResults", "air"})
                     row.set(key, current.get(key));
                 break;
             }

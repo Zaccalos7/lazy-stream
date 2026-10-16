@@ -50,7 +50,6 @@ STREAM_TARGETS = {
     "LivePreviewFrames": "src/stream.cpp",
     "LivePlatformEmbeds": "src/platform_lookup.cpp",
     "StreamPlatform": "src/stream_platform.cpp; src/stream.cpp; src/media_job.cpp",
-    "LiveStreamKeys": "src/live_stream_keys.cpp; src/stream.cpp",
     "MonitorTarget": "src/stream.cpp",
     "OverlayMedia": "src/overlay_media.cpp; src/stream.cpp",
     "BitrateLadder": "src/rate_control.cpp; tests/streaming_tests.cpp",
@@ -77,7 +76,6 @@ TEST_TARGETS = {
     "RtmpPublisherTests": "tests/integration.py",
     "SceneLiveTests": "tests/native_tests.cpp",
     "SceneSwitchLiveTests": "tests/integration.py",
-    "TikTokTests": "tests/core_tests.cpp; tests/integration.py; tests/native_tests.cpp",
     "YouTubeAirWatchTests": "tests/streaming_tests.cpp",
     "YouTubeAirStateTests": "tests/streaming_tests.cpp",
     "OverlayMediaTests": "tests/streaming_tests.cpp",
@@ -125,6 +123,8 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
     """Return a conservative target and status; a related file never counts as verified parity."""
     path = source["path"]
     name = Path(path).stem
+    if name in {"TikTokTests", "LiveStreamKeys"}:
+        return "—", "ESCLUSO", "Piattaforma rimossa dal port C++ su richiesta; chiavi temporanee e test dedicati non applicabili"
     if name == "FileLoggerProvider":
         return "src/async_logger.cpp; tests/streaming_tests.cpp", "PARZIALE", "Coda limitata, file giornaliero e conservazione 3 giorni; integrazione logging Qt da verificare"
     if "/Streaming/Rtmp/" in path:
@@ -135,6 +135,11 @@ def counterpart(source: dict, copied: dict[str, str]) -> tuple[str, str, str]:
         return "web/resources/codec-catalog.json; scripts/sync-codec-catalog.py; src/native_live_pages.cpp", "PARZIALE", "Cataloghi selezionabili; codec, pixel e AVOption risolti da FFmpeg 9.0.2; hardware dipendente da OS/driver"
     if source["sha256"] in copied:
         return copied[source["sha256"]], "COPIATO", "Byte identici all'inventario"
+    if "/Ui/" in path or "/Messages/" in path:
+        folder = "ui" if "/Ui/" in path else "messages"
+        target = ROOT / "web/resources" / folder / Path(path).name
+        if target.exists():
+            return target.relative_to(ROOT).as_posix(), "ADATTATO", "Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope"
     if path in MISSING:
         return "—", "MANCANTE", MISSING[path]
     if path.endswith(".css"):
@@ -213,7 +218,8 @@ def main() -> None:
         "",
         "`COPIATO` significa hash identico; `PARZIALE` significa solo che esiste codice Linux "
         "correlato, non che il comportamento sia equivalente; `MANCANTE` richiede implementazione; "
-        "`RIFERIMENTO` indica documenti o file specifici di Windows. Nessun file di codice è "
+        "`RIFERIMENTO` indica documenti o file specifici di Windows; `ESCLUSO` è fuori ambito su richiesta e "
+        "`ADATTATO` mantiene le risorse salvo l'esclusione richiesta. Nessun file di codice è "
         "segnato come verificato sulla sola base del nome.",
         "",
         f"Totale {len(rows)} file: " + ", ".join(f"{key} {counts[key]}" for key in sorted(counts)) + ".",

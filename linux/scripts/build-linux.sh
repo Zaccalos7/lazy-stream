@@ -22,6 +22,7 @@ fi
 task_webengine_libs="$task_root/build/qt-webengine/usr/lib/x86_64-linux-gnu"
 if [[ -f "$task_webengine_libs/libQt6WebEngineCore.so.6" ]]; then
   export LD_LIBRARY_PATH="$task_webengine_libs${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export QT_PLUGIN_PATH="$task_webengine_libs/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
 fi
 ctest --test-dir "$task_root/build" --output-on-failure
 # Genera pacchetti solo dopo il successo dei test, evitando artefatti di una build non verificata.

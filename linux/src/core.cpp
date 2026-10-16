@@ -3,6 +3,7 @@
 #include "database_schema.hpp"
 #include "history_cleanup_service.hpp"
 #include "screen_capture.hpp"
+#include "stream_platform.hpp"
 #include "version.hpp"
 #include <algorithm>
 #include <cmath>
@@ -262,10 +263,10 @@ Store::Store(fs::path path) : root(std::move(path)) {
         db = nullptr;
         throw;
     }
-    // Windows seeds the five platform defaults and their low CPU alternatives. Existing
+    // Seed the four supported platform defaults and their low CPU alternatives. Existing
     // user rows are found by platform/flag or title, so upgrades never overwrite edits.
     auto profiles = list("profiles");
-    for (const std::string platform : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}) {
+    for (const std::string platform : {"Twitch", "YouTube", "Kick", "Facebook"}) {
         for (bool high : {true, false}) {
             const auto display = platform == "YouTube"    ? "Youtube"
                                  : platform == "Facebook" ? "Facebook Gaming"
@@ -282,8 +283,7 @@ Store::Store(fs::path path) : root(std::move(path)) {
                     const bool legacy =
                         high && p.get("title").str() == "Default " + platform &&
                         p.get("videoBitrate").num() == 4500 && p.get("audioBitrate").num() == 128 &&
-                        p.get("videoWidth").num() == (platform == "TikTok" ? 720 : 1280) &&
-                        p.get("videoHeight").num() == (platform == "TikTok" ? 1280 : 720) &&
+                        p.get("videoWidth").num() == 1280 && p.get("videoHeight").num() == 720 &&
                         p.get("frameRate").num() == 30 && p.get("preset").str() == "veryfast" &&
                         !p.get("videoSettingsOptions").size();
                     if (legacy)
@@ -304,17 +304,11 @@ Store::Store(fs::path path) : root(std::move(path)) {
             p.set("videoFormat", "flv");
             p.set("pixelFormat", "yuv420p");
             p.set("audioCodecName", "aac");
-            p.set("videoBitrate",
-                  high ? (platform == "Facebook" || platform == "TikTok" ? 4500.0 : 6000.0)
-                       : (platform == "TikTok" ? 2500.0 : 3000.0));
-            p.set("videoWidth", high && platform == "Twitch"
-                                    ? Json::parse("null")
-                                    : Json::number(platform == "TikTok" ? (high ? 1080 : 720)
-                                                                        : (high ? 1920 : 1280)));
-            p.set("videoHeight", high && platform == "Twitch"
-                                     ? Json::parse("null")
-                                     : Json::number(platform == "TikTok" ? (high ? 1920 : 1280)
-                                                                         : (high ? 1080 : 720)));
+            p.set("videoBitrate", high ? (platform == "Facebook" ? 4500.0 : 6000.0) : 3000.0);
+            p.set("videoWidth", high && platform == "Twitch" ? Json::parse("null")
+                                                             : Json::number(high ? 1920 : 1280));
+            p.set("videoHeight", high && platform == "Twitch" ? Json::parse("null")
+                                                              : Json::number(high ? 1080 : 720));
             p.set("frameRate",
                   high && platform == "Twitch" ? Json::parse("null") : Json::number(30));
             p.set("gopSize", 2.0);
@@ -401,8 +395,10 @@ long Store::save(const std::string& k, Json v, long id) {
     if (!v.isObject())
         throw std::runtime_error("Oggetto JSON richiesto");
     if (id <= 0) {
-        Statement q(db, "SELECT coalesce(max(id),0)+1 FROM records WHERE kind=?");
+        Statement q(db, "SELECT coalesce(max(id),0)+1 FROM (SELECT id FROM records WHERE kind=? "
+                        "UNION ALL SELECT id FROM retired_records WHERE kind=?)");
         q.text(1, k);
+        q.text(2, k);
         q.step();
         id = sqlite3_column_int64(q.p, 0);
     }
@@ -528,6 +524,10 @@ int Store::cleanup(int months, long channel) {
 void validate(const std::string& k, const Json& v) {
     if (!v.isObject())
         throw std::runtime_error("Oggetto JSON richiesto");
+    if ((k == "channels" || k == "profiles") &&
+        (!supportedPlatform(v.get("platform").str()) ||
+         !supportedPlatform(v.get("defaultPlatformConfiguration").str())))
+        throw std::runtime_error("Piattaforma non supportata");
     if (k == "channels" &&
         (v.get("channelName").str().empty() || (!v.get("streamUrl").str().starts_with("rtmp://") &&
                                                 !v.get("streamUrl").str().starts_with("rtmps://"))))

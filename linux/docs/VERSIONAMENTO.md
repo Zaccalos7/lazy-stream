@@ -6,8 +6,10 @@ Ogni rilascio registra le modifiche in `linux/CHANGELOG.md`; il comando `bash sc
 
 La versione Linux è indipendente dalla versione Windows: il checkout Windows esaminato è **2.1.2**, mentre il numero Linux misura i rilasci del port, non certifica parità. Aumentare PATCH per correzioni compatibili, MINOR per nuove funzioni o flussi recuperati, MAJOR per modifiche incompatibili dei dati/API. Ogni rilascio richiede compilazione, test e verifica del `.deb` estratto.
 
-La serie iniziale `0.0.x` registra gli avanzamenti del port ancora incompleto: la versione corrente è `0.0.11`. Passare a `0.1.0` quando il primo insieme concordato di funzioni ha una verifica completa; `1.0.0` richiede il raggiungimento del contratto funzionale dichiarato, non solo la riuscita della compilazione.
+La serie iniziale `0.0.x` registra gli avanzamenti del port ancora incompleto: la versione corrente è `0.0.12`. Passare a `0.1.0` quando il primo insieme concordato di funzioni ha una verifica completa; `1.0.0` richiede il raggiungimento del contratto funzionale dichiarato, non solo la riuscita della compilazione.
 
-La versione dello schema dati è separata: `database_schema.cpp` usa `PRAGMA user_version=1`. Il database viene inizializzato una volta; uno schema Windows o più nuovo viene rifiutato prima di creare tabelle Linux nello stesso file. Le future migrazioni devono avanzare `user_version` in transazione e mantenere la lettura dei dati esistenti.
+La versione dello schema dati è separata: `database_schema.cpp` usa `PRAGMA user_version=2`. Il database viene inizializzato una volta; uno schema Windows o più nuovo viene rifiutato prima di creare tabelle Linux nello stesso file. Le future migrazioni devono avanzare `user_version` in transazione e mantenere la lettura dei dati esistenti.
 
 Il riferimento file per file è in `PORTING_MAP.md`: ogni voce deve passare da `MANCANTE` a `PARZIALE` e poi a `VERIFICATO` solo con un comportamento equivalente e una prova. I file Windows possono cambiare indipendentemente: rigenerare il loro inventario con `scripts/sync-windows.py` prima di aggiornare lo stato di parità.
+
+La 0.0.12 applica la migrazione 1 → 2 per archiviare privatamente le configurazioni della piattaforma esclusa e conservare gli ID storici. Non cambia la versione del formato export JSON.
