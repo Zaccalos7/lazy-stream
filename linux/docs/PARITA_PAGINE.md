@@ -1,6 +1,6 @@
 # Contratto delle pagine Windows e implementazione Qt
 
-Riferimento: checkout locale `lazy-stream-windows`, pagine in `src/Orbis.Stream.Core/Pages`, confrontate il 16 ottobre 2026. Le schermate Linux sono controlli C++/Qt. Solo il player pubblico incorporato richiede Qt WebEngine.
+Riferimento: checkout locale `lazy-stream-windows`, pagine in `src/Orbis.Stream.Core/Pages`, confrontate il 16 ottobre 2026. Le schermate Linux sono controlli C++/Qt. Solo il player pubblico incorporato richiede Qt WebEngine. Il canvas dispone inoltre di un’anteprima FFmpeg locale, gestita da C++.
 
 | Pagina Windows | Percorso Linux | Aperture e controlli |
 |---|---|---|
@@ -28,4 +28,6 @@ Riferimento: checkout locale `lazy-stream-windows`, pagine in `src/Orbis.Stream.
 
 ## Confini della verifica
 
-Il contratto sopra descrive i percorsi implementati; non attesta identità di ogni pixel su tutti i desktop. Qt usa font e dialoghi del sistema. Le informazioni hardware e i dispositivi provengono da Linux. I codec non operativi nel motore sono visibili ma disabilitati. Le differenze del motore e le funzioni Windows esterne a queste pagine sono documentate in `MIGRAZIONE.md`. Servono prove su account reali per autenticazione ingest, stato pubblico, eventuali restrizioni del player e attivazione Facebook Live Producer.
+Il contratto sopra descrive i percorsi implementati; non attesta identità di ogni pixel su tutti i desktop. Qt usa font e dialoghi del sistema. Le informazioni hardware e i dispositivi provengono da Linux. Il catalogo Windows è selezionabile; disponibilità di encoder, formati e driver è verificata dal FFmpeg incluso. Il trasporto delle live usa FLV; non tutte le combinazioni arbitrarie del catalogo sono formati validi per un ingest RTMP. Le differenze del motore e le funzioni Windows esterne a queste pagine sono documentate in `MIGRAZIONE.md`. Servono prove su account reali per autenticazione ingest, stato pubblico, eventuali restrizioni del player e attivazione Facebook Live Producer.
+
+`streaming-engine` verifica pacing, backpressure, cancellazione, adattamento, preset, anteprima del canvas, opzioni encoder, loop WebP e stato YouTube. `delivery` decodifica l’intero risultato di entrambi i trasporti, controlla formato uniforme, sorgenti senza audio, continuità dei DTS, ricorrenza dell’animazione e trasparenza reale. `integration` verifica anche SSE autenticato.

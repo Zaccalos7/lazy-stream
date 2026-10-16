@@ -2,7 +2,7 @@
 
 Port Linux del progetto `lazy-stream-windows`, contenuto nella cartella `linux/` del repository macOS. Il motore e l’interfaccia sono compilati in **C++20 con Qt 6 Widgets, Qt Multimedia e Qt WebEngine**. L’avvio normale apre una finestra Linux nativa: controlli, dialoghi, canvas e player sono widget Qt, collegati direttamente al motore. FFmpeg esegue composizione e codifica; SQLite conserva i dati. Le pagine dell’app sono widget C++: non viene avviato un server HTTP né un browser esterno. Solo il player pubblico Twitch/YouTube nell’Anteprima usa un QWebEngineView, controllato da C++, con il frame FFmpeg disponibile in fallback.
 
-Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mappa file per file](docs/PORTING_MAP.md) associa ciascuno dei **257 file Windows** al codice Linux o al lavoro mancante; l'[inventario](docs/INVENTARIO_WINDOWS.md) conserva hash, simboli e 61 route. Il [versionamento](docs/VERSIONAMENTO.md) collega binario, API e pacchetto Debian.
+Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mappa file per file](docs/PORTING_MAP.md) associa ciascuno dei **272 file Windows** al codice Linux o al lavoro mancante; l'[inventario](docs/INVENTARIO_WINDOWS.md) conserva hash, simboli e 62 route. Il [versionamento](docs/VERSIONAMENTO.md) collega binario, API e pacchetto Debian.
 
 **Stato:** port eseguibile con test su Linux x86_64. La parità completa con Windows non è ancora certificata: la cattura/hardware e i servizi pubblici richiedono prove dedicate; alcuni comportamenti Windows restano parziali o mancanti. I test nativi verificano le schermate nelle 21 lingue originali, ma non certificano ogni funzione Windows. Il documento di migrazione indica le differenze precise.
 
@@ -13,8 +13,9 @@ Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mapp
 Su Debian/Ubuntu:
 
 ```sh
-sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-translations-l10n fonts-noto-core fonts-noto-cjk
+sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gnupg libxcb1-dev gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-translations-l10n fonts-noto-core fonts-noto-cjk
 cd linux
+python3 scripts/prepare-ffmpeg.py  # la build lo esegue se manca il relativo SDK
 bash scripts/build-linux.sh
 ./build/orbis-stream
 ```
@@ -45,9 +46,9 @@ Per creare l'installer Debian, dalla cartella `linux/`:
 bash scripts/create-deb.sh
 ```
 
-Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.5_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
+Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.11_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
 
-Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle applicazioni; FFmpeg è una dipendenza della distribuzione. Un pacchetto compilato su Ubuntu 24.04 richiede versioni compatibili di glibc e delle librerie. Ricompila sulla distribuzione di destinazione se necessario. Il codice non impone x86_64, ma ARM64 non è stato verificato.
+Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle applicazioni; FFmpeg/FFprobe 9.0.2 e le relative librerie sono inclusi in percorsi privati. Le librerie esterne degli encoder e Qt sono dipendenze APT; il FFmpeg della distribuzione resta disponibile come fallback esplicito. Un pacchetto compilato su Ubuntu 24.04 richiede versioni compatibili di glibc e delle librerie. Ricompila sulla distribuzione di destinazione se necessario. Il codice non impone x86_64, ma ARM64 non è stato verificato.
 
 ## Utilizzo
 
@@ -58,7 +59,7 @@ Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle ap
 5. **Overlay e pulsanti scena:** carica i media, scegli modalità a schermo intero o sovrapposta, posizione, durata e scorciatoia. Aprire il pannello di regia arma i tasti per quella diretta anche in Live/Anteprima; chiedono conferma.
 6. **Avvia Live:** scegli un profilo attivo, poi una configurazione canale attiva e componi la scena, nello stesso ordine Windows. **Avvia playlist** usa gli stessi pannelli e una cartella locale; sono disponibili ripetizione e countdown annullabile.
 7. **Gestione Live:** tabella con filtri Stato/Canale/Piattaforma e dieci righe per pagina, come `MainLive.cshtml`. La riga mostra stato, titolo (con pillola della playlist/scena e provenienza), canale, data di avvio e tutte le azioni come icone. Dettagli apre i video della playlist o le sorgenti della scena; Riprendi usa video e timestamp interrotti, Ricomincia parte dall'inizio. Il profilo può essere collegato anche a una diretta già salvata. La ricerca testuale resta sulla pagina Storico.
-8. **Regia:** controlla anteprima, bitrate di uscita, mixer 0–200%, mute, salto, cambio profilo, intermezzi e spot in coda. Il publisher FFmpeg resta aperto durante i cambi dei produttori; la sostituzione può introdurre una breve pausa di codifica.
+8. **Regia:** controlla anteprima, bitrate di uscita, mixer 0–200%, mute, salto, cambio profilo, intermezzi e spot in coda. Il publisher resta aperto durante i cambi dei produttori, usando libavformat in C++ o il sender FFmpeg secondo la piattaforma; la sostituzione può introdurre una breve pausa di codifica.
 9. **Storico:** filtra per canale, stato e titolo, consulta snapshot/esito, riavvia e cancella. Esporta JSON senza chiavi; la pulizia manuale o programmata mostra i conteggi e conserva le dirette attive.
 10. **Attività:** CPU, memoria, swap, rete, disco, uptime, sensori disponibili e processi FFmpeg. `—` indica il primo campione o un contatore assente.
 11. **Manuale:** consulta le 21 versioni del manuale originale, con screenshot Windows. Stampa o salva in PDF con i dialoghi Qt.
@@ -71,16 +72,22 @@ Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle ap
 | `--port N` / `LAZY_STREAM_PORT` | `1200`, usata solo con `--headless` |
 | `--headless` / `--no-browser` | disattiva la GUI e avvia il servizio API |
 | `--web-root DIR` | risorse installate oppure `linux/web` durante lo sviluppo |
-| `FFMPEG_PATH` | `ffmpeg` da PATH |
-| `FFPROBE_PATH` | `ffprobe` da PATH |
+| `FFMPEG_PATH` | FFmpeg 9.0.2 privato; fallback a PATH solo senza SDK/installazione |
+| `FFPROBE_PATH` | FFprobe accanto al FFmpeg scelto; fallback a PATH |
 
 Il database è `stream.db`; `overlays/`, `scene-media/`, `proxies/`, `previews/`, `images/` e `logs/` sono nella cartella dati. La cartella dati è privata (`0700`), il database e i file importati sono `0600`. Le chiavi dei canali sono nel database locale, come nel progetto Windows; non sono cifrate con Secret Service. Export e storico escludono la chiave. L'importazione JSON sostituisce canali/profili/scene/pulsanti/video/preferenze in una transazione; conserva lo storico locale e richiede di reinserire le chiavi.
 
-Nei **Dettagli** di una diretta sono visibili i log aggiornati durante l'esecuzione: `<id>.session.log` contiene comandi, PID, segmenti, primo output, errori con fase ed exit code e riconnessioni; `<id>.log` contiene la diagnostica del producer FFmpeg; `<id>.publisher.log` quella del publisher. Le chiavi e gli URL RTMP sono oscurati prima della scrittura su disco; i file sono privati (`0600`) e i tentativi restano nello stesso registro. `<id>.preview.log` registra ricerca della diretta pubblica, caricamento del player, errori console e uscita del renderer. Il pannello e `GET /api/logs/<id>` mostrano gli ultimi 64 KiB di ciascun file. FFmpeg analizza fino a 4 MiB/due secondi per raccogliere le intestazioni H.264/AAC prima di pubblicare, come il sender Windows, e conserva integralmente la chiave Facebook passando app e playpath separati. Avvio e progresso del publisher hanno un watchdog di 30 secondi; un fallimento durante la finalizzazione viene segnalato come errore.
+Nei **Dettagli** di una diretta sono visibili i log aggiornati durante l'esecuzione: `<id>.session.log` contiene comandi, PID, segmenti, primo output, errori con fase ed exit code e riconnessioni; `<id>.log` contiene la diagnostica del producer FFmpeg; `<id>.publisher.log` quella del publisher. Le chiavi e gli URL RTMP sono oscurati prima della scrittura su disco; i file sono privati (`0600`) e i tentativi restano nello stesso registro. `<id>.preview.log` registra ricerca della diretta pubblica, caricamento del player, errori console e uscita del renderer. Il pannello e `GET /api/logs/<id>` mostrano gli ultimi 64 KiB di ciascun file. FFmpeg analizza fino a 4 MiB/due secondi per raccogliere le intestazioni H.264/AAC prima di pubblicare, come il sender Windows, e conserva integralmente la chiave Facebook passando app e playpath separati. Il publisher segue timeout e riconnessioni della piattaforma (20/15 secondi per Twitch/Kick, 30/20 per le piattaforme con buffering); un fallimento durante la finalizzazione viene segnalato come errore.
 
 Il database Windows originale ha uno schema diverso: **non sostituire `stream.db` Linux con quello Windows**. La migrazione automatica del database originale non è inclusa.
 
-I processi sono avviati con argomenti separati, senza shell. `orbis-stream-runner` deve restare accanto a `orbis-stream`: lega FFmpeg alla vita dell'applicazione anche in caso di crash. INT/TERM fermano le sessioni; dopo un'interruzione anomala lo storico viene recuperato come `INTERRUPTED`.
+Il compositore ha un’anteprima JPEG a 2 fps generata dallo stesso grafo FFmpeg, senza codifica video o ascolto audio. I processi sono avviati con argomenti separati, senza shell. `orbis-stream-runner` deve restare accanto a `orbis-stream`: lega FFmpeg alla vita dell'applicazione anche in caso di crash. INT/TERM fermano le sessioni; dopo un'interruzione anomala lo storico viene recuperato come `INTERRUPTED`.
+
+L’anteprima della diretta arriva fino a 30 fps, con lato maggiore limitato a 640 pixel e timer dell’immagine distinto dall’aggiornamento dei controlli. I file JPEG sono sostituiti atomicamente; la GUI conserva l’ultima immagine completa e decodifica solo le immagini nuove. Il primo video fissa il formato delle piattaforme che richiedono un’unica risoluzione: senza dimensioni nel profilo, un clip piccolo o verticale parte da 1080p, come nel riferimento Windows.
+
+Il primo avvio crea dieci preset attivi come Windows: standard e leggero per Twitch, YouTube, Kick, Facebook Gaming e TikTok. I preset modificati vengono conservati. Il controllo YouTube prosegue in background, con 90 secondi di tolleranza e riscontri ripetuti. La GUI riceve notifiche dal motore; in headless `GET /updates?watch=rows,stats,live` offre SSE autenticato e ripresa con `Last-Event-ID`.
+
+I file `application-AAAA-MM-GG.log` raccolgono startup, versione effettiva di FFmpeg, errori UI/Qt e fasi di invio. La coda asincrona è limitata a 10.000 voci e 8 MiB, con conservazione di tre giorni; `composition-preview.log` conserva gli errori FFmpeg dell’anteprima del canvas.
 
 ## Cattura Linux
 
@@ -89,7 +96,7 @@ I processi sono avviati con argomenti separati, senza shell. `orbis-stream-runne
 - **Microfono/audio desktop:** sorgenti PulseAudio, comprese le sorgenti monitor. PipeWire funziona attraverso `pipewire-pulse` e `pactl`.
 - **Sensori:** `/sys/class/thermal`; statistiche NVIDIA tramite `nvidia-smi` se presente. Nessun valore GPU o temperatura viene inventato.
 
-L'uscita RTMP usa FLV/H.264/AAC. HEVC, altri contenitori e VAAPI non sono opzioni operative di questo motore. `h264_nvenc` è disponibile nel dialogo Qt; `h264_qsv` è disponibile nello stesso catalogo; entrambi richiedono una prova sul computer reale.
+L'uscita RTMP usa FLV, comprese le estensioni FFmpeg 9 per HEVC, VP9 e AV1 verificate con decodifica completa in locale. L’ingest deve supportare i codec scelti; H.264/AAC rimane il formato dei preset delle piattaforme. Gli altri contenitori del catalogo non cambiano il relay FLV. NVENC, QSV e VAAPI sono selezionabili; la pipeline VAAPI carica i fotogrammi nel dispositivo, ma l’esecuzione degli encoder hardware richiede i relativi driver e una prova sul computer reale.
 
 ## Verifica e risorse Windows
 

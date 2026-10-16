@@ -1,6 +1,16 @@
 # Cronologia del port Linux
 
-## Modifiche in sviluppo — 2026-10-16
+## 0.0.11 — 2026-10-16
+
+- FFmpeg/FFprobe 9.0.2 compilati da sorgenti ufficiali con firma verificata e inclusi nel pacchetto; x264/x265, VP8/VP9, AV1, WebP e codec audio, NVENC/QSV/VAAPI secondo hardware e driver.
+- Trasporto C++ nativo mediante libavformat, coda di tag compressi limitata, invio su thread dedicato e attese interrompibili; sender FFmpeg conservato per le piattaforme con buffering. Stato e posizione seguono il contenuto consegnato al publisher.
+- Profili di consegna Windows per piattaforma, formato uniforme e audio, preroll, VBV, timeout e riconnessioni; bitrate adattivo basato su avanzamento e backlog, con recupero e protezione dalla lentezza dell'encoder.
+- Dieci preset iniziali attivi, aggiornamento riconoscibile dei vecchi template senza sovrascrivere configurazioni modificate. Cataloghi selezionabili, risoluzione codec/pixel e verifica delle AVOption tramite FFmpeg; compatibilità con opzioni NVENC rimosse nella versione 9 e CBR x264 conservato insieme ai parametri manuali.
+- Anteprima del compositore generata in C++ con lo stesso grafo, senza codifica H.264 né riproduzione audio; finestre e monitor X11 selezionabili. Catalogo sorgenti raggruppato e scorrevole, intestazioni e font avvicinati al riferimento Windows.
+- Anteprima live fino a 30 fps con aggiornamento immagine separato dai controlli, limite di 640 pixel anche in verticale e conservazione dell’ultimo JPEG completo. Prima risoluzione delle connessioni condivise allineata a Windows; letture del relay più piccole per ridurre il ritardo dei comandi sulle scene statiche.
+- Overlay statici decodificati una volta, decoder libvpx per alpha WebM, copie private WebP con ANIM infinito e ignore_loop=0. Eliminati metadati ripetuti e configurazioni AAC identiche che alteravano il rilevamento a 48 kHz nei cambi di produttore.
+- Controllo YouTube in background con cache, tolleranza iniziale, avvisi e chiusura solo dopo due riscontri di fine della trasmissione pubblica. Richieste esterne cancellabili alla chiusura.
+- Notifiche di modifica verso Qt e SSE autenticato per headless; log applicativi giornalieri asincroni con coda limitata e conservazione di tre giorni, diagnostica Qt e anteprima inclusa.
 
 - Anteprima Twitch/YouTube incorporata con Qt WebEngine, controllata da C++; test con decodifica H.264 reale e sandbox attiva. Registro aggiuntivo della risoluzione del player, caricamento, console e arresti del renderer.
 - Storico con stati/esiti separati per video, messaggio completo e rapporto QR multipagina; aggiornati i 21 cataloghi dai sorgenti Windows. Dettagli playlist con azioni sui singoli video e log espandibili.

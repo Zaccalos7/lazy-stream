@@ -1,10 +1,10 @@
 # Migrazione Windows → Linux: elenco punto per punto
 
-**Interfaccia corrente (0.0.5):** C++/Qt Widgets nativa. Le righe V storiche possono riferirsi ai test del motore o al precedente client di riferimento; non attestano automaticamente parità del nuovo front end. La verifica Qt e le differenze sono in [INTERFACCIA_NATIVA.md](INTERFACCIA_NATIVA.md). Tutti i 21 cataloghi Windows sono disponibili nella GUI.
+**Interfaccia corrente (0.0.11):** C++/Qt Widgets nativa. Le righe V storiche possono riferirsi ai test del motore o al precedente client di riferimento; non attestano automaticamente parità del nuovo front end. La verifica Qt e le differenze sono in [INTERFACCIA_NATIVA.md](INTERFACCIA_NATIVA.md). Tutti i 21 cataloghi Windows sono disponibili nella GUI.
 
-Riferimento: checkout locale `lazy-stream-windows`, 12 ottobre 2026. Destinazione: `lazy-stream-mac/linux`, C++20 + Qt 6 Widgets + FFmpeg + SQLite. Questo elenco parte dal progetto Windows, non dalle aggiunte specifiche di macOS.
+Riferimento: checkout locale `lazy-stream-windows`, 16 ottobre 2026. Destinazione: `lazy-stream-mac/linux`, C++20 + Qt 6 Widgets + FFmpeg + SQLite. Questo elenco parte dal progetto Windows, non dalle aggiunte specifiche di macOS.
 
-L'[inventario completo](INVENTARIO_WINDOWS.md) riporta 257 file, 61 route API, tipi, proprietà, metodi pubblici e hash SHA-256. È riproducibile con `scripts/sync-windows.py`; [windows-inventory.json](windows-inventory.json) contiene i dati per strumenti automatici.
+L'[inventario completo](INVENTARIO_WINDOWS.md) riporta 272 file, 62 route API, tipi, proprietà, metodi pubblici e hash SHA-256. È riproducibile con `scripts/sync-windows.py`; [windows-inventory.json](windows-inventory.json) contiene i dati per strumenti automatici.
 
 ## Significato degli stati
 
@@ -37,7 +37,7 @@ Originali: `Domain/Entities.cs`, `Services/SettingService.cs`, `Streaming/Stream
 | W016 | TikTok verticale | orientamento del profilo e fitting con bande | P |
 | W017 | RTMP personalizzato | nessun vincolo sul provider | V con ingest locale |
 | W018 | Regole di pulizia per canale | mesi, intervallo e ultimo controllo persistito | P |
-| W019 | Scelta nativo RTMP / FFmpeg sender | unico trasporto FFmpeg sender | D |
+| W019 | Scelta nativo RTMP / FFmpeg sender | API libavformat in C++ senza secondo processo, sender per le piattaforme con buffering e selezione YouTube | V trasporti locali e decodifica completa; P RTMPS reale |
 | W020 | Normalizzazioni speciali URL/chiave YouTube | `stream_platform.cpp` converte schema e host ingest RTMP YouTube in RTMPS conservando chiave, porta e percorso | V per primary/backup e host estranei; altre regole da confrontare |
 
 ## Profili video e audio
@@ -49,25 +49,25 @@ Originali: `Domain/VideoSetting*.cs`, `Domain/FfmpegCodecCatalog.cs`, `Services/
 | W021 | Elenco e ricerca profili | `MainVideoSetting.html`: i seed sono template, i profili personalizzati compaiono nelle righe | V browser per elenco e ricerca di base |
 | W022 | Creazione, modifica, duplicazione | form e API SQLite | V creazione; P modifica/duplicazione |
 | W023 | Eliminazione e riferimenti | rifiuto se associato ad un canale | P |
-| W024 | Preset per piattaforma | sei profili iniziali, TikTok verticale | P |
-| W025 | Attivo/predefinito per piattaforma | toggle `isActive`, wizard usa il profilo attivo se il canale non ne impone uno | P percorso server; multi-attivo ancora da allineare |
+| W024 | Preset per piattaforma | Dieci seed standard/leggeri con valori Windows attuali; upgrade dei template Linux riconoscibili, senza sovrascrivere modifiche | V nuovi seed e persistenza; P upgrade su database utente |
+| W025 | Attivo/predefinito per piattaforma | Seed attivi, flag predefinito solo sui cinque standard, selezione e toggle Qt; default della piattaforma nel server | V wizard Qt e selezione API |
 | W026 | Elenco encoder FFmpeg installati | comando `-encoders` | P |
 | W027 | H.264 software | libx264 | V |
 | W028 | Accelerazione hardware | NVENC/QSV, da verificare con driver reali | P |
-| W029 | Encoder/codec extra del catalogo Windows | uscita limitata ad H.264; VAAPI/HEVC non operativi | M |
+| W029 | Encoder/codec extra del catalogo Windows | Cataloghi selezionabili e risoluzione tramite libavcodec; build con x265, AOM/SVT-AV1, libvpx e percorso VAAPI con upload | P combinazioni e hardware; vedi test delivery |
 | W030 | Bitrate video | kbps e rate control | V |
 | W031 | Audio | AAC stereo 48 kHz, bitrate configurabile | V |
-| W032 | Catalogo codec audio/formati pixel/contenitori | AAC, yuv420p e FLV fissati per RTMP | D; catalogo completo M |
+| W032 | Catalogo codec audio/formati pixel/contenitori | Scelte Windows esposte, codec audio e pixel risolti dal motore; il relay delle live usa FLV | D per i contenitori non FLV e i codec incompatibili con RTMP; P combinazioni extra |
 | W033 | Risoluzione | dimensioni pari, fitting della scena | V su profilo test |
 | W034 | Frame rate | 1–120 fps | V su profilo test |
 | W035 | GOP in secondi | convertito in numero di frame | V su profilo test |
-| W036 | Risoluzione/FPS “mantieni sorgente” | output esplicito per una timeline coerente | M per il modo automatico Windows |
+| W036 | Risoluzione/FPS mantieni sorgente | Valori null risolti dalla scena/media; prima uscita mantenuta sulle piattaforme che richiedono formato uniforme | V builder e consegna con sorgenti di dimensione/FPS diversi |
 | W037 | Preset x264 | selezione manuale | V |
 | W038 | Tune/bassa latenza | `zerolatency` quando abilitato | V |
 | W039 | Qualità Auto | benchmark x264 a risoluzione/fps del profilo | V |
-| W040 | Qualità Leggera/Bilanciata/Alta | preset e risultato del benchmark | D, euristica differente |
-| W041 | Bitrate adattivo | riduzione in presenza di backpressure, recupero graduale | P, non provato con rete degradata |
-| W042 | Opzioni FFmpeg aggiuntive | allowlist crf/profile/level/bf/refs | P |
+| W040 | Qualità Leggera/Bilanciata/Alta | Preset x264/x265, NVENC e QSV come riferimento; Auto misura risoluzione e FPS effettivi | V selezione preset; P hardware e confronto del benchmark |
+| W041 | Bitrate adattivo | Finestre, deriva, throughput e backlog; riduzione limitata e recupero, senza confondere encoder lento e rete lenta | V simulazioni deterministiche; P rete fisica degradata |
+| W042 | Opzioni FFmpeg aggiuntive | Opzioni specifiche verificate tramite AVOption dell’encoder, preset e alias NVENC 9, parametri x264 uniti al CBR | V opzioni e protezione input/output; P ogni encoder |
 | W043 | Rifiuto opzioni che cambiano input/output | opzioni non consentite rifiutate | P |
 | W044 | Profilo per singolo video | `videoProfiles` durante la playlist | P |
 | W045 | Modifica parametri in diretta | nuovo produttore sul publisher persistente | P |
@@ -92,7 +92,7 @@ Originali: `Services/StreamingService.cs`, `Services/FfmpegVideoPlaylistStreamer
 | W057 | Blocco doppio avvio canale | controllo in `Studio::start` | P |
 | W058 | Successivo e salto ad indice | comandi next/jump | P |
 | W059 | Stop singolo e generale | arresto dei gruppi FFmpeg, stato STOPPED per stop manuale distinto da ENDED | V singolo; P generale |
-| W060 | Riconnessione e watchdog | 3 tentativi, controllo dati/uscita a 30 s | P |
+| W060 | Riconnessione e watchdog | Timeout di consegna per piattaforma; 5 tentativi YouTube/Facebook e 3 sugli altri percorsi; I/O cancellabile | V errore/rifiuto/handshake sospeso/stop; P riconnessioni su servizi pubblici |
 | W061 | Recupero dopo crash | record INTERRUPTED, helper parent-death | P |
 
 ## Scene, sorgenti, layout e overlay
@@ -106,13 +106,13 @@ Originali: `Services/SceneService.cs`, `Services/SourceCatalogService.cs`, `Serv
 | W064 | Layout con slot vuoti e overlay conservati | `scene_service.cpp`: almeno uno slot, target puliti solo per non-overlay, overlay verificati nella libreria | V regole di salvataggio; P editor completo |
 | W065 | Creazione scena distinta dal layout | “Usa layout”, copia con nuovo ID; SceneService duplica scene già in onda o se cambia il tipo | V copia su modifica in storico; P flusso UI completo |
 | W066 | Posizione, dimensioni e ordine dei layer | compositor e filter graph | V trascinamento; P resize/layer |
-| W067 | Allineamento al centro | pulsante Centra | P |
-| W068 | Altri strumenti di allineamento Windows | coordinate numeriche disponibili; non tutti i comandi dedicati | M |
+| W067 | Posizionamento del canvas | Coordinate, trascinamento e frecce; il riferimento attuale non espone un pulsante Centra separato | V interazioni Qt di base |
+| W068 | Comandi dei livelli del riferimento attuale | Avanti/indietro, riempi canvas, rimozione e ordine dei livelli come composer.js | V controlli e geometria; P confronto di tutte le sequenze |
 | W069 | Scorciatoie frecce/Shift/Canc | eventi tastiera del canvas | P |
 | W070 | Drag-and-drop dal desktop | upload nella libreria scena | P |
 | W071 | Sorgente file | FFmpeg e FFprobe | V |
 | W072 | Acquisizione schermo | x11grab, DISPLAY selezionato | P, richiede sessione X11 |
-| W073 | Selezione finestra/schermo specifico | acquisizione DISPLAY, senza catalogo finestre equivalente | M |
+| W073 | Selezione finestra/schermo specifico | Catalogo XCB di desktop e finestre, monitor RandR, target distinti e input FFmpeg condiviso con snapshot | V parsing e limiti input; P desktop/hardware reali |
 | W074 | Acquisizione camera | V4L2 `/dev/videoN` | P |
 | W075 | Microfono e audio desktop | PulseAudio/PipeWire Pulse, sorgenti monitor | P |
 | W076 | Catalogo sorgenti disponibili | `/dev`, `/sys`, DISPLAY e pactl | P |
@@ -120,11 +120,11 @@ Originali: `Services/SceneService.cs`, `Services/SourceCatalogService.cs`, `Serv
 | W078 | Probe risoluzione/codec/durata | FFprobe JSON | V |
 | W079 | Proxy media leggeri | job FFmpeg cancellabile, cache MP4 e progresso | V |
 | W080 | Libreria overlay | upload, elenco e cancellazione; rifiuto di overlay fuori libreria o ancora referenziati | V controllo dei riferimenti; P upload/media avanzati |
-| W081 | PNG/JPEG statici | loop del decoder | P |
-| W082 | GIF/WebP animati e WebM alpha | loop/format rgba e overlay FFmpeg | P, alpha da verificare per decoder |
+| W081 | PNG/JPEG statici | Decodifica singola e ripetizione dell’ultimo fotogramma nel filtro; nessun loop del decoder | V classificazione e anteprima reale PNG |
+| W082 | GIF/WebP animati e WebM alpha | Classificazione FFprobe, libvpx per VP8/VP9 alpha, WebP ANIM infinito in copia privata e ignore_loop=0 | V WebP reale: colori, alpha e tre cicli; P combinazioni GIF/WebM |
 | W083 | Audio separato per sorgente | volume 0–200% e mute, `amix` | V su singola sorgente; P multi-sorgente |
 | W084 | Silenzio per sorgenti senza audio | `anullsrc` | P |
-| W085 | Anteprima composizione live | output JPEG a 2 fps, 640 px | V pipeline; P verifica visiva in live |
+| W085 | Anteprima composizione live e compositore | Live fino a 30 fps e 640 pixel sul lato maggiore; CompositionPreview a 2 fps usa lo stesso grafo senza H.264/audio in ascolto nel canvas | V fotogrammi reali e lifecycle; P dispositivi di cattura |
 | W086 | Scena di ogni live conservata nello storico | snapshot del request, distinto dal layout; scene già usate non sovrascritte o cancellate | V vincolo di modifica/cancellazione; P flusso completo di riavvio |
 | W087 | Cattura Wayland | portale PipeWire assente | M; funzione Linux aggiuntiva |
 
@@ -157,12 +157,12 @@ Originali: `Services/LivePreviewService.cs`, `Streaming/LivePreviewFrames.cs`, `
 |---|---|---|---|
 | W102 | Selezione della diretta osservata | `MainPreview.html`: selettore delle sessioni e `?live=ID` | V selezione browser senza live multipla; P con dirette concorrenti |
 | W103 | Frame con stamp/ETag | 304 sul frame già posseduto | P |
-| W104 | Long polling frame / notifiche SSE | polling browser a 2 secondi | D |
+| W104 | Long polling frame / notifiche SSE | ChangeNotifier verso Qt, SSE autenticato con eventi rows/stats/live e Last-Event-ID; ETag frame conservato | V notifica e cancellazione; D forma snapshot live rispetto al contratto Windows |
 | W105 | Riproduzione file con seek | Range e lettura a blocchi | V |
 | W106 | Player pubblico Twitch/YouTube | iframe e pagina pubblica | P |
-| W107 | YouTube stato in onda e avviso | controllo best effort, consenso/errori → UNVERIFIED | P |
-| W108 | Monitoraggio automatico YouTube con cache | richiesta esplicita del player; polling/cache continua assenti | M |
-| W109 | Chiudi avviso per live | sessionStorage per ID | P |
+| W107 | YouTube stato in onda e avviso | Ricerca streams/watch verificata prima di assegnare un embed; avvisi in Gestione Live e Anteprima | V parsing/stato e GUI; P risposte reali della piattaforma |
+| W108 | Monitoraggio automatico YouTube con cache | Worker 30 s, tolleranza 90 s, cache 45/10 s, assenze/errori distinti, stop solo dopo due prove positive di fine | V stato e richieste cancellabili; P account pubblico |
+| W109 | Chiudi avviso per live | Stato condiviso per ID; chiusura mantenuta fino al successivo riscontro della live pubblica | V stato C++ |
 | W110 | Storico e snapshot | `MainLiveHistory.html`: filtri Canale/Stato/Titolo, pagine da 20 righe e URL persistente; nome/piattaforma conservati nello snapshot | V API/FFmpeg e browser |
 | W111 | Riavvio storico | richiesta salvata, indice video e offset; replay/riparti/ricomincia nella Gestione Live, chiave corrente del canale o fresca TikTok | V motore FFmpeg; P singoli controlli replay |
 | W112 | Eliminazione storico con protezione live | sessione e stato persistito LIVE/STARTING ricontrollati prima della cancellazione | V API e C++ |
@@ -186,35 +186,37 @@ Originali: `I18n/*`, `Ui/*`, `Messages/*`, `Pages/*`, `Logging/FileLoggerProvide
 | W123 | Navigazione desktop | finestra Qt nativa e navigazione nelle sette sezioni; HTML conservati come riferimento | V avvio nativo e navigazione in 21 lingue; P resa/contratto Windows |
 | W124 | Tema sistema/chiaro/scuro | CSS e preferenza locale | P |
 | W125 | 21 lingue UI/messaggi | bundle originali inclusi, navigazione localizzata | P |
-| W126 | Traduzione completa di tutti i controlli | nuovi controlli Linux ancora in italiano | M |
+| W126 | Traduzione dei controlli Windows | 21 cataloghi originali nella GUI; diciture aggiuntive native in italiano/inglese, dettagli diagnostici conservati | V chiavi e navigazione; D per diciture native extra |
 | W127 | Manuale in 21 lingue con figure | originale incluso, figure Windows dichiarate | V rendering |
 | W128 | Stampa/salvataggio PDF manuale | stampa/PDF con QTextDocument e QPrinter | P |
-| W129 | Screenshot Linux in ogni lingua | non generati come sostituti del manuale Windows | M |
+| W129 | Immagini del manuale | Figure originali Windows incluse, come nel riferimento; screenshot Qt prodotti dai test | D: screenshot Linux per ogni lingua sono documentazione aggiuntiva, non funzione Windows |
 | W130 | Sfondo personalizzato dashboard | upload immagini e preferenza SQLite | P |
 | W131 | Log FFmpeg consultabile/esportabile | file per sessione e API testo | P |
-| W132 | Log applicazione/rotazione quotidiana Windows | log per sessione e conservazione 3 giorni; logger completo assente | D/M |
+| W132 | Log applicazione/rotazione quotidiana | AsyncLogger limitato a 10.000 voci/8 MiB, file giornalieri e conservazione 3 giorni; include Qt, errori UI, preview e sessioni | V coda/flush/retention; P tutti gli errori dei driver |
 | W133 | Percorsi runtime configurabili | XDG, env e CLI | V |
 | W134 | Sicurezza media upload/path | librerie private, nome file validato, token locale | V token; P upload/path |
 | W135 | Server Kestrel esposto in rete | server C++ solo loopback con sessione/token | D |
 | W136 | API Windows / Swagger | `/api/*`; 61 route originali censite ma non compatibili | D/M per compatibilità API |
 | W137 | SQLite e migrazioni | schema C++ separato, versione 1 | V |
-| W138 | Import database Windows | non incluso | M |
+| W138 | Import database Windows | Database Linux separato e protezione contro apertura di uno schema Windows; import diretto non implementato | D/M: migrazione tra OS aggiuntiva, non funzione dell’app Windows |
 | W139 | Import/export Linux transazionale | validazione ID e rollback | V |
 | W140 | Verifica aggiornamenti | manifest HTTPS Linux e link download | P |
-| W141 | Controllo chiusura durante live e sospensione | conferma browser e stop su segnale; inhibit sleep assente | P/M |
+| W141 | Controllo chiusura durante live | Conferma Qt, cancellazione richieste e stop di processi/worker; nessuna API Windows di blocco sospensione nel riferimento censito | V chiusura con entrambi i trasporti e finestre secondarie |
 | W142 | Compilazione Release | CMake C++20 | V su Linux x86_64 |
 | W143 | Installer NSIS/MSI | pacchetti DEB/TGZ e desktop entry | D |
-| W144 | FFmpeg incluso offline nell'installer | dipendenza dal pacchetto FFmpeg della distribuzione | D |
+| W144 | FFmpeg incluso offline nell’installer | FFmpeg/FFprobe e librerie 9.0.2 privati, sorgenti firmati e build riproducibile, dipendenze encoder tramite APT | V Debian 0.0.11 estratto: versione, GUI, API e decodifica completa con entrambi i trasporti |
 | W145 | Test automatici | Core + FFmpeg/server/RTMP + Chrome headless | V |
 
 ## Validazione eseguita
 
-- Compilazione con GCC 13, CMake, Boost 1.83, SQLite 3.45, json-c 0.17, FFmpeg 6.1 su Linux x86_64.
+- Compilazione con GCC 13, CMake, Boost 1.83, SQLite 3.45, json-c 0.17, FFmpeg 9.0.2 su Linux x86_64.
 - Test Core: JSON, persistenza, import/export, rollback, ordinamento naturale, avvio processi senza shell, parser FLV a frammenti e timestamp tra segmenti.
 - Test integrazione: server reale/token, playlist con audio/video, timestamp continui, mixer/takeover/ripresa/stop, ingest RTMP locale, thumbnail JPEG, proxy, benchmark x264 e riproduzione Range.
 - Test Chrome: dashboard, CRUD canale, slot canvas, trascinamento, salvataggio scena e manuale.
-- Le verifiche non provano driver hardware, servizi pubblici, degrado della rete, Wayland, ARM64 o tutte le combinazioni multi-sorgente/overlay.
+- Le verifiche non provano driver hardware, servizi pubblici, degrado di una rete fisica, Wayland, ARM64 o tutte le combinazioni del catalogo codec. Le prove di pacing/adattamento, trasporti, WebP e canvas sono in streaming-engine e delivery.
 
 ## Parità ancora da completare
 
 Le voci **M** sono una lista di lavoro concreta. La presenza del port Linux funzionante e dei test superati non equivale alla conclusione della richiesta “tutte le funzionalità”. Prima di dichiarare parità completa servono queste implementazioni, prove hardware/rete, traduzioni dei nuovi controlli e confronto operativo con il progetto Windows.
+
+Il riesame del 16 ottobre è in [VERIFICA_2026-10-16.md](VERIFICA_2026-10-16.md). Le voci storiche riferite al browser non vanno interpretate come prova di identità di ogni widget Qt. Import di un database Windows, portale Wayland e screenshot Linux localizzati sono estensioni del port e non funzioni mancanti del programma Windows. La compatibilità binaria delle 62 API originali resta distinta dai flussi della GUI nativa.

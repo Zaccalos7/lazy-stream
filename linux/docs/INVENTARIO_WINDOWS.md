@@ -1,6 +1,6 @@
 # Inventario dei sorgenti Windows
 
-257 file censiti, 61 route API. Snapshot SHA-256 disponibile in `windows-inventory.json`.
+272 file censiti, 62 route API. Snapshot SHA-256 disponibile in `windows-inventory.json`.
 
 Il censimento riguarda il checkout locale di lazy-stream-windows; non deriva dalle funzioni aggiunte soltanto alla versione macOS. La parità funzionale è descritta in [MIGRAZIONE.md](MIGRAZIONE.md).
 
@@ -34,6 +34,7 @@ Il censimento riguarda il checkout locale di lazy-stream-windows; non deriva dal
 | DELETE | `/scene-buttons/{pkid:long}` |
 | POST | `/scene-buttons/media` |
 | GET | `/scene-buttons/media/{name}/still` |
+| GET | `/video/{pkid:int}/error-report` |
 | GET | `/video/getPage` |
 | GET | `/video/getAllVideo` |
 | GET | `/video/getAllChannelWithVideoLive` |
@@ -90,15 +91,15 @@ SHA-256: `2fcb6a512d29237f6fa74b0544bd41f6b0eb6fb5afefdfd3affa45fe99890b83`.
 
 ### `Installer/fetch-ffmpeg.ps1`
 
-SHA-256: `22317221f0fdf919d27c9f281b7e448a9b7855780850ff2c8703062fcc1ef1d6`.
+SHA-256: `9ffc0816dd8d6b7dedce3d9583fbc95a174f2e688056befe8cd3a5a11d0c1a37`.
 
 ### `Installer/fetch-ffmpeg.sh`
 
-SHA-256: `70a4fe74cde0e3be3db0696a40e264c544e7e43d9c36ff6208c7dc9c45031d84`.
+SHA-256: `8062f59267b1263c6a5de6aaab36170080fffa71bdb7b65a29f5dfd00f129994`.
 
 ### `Installer/installer.nsi`
 
-SHA-256: `9c46580c66a2fd205407d0c7e984e934ba8e95405b7f6a92e6a9e163a34c3d50`.
+SHA-256: `1239d703e57e4b5e79e474b375c39d69893297023a60dfc7a22ba55524cb010f`.
 
 ### `LICENSE`
 
@@ -106,7 +107,7 @@ SHA-256: `559fd2eab22fe11af69707fb6d0be5fe2d03e7dfc8fe8ff37071e5c2a04474f0`.
 
 ### `README.md`
 
-SHA-256: `66ccca707c1196e44f1b25166d8eae867f4f93efb760b17da6e38218bd9efbb1`.
+SHA-256: `5b3a75405baa171eb7101071d2aec8249195d56ffae54e6e65dc360e638fcea1`.
 
 ### `samples/overlays/README.md`
 
@@ -138,7 +139,7 @@ SHA-256: `3fac2af92385f676e9a941befd23fe38f0a5fa6167d4a3a88f07e730c5595ca3`.
 
 Tipi: `MainWindow`.
 
-SHA-256: `329383722b26af705efccafe52449f4e6a2de54a16159c5bb3718a1d3e827288`.
+SHA-256: `00acaad9f97bb8daf98282f8a79fbc20f8fedd6eba32b41426aa87156f0820c6`.
 
 ### `src/Orbis.Stream.App/Orbis.Stream.App.csproj`
 
@@ -158,7 +159,7 @@ SHA-256: `455d58d4c3360f0f651cbf31b7bd785cc0900c0a31b12ebef5701a69520806de`.
 
 ### `src/Orbis.Stream.App/wwwroot/css/controls.css`
 
-SHA-256: `d5e27201578cf805b87169d1964800eafe5f2de51cfdb3d9d71a39d3d4c9f774`.
+SHA-256: `df9caed8b4762d3138e30253e568b049b3163c3d7f403e585f5592ab8f6544f7`.
 
 ### `src/Orbis.Stream.App/wwwroot/css/countdown.css`
 
@@ -170,7 +171,7 @@ SHA-256: `13961623f1f2605fec24a1250040a1e6e65055c9a13f9b99e4a2febdeae2a3e8`.
 
 ### `src/Orbis.Stream.App/wwwroot/css/feedback.css`
 
-SHA-256: `d377efab2eb33dd715999166d5f26881f8fd19fd77e411c19598b0f2b54f132a`.
+SHA-256: `d9cba1c879c3567cce9e7afcb6e0ef9be9522f44393db030c768fd247258c801`.
 
 ### `src/Orbis.Stream.App/wwwroot/css/layout.css`
 
@@ -186,7 +187,7 @@ SHA-256: `f64ce9cd08c12dba83396388d97ccf54fe0ef333362897bb2ab53f590bbb125e`.
 
 ### `src/Orbis.Stream.App/wwwroot/css/overlays.css`
 
-SHA-256: `a8a51f570c8a08a4c6141d8211d57407159569523bc179ab07c50ec4d7796017`.
+SHA-256: `3c47dc0d47fdb8c428298ad004a28f124f247b1f70d939348630d42f689fa699`.
 
 ### `src/Orbis.Stream.App/wwwroot/css/preview.css`
 
@@ -206,7 +207,7 @@ SHA-256: `31e9770fc711c25607cf13f7b1ab3b54d3629d8f8ad0742a158619b69c436280`.
 
 ### `src/Orbis.Stream.App/wwwroot/js/composer.js`
 
-SHA-256: `19b109c44fefe1ff2378f5ddf072e1983701b99b8e5caeb89632f1d120c80828`.
+SHA-256: `a0007790f4bb0e3ce8c3a6d0a3c831d8cbed6f88f7c4037270d76902f455cf46`.
 
 ### `src/Orbis.Stream.App/wwwroot/js/scenes.js`
 
@@ -214,7 +215,7 @@ SHA-256: `e783d7c11821f51b06db49b76d16f7aab51f7f6d55dd1ea2949b483b6b1ebf02`.
 
 ### `src/Orbis.Stream.App/wwwroot/js/site.js`
 
-SHA-256: `02d513390548aea7993fc7c5e4ae2a2dbe387809eb51f9b927ce4f5614695ac8`.
+SHA-256: `03660218c06885edcc34a03c416c9c4606be8b2aa694bd8e1a5ea06c3c260c95`.
 
 ### `src/Orbis.Stream.Core/Configuration/OrbisRuntimeOptions.cs`
 
@@ -306,9 +307,9 @@ SHA-256: `21641913024ce7d14a1d8e6c393cc33f7ebfa4121bf07e73ef7430221069bec6`.
 
 Tipi: `VideoRepository`, `SqliteValue`, `LiveRowEntity`.
 
-Metodi pubblici: `Delete`, `DeleteByLiveHistoryId`, `FindByLiveHistoryId`, `FindByLiveStatus`, `FindByLiveStatusAndChannelName`, `FindByPkid`, `FindByScenePkid`, `FindByVideoPathAndVideoLiveHistoryPkid`, `FindChannelNames`, `FindLivePage`, `FindPaged`, `FindPkidsByVideoSettingId`, `From`, `Insert`, `SetStopFlag`, `SetVideoSetting`, `SetVolume`, `ToBoolean`, `ToInt64`, `ToNullableDateTime`, `ToNullableDouble`, `ToNullableInt32`, `ToNullableInt64`, `ToText`, `Update`.
+Metodi pubblici: `Delete`, `DeleteByLiveHistoryId`, `FindActive`, `FindByLiveHistoryId`, `FindByLiveStatus`, `FindByLiveStatusAndChannelName`, `FindByPkid`, `FindByScenePkid`, `FindByVideoPathAndVideoLiveHistoryPkid`, `FindChannelNames`, `FindLivePage`, `FindPaged`, `FindPkidsByVideoSettingId`, `From`, `Insert`, `SetStopFlag`, `SetVideoSetting`, `SetVolume`, `ToBoolean`, `ToInt64`, `ToNullableDateTime`, `ToNullableDouble`, `ToNullableInt32`, `ToNullableInt64`, `ToText`, `Update`.
 
-SHA-256: `1dccfdc7ca22737a9648f504b72050159b4f0ae3a54c5237e932c039c25dd618`.
+SHA-256: `084b050db76c6b2421aae8ace5be3fea06772431cf9e5b05d7a5dfde3b92c011`.
 
 ### `src/Orbis.Stream.Core/Data/VideoSettingRepository.cs`
 
@@ -346,9 +347,9 @@ SHA-256: `f2a4bc27e24ce30415e955b8dbec9b21801863d7ee23c76306b72205ccb622ea`.
 
 Tipi: `ordinal`, `LiveStatus`, `LiveStatusExtensions`, `LiveStatusJsonConverter`.
 
-Metodi pubblici: `FromStorage`, `ToStorageValue`, `ToWireValue`, `TryParseWireValue`.
+Metodi pubblici: `FromStorage`, `IsActive`, `ToStorageValue`, `ToWireValue`, `TryParseWireValue`.
 
-SHA-256: `7b90b680f3ad996c92ce4ba627d8ac8a4bb67655a62af067af2279039c72cacf`.
+SHA-256: `e64bfa04b0710ba8fca46df983c22ca63eb176ff6f3db0d3d7ddc738511c6d5e`.
 
 ### `src/Orbis.Stream.Core/Domain/SceneButton.cs`
 
@@ -366,7 +367,7 @@ Tipi: `is`, `SourceKind`, `SourceKindExtensions`.
 
 Metodi pubblici: `HasPicture`, `IsCaptureDevice`, `IsDefined`, `IsOverlay`, `ToWireValue`, `TryParse`, `TryParseWireValue`.
 
-SHA-256: `7118ce7ba708441881ef81fe45b67882fd176fe15e51fe08bf3db8d97c912829`.
+SHA-256: `96bf971f8624aee957c1c2fe28d8f28bf80268e353c34defadc23e2154b3f05e`.
 
 ### `src/Orbis.Stream.Core/Domain/VideoSettingAdaptiveBitrate.cs`
 
@@ -404,7 +405,7 @@ Tipi: `DatabaseBootstrapper`, `DefaultSpec`.
 
 Metodi pubblici: `StartAsync`, `StopAsync`.
 
-SHA-256: `a97ebe474d63d4b81641c12faee3477c728a6f870a122e36f55b452afb192209`.
+SHA-256: `659fcd9a0a7f0c3170d94a453cf961e2ccf7a7c02c04e74b6a056736deff01d6`.
 
 ### `src/Orbis.Stream.Core/Hosting/EncoderTuningStartup.cs`
 
@@ -420,7 +421,7 @@ Tipi: `OrbisEndpoints`.
 
 Metodi pubblici: `MapOrbisEndpoints`.
 
-SHA-256: `e834a1662da4b7cf158671130bcef21a9c6fb6ae39fd0490f300db425a68ad07`.
+SHA-256: `9d9d43c245fc0509f148a99912e7cfa325e4405c8f59feeb4156a2eef33e9eef`.
 
 ### `src/Orbis.Stream.Core/Hosting/OrbisHost.cs`
 
@@ -626,7 +627,7 @@ SHA-256: `3bbf0249be6ff1edaa43439c4536adb9ee55b935daac26c62781d89e80cfad9d`.
 
 ### `src/Orbis.Stream.Core/Orbis.Stream.Core.csproj`
 
-SHA-256: `30e2f94d0e68f9aff1c16143eb3e768585d9f0fe1060eaf4d7b25791614bcf2d`.
+SHA-256: `c0c1daa9b68bb0f179d892299321d504deedddc71c5bef17866253e6eabc3af3`.
 
 ### `src/Orbis.Stream.Core/Pages/Countdown.cshtml`
 
@@ -634,17 +635,17 @@ SHA-256: `c9e582af32867a6b06b3d2c189f9c05bfab678b8b536d2bac17dc4a3930ed933`.
 
 ### `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml`
 
-SHA-256: `83ab73b6d3a61eb4f66efc661ae4dccf5cf1e925bdcc8f1efbc5e4f40c65163e`.
+SHA-256: `a1f126e04049546aca63d3e8aac06335bf920252b0661bd15cd9a8f889900dcf`.
 
 ### `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml.cs`
 
-Tipi: `PlatformChoice`, `MainChannelSettingModel`.
+Tipi: `bundles`, `PlatformChoice`, `MainChannelSettingModel`.
 
 Proprietà: `Configurations`, `Platform`, `Active`, `Editing`.
 
-Metodi pubblici: `ChoiceOf`, `OnGet`, `OnPostDelete`, `OnPostSave`, `OnPostToggle`.
+Metodi pubblici: `ChoiceOf`, `ChoiceOfSetting`, `OnGet`, `OnPostDelete`, `OnPostSave`, `OnPostToggle`.
 
-SHA-256: `b761f6cd3c3945e457db8c487b95d9b6d44e06418ed63c2c862d4efa84d4c483`.
+SHA-256: `2de8ec6d74abceadc8d096411f7e35f95305b7c6ba4bd4d425bceba713dc7e6c`.
 
 ### `src/Orbis.Stream.Core/Pages/MainLayout.cshtml`
 
@@ -676,7 +677,7 @@ SHA-256: `9a3a894cb7f3fc4f853c7d33c925d143deba4b485ba10149c300ad497d2a6ddb`.
 
 ### `src/Orbis.Stream.Core/Pages/MainLive.cshtml`
 
-SHA-256: `5a44642050fbf67c662fd7c2eb4fe9130ccac4ee21bbd34ee6d57c3475cf795a`.
+SHA-256: `799efcc684da6289255c04497eac33f6e164fa8e3f59b021c96aab1c66652c14`.
 
 ### `src/Orbis.Stream.Core/Pages/MainLive.cshtml.cs`
 
@@ -686,11 +687,11 @@ Proprietà: `LiveStatus`, `ChannelName`, `Platform`, `PageIndex`, `Videos`, `Cha
 
 Metodi pubblici: `OnGet`, `OnGetDetailsRows`, `OnGetRows`, `OnPostDelete`, `OnPostDeletePlaylist`, `OnPostLink`, `OnPostPlaylist`, `OnPostReplay`, `OnPostReplayFrom`, `OnPostRestart`, `OnPostSpot`, `OnPostStartScene`, `OnPostStop`, `OnPostUnlock`.
 
-SHA-256: `cf634e9e752f94e3e68aecb4fd51d60faabb6f1e4acf2df4e0363bd078c02a15`.
+SHA-256: `b8ba64eabda5249998d7ca948fccd0be79711294edc57cea8906f28aa6b3eaf0`.
 
 ### `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml`
 
-SHA-256: `27ae35160bb16b87e7e729b304569e2e414d0e173e927cfb5746963a1598e3fb`.
+SHA-256: `279800c96455bd2940c3d8806dd8cb0faf64ddfd30b0c8f175ce37cabf124115`.
 
 ### `src/Orbis.Stream.Core/Pages/MainLiveHistory.cshtml.cs`
 
@@ -700,7 +701,7 @@ Proprietà: `PageIndex`, `LiveStatus`, `ChannelName`, `TitleSearch`, `Videos`, `
 
 Metodi pubblici: `OnGet`, `OnPostDelete`, `OnPostSaveAutoCleanup`.
 
-SHA-256: `aceaf8a6bdbb9bf323a9e2e16f1e91a421008c48daed58ddcc0c4301259385dc`.
+SHA-256: `37827f538bde80ce4bfeee6e98e4aeaa5e80cd94d8e34171e68b3ff008210ed5`.
 
 ### `src/Orbis.Stream.Core/Pages/MainLiveMenu.cshtml`
 
@@ -716,7 +717,7 @@ SHA-256: `5e73dc0c738495feb7fc135ae32383a0b6908ef09bb1cab0740a03e09a73b21e`.
 
 ### `src/Orbis.Stream.Core/Pages/MainManual.cshtml`
 
-SHA-256: `9fa8f58b6e706195ecefd02191e68f0008aa9bd4319002fdb82aeb8e12207e76`.
+SHA-256: `f1fe933e3a68b7d2d17d3edd1b2a2669167b8421a0f57e02f35faf39b4fab8bd`.
 
 ### `src/Orbis.Stream.Core/Pages/MainMenu.cshtml`
 
@@ -724,7 +725,7 @@ SHA-256: `9aa25a715fc12ae0ea7e3d7154da44ce215514416f538b28bb7ca1f5a812b33c`.
 
 ### `src/Orbis.Stream.Core/Pages/MainPreview.cshtml`
 
-SHA-256: `6142924a28871e4de452f0578c26e2d78366cd31471250ca24d2bca0b132594f`.
+SHA-256: `0632dc643c8437fefce610b13624d4dc4698c37cc5ffdc25b6c6afe51b08bebe`.
 
 ### `src/Orbis.Stream.Core/Pages/MainPreview.cshtml.cs`
 
@@ -766,7 +767,7 @@ Proprietà: `Settings`, `Form`.
 
 Metodi pubblici: `OnGet`, `OnPostDelete`, `OnPostDuplicate`, `OnPostSave`, `OnPostToggle`.
 
-SHA-256: `aeaf82f7b750643e0e026b8194aab50b3df8f68ae7a88204c250109bedebb40d`.
+SHA-256: `e13d12b75bfaa77a226af169dff5f5ef97bd121d93a0f318076eb35e5c8390ff`.
 
 ### `src/Orbis.Stream.Core/Pages/OrbisPageModel.cs`
 
@@ -784,11 +785,11 @@ Proprietà: `Window`.
 
 Metodi pubblici: `ClassOf`, `Css`, `Date`, `Key`, `LabelOf`, `MarkupOf`, `Of`, `PlatformOf`, `UrlOf`, `YouTubeChannelUrl`, `YouTubeStudioUrl`.
 
-SHA-256: `146998a415245cb4b4c2d187c41e9cd988ae809fd8a19b3e0d48b51bec1404a3`.
+SHA-256: `5440effbe298b52c2a221203c3a39464ecb8a7afacd78fe0ff99069e894fc931`.
 
 ### `src/Orbis.Stream.Core/Pages/Shared/_Layout.cshtml`
 
-SHA-256: `72527945fbd5f9d4c240ac7c55a5f5fc1c8e09773caa8818434d151c1ee7e400`.
+SHA-256: `2933577f35de263a3e69929ee5fced668e68339b7f5593f58de0649aec511036`.
 
 ### `src/Orbis.Stream.Core/Pages/Shared/_Pager.cshtml`
 
@@ -820,13 +821,25 @@ SHA-256: `d26c40454b8d1aacf7fd7e6f5b1021affb8658ec7d550c54b6768085c178478f`.
 
 SHA-256: `a954523575b3820e58e4f91c2c343e6781b88b8c501f629e468a6062aa35bdd3`.
 
+### `src/Orbis.Stream.Core/Pages/_ErrorReportButton.cshtml`
+
+SHA-256: `bbc6b26d72dce9be2f5e3af30682e2a32d9ae11406400eea5653c75a4d46977e`.
+
+### `src/Orbis.Stream.Core/Pages/_ErrorReportDialog.cshtml`
+
+SHA-256: `b2c54eba23d0c3f7beaa85686aa770fb1802d38d8bea4f2988992b2aa99fa0d1`.
+
+### `src/Orbis.Stream.Core/Pages/_FacebookLiveNotice.cshtml`
+
+SHA-256: `86c000edfadbbbd86623ab20d4365aeadbd547388a5c9c80aed84cd48057f87f`.
+
 ### `src/Orbis.Stream.Core/Pages/_LiveRows.cshtml`
 
-SHA-256: `f9d8f113f68ff31c2c24357325ab818fcedcb53bd6cb025203393ed5fe569e0a`.
+SHA-256: `106076c789d88bb32ddfba7f2ff5a7c89ee0bcf8f2461fa9b8b176929e8cd273`.
 
 ### `src/Orbis.Stream.Core/Pages/_PlaylistVideos.cshtml`
 
-SHA-256: `73902cf7a83905e4f5678f8f7f3a15e4d0b6647e271053f1981776dc31fdd32e`.
+SHA-256: `c2114899553e8f6fd80d3817e4346379669ca3dc467b13220fd682a4aa6afbae`.
 
 ### `src/Orbis.Stream.Core/Pages/_SceneComposer.cshtml`
 
@@ -838,11 +851,11 @@ SHA-256: `49272363885d652a2376e8b72ed1249033aef7f2d39b7d26533da7709ad5329b`.
 
 ### `src/Orbis.Stream.Core/Pages/_StartWizardConfiguration.cshtml`
 
-SHA-256: `8a482a25af620b87b8fd69b2e38446ef4bffa2f7b839c83ce47a292a95ac59ac`.
+SHA-256: `84f4ccd84b96f14996e3e350aaeee669607175a82c98c1a98c948e4620374cee`.
 
 ### `src/Orbis.Stream.Core/Pages/_StartWizardSetting.cshtml`
 
-SHA-256: `45eb916bc80a2a6aaa423753ffbc2046f78b76656cbaaf06d4290f69dedf8b17`.
+SHA-256: `9fd3b6e00f20a14234fda173b1ac4b94e5986301386e13ae1c2f91cb7581c3a8`.
 
 ### `src/Orbis.Stream.Core/Pages/_Stats.cshtml`
 
@@ -878,6 +891,14 @@ Metodi pubblici: `HardwareEncoderAsync`, `ResolveAsync`, `TuneDefaultsAsync`.
 
 SHA-256: `b9d11e500f2bdde7fcaf821e1b526aef9fa88689254830fed65b6e9727bad10a`.
 
+### `src/Orbis.Stream.Core/Services/ErrorReport.cs`
+
+Tipi: `ErrorReport`.
+
+Metodi pubblici: `Image`, `Parts`, `Text`.
+
+SHA-256: `1707cf808fc6a919e2dca6c54a18487fbb6cec7a746e8119d9149e2fbf8b8ccc`.
+
 ### `src/Orbis.Stream.Core/Services/FfmpegVideoPlaylistStreamer.cs`
 
 Tipi: `FfmpegVideoPlaylistStreamer`, `StreamOutcome`, `ReconnectBudget`, `PlannedVideo`, `PausedProgram`, `VideoGroup`, `IVideoPlaylistStreamer`.
@@ -886,7 +907,7 @@ Proprietà: `Used`, `StopReason`.
 
 Metodi pubblici: `StreamPlaylistAsync`.
 
-SHA-256: `f7c28c0de16584e4fb39f0b3dcaf8007f14ef54edf2845e318ef4871fab67141`.
+SHA-256: `8723f585dfd4826d03c27b533e2494afde18991dd9540c84ffa397936f50c06a`.
 
 ### `src/Orbis.Stream.Core/Services/ImageService.cs`
 
@@ -914,7 +935,7 @@ Proprietà: `Progress`.
 
 Metodi pubblici: `DeleteLive`, `Run`, `ThresholdOf`, `TryStart`.
 
-SHA-256: `5b093c7c335297bd57ad426fb4e72a2bd8a3968323f57dbcbaf78d56df2c7c85`.
+SHA-256: `e466d6528540056316a0d2f3d2e87b6c0314b0b7149268ae203ace5704418903`.
 
 ### `src/Orbis.Stream.Core/Services/LivePreviewService.cs`
 
@@ -922,7 +943,7 @@ Tipi: `LiveMedia`, `LiveParameters`, `LiveSource`, `LiveOption`, `LiveSnapshot`,
 
 Metodi pubblici: `ApplyParameters`, `ApplyVolume`, `EmbedAsync`, `Offline`, `Snapshot`.
 
-SHA-256: `d017948663daa3abd2b2e73c5bb1c316a156a0f7412c4ba1edacd6315fe92e52`.
+SHA-256: `e395a8fafd55c58aa4b2e077ff4756844db42c443a8528d2bfdb72cecede7209`.
 
 ### `src/Orbis.Stream.Core/Services/LiveTakeovers.cs`
 
@@ -1030,7 +1051,7 @@ Tipi: `StreamingService`, `too`, `means`, `FileFacts`.
 
 Metodi pubblici: `EnqueueSpot`, `PlaySceneButton`, `PrepareStartFrom`, `ResetFlag`, `RestartFromBeginning`, `ResumeProgram`, `SceneStateOf`, `Shutdown`, `StartLive`, `StartPlaylist`, `StartSceneLive`, `StartVideo`, `StopAllAsync`, `StopBecause`, `StopVideoStreamingByPkid`.
 
-SHA-256: `f961c0acce3cc119e1d16f73a65c130153a3dbf393d4da8ea4c1ac35cdfab22e`.
+SHA-256: `d7036800eb60223fc0d92abf191f857e71dcaa57ca0f55d1b23a1936f9c162e6`.
 
 ### `src/Orbis.Stream.Core/Services/SystemInfoService.cs`
 
@@ -1046,7 +1067,7 @@ Tipi: `VideoService`.
 
 Metodi pubblici: `DeleteLiveHistory`, `DeleteOldLiveHistory`, `DeletePlaylist`, `DeleteVideo`, `FindVideo`, `GetAllChannelOnline`, `GetAllVideoList`, `GetLivePage`, `GetLockedVideos`, `GetPlaylist`, `GetVideoChannelNames`, `GetVideoList`, `UnlockVideo`.
 
-SHA-256: `2e91cdb490cec34c5591ce16569df87eb1c0625f9f403be6085713546d44075f`.
+SHA-256: `39fa78e88985073b9c6247ac717fa3326d89c01f8d3c557923112d09267545f9`.
 
 ### `src/Orbis.Stream.Core/Services/VideoSettingService.cs`
 
@@ -1088,7 +1109,7 @@ Tipi: `FfmpegStreamRequest`, `FfmpegCompositionItem`, `ProxyEncoding`, `FfmpegCo
 
 Metodi pubblici: `Build`, `BuildComposition`, `BuildEncoderTrial`, `BuildProxy`, `BuildSender`, `BuildSnapshot`, `BuildStreamingUrl`, `CarriesSound`, `Fit`, `FrameOfLive`, `Letterbox`, `OverlayTile`, `PresetArguments`, `ResolveOutput`, `ScaleFilter`.
 
-SHA-256: `eed59b9b8ff34e54d6925d081209b86f3f3e268494120e7ae385faba894d09c7`.
+SHA-256: `263611b9e5abe5c14fe388f6040ad7bc91b3e4ac28dd47ae30a6e2800dd30549`.
 
 ### `src/Orbis.Stream.Core/Streaming/FfmpegProbe.cs`
 
@@ -1098,6 +1119,14 @@ Metodi pubblici: `CreateStartInfo`, `Parse`, `ProbeAsync`, `RunCapturedAsync`.
 
 SHA-256: `acb2bc49ff0fa6801e36f4650c9f69b70d17ed8f084b56b758b8b805a16fa53d`.
 
+### `src/Orbis.Stream.Core/Streaming/FfmpegProcessLog.cs`
+
+Tipi: `FfmpegProcessLog`.
+
+Metodi pubblici: `ReadAsync`.
+
+SHA-256: `639c0b2062935a5c7adc12ee33b7b987f52e460526cb03dfc8fbf98e8629e5d3`.
+
 ### `src/Orbis.Stream.Core/Streaming/FfmpegStreamingSession.cs`
 
 Tipi: `FfmpegStreamingSession`, `StreamingSessionRegistry`.
@@ -1106,7 +1135,7 @@ Proprietà: `Profile`, `OnAirFor`, `AdaptiveQuality`, `NominalBitrate`, `AudioBi
 
 Metodi pubblici: `AbortAsync`, `AdaptBitrate`, `DisposeAsync`, `EndNaturallyAsync`, `HandOverAsync`, `ReadErrorAsync`, `RedactStreamKey`, `Register`, `Remove`, `RequestRestart`, `Start`, `StartComposition`, `StopAllAsync`, `StopAsync`, `TryGet`, `WaitForExitAsync`, `Watched`.
 
-SHA-256: `6dba0c2005b6bf16776b280513a0b1920802664f2ffcb641055e6d8078b35d3c`.
+SHA-256: `27a58730fabc9f757adb5335e0bb1505e9105157f58bd9dbd42381e2c1f67c2d`.
 
 ### `src/Orbis.Stream.Core/Streaming/FlvPacedRelay.cs`
 
@@ -1116,7 +1145,7 @@ Proprietà: `IsOpen`.
 
 Metodi pubblici: `Attach`, `Cancel`, `Close`, `Detach`, `Sample`, `Start`.
 
-SHA-256: `601e61abee838d0294b08da7486f111282c00f10f078670d09582f857f550ae3`.
+SHA-256: `fb7cb62aa3675df5687e708b88a8287b54cb3db37b8b7b6b1a58514fa120650f`.
 
 ### `src/Orbis.Stream.Core/Streaming/FlvSink.cs`
 
@@ -1140,11 +1169,11 @@ SHA-256: `035df7679ae20cb01e22f9047aa23f58d3d051778ccf3a8b0520e7273b0c082f`.
 
 Tipi: `LiveOutput`.
 
-Proprietà: `OutputUrl`, `Frame`, `Profile`, `QualityCap`, `Ladder`.
+Proprietà: `OutputUrl`, `SenderHasExited`, `Frame`, `Profile`, `QualityCap`, `Ladder`.
 
-Metodi pubblici: `Abort`, `AdaptBitrate`, `Attach`, `Cap`, `CompleteAsync`, `DisposeAsync`, `For`, `Pin`, `TryLower`.
+Metodi pubblici: `Abort`, `AdaptBitrate`, `Attach`, `Cap`, `CompleteAsync`, `DisposeAsync`, `For`, `Pin`, `ReadSenderErrorAsync`, `TryLower`.
 
-SHA-256: `fb8f5356ed2409daf7330060b5e935b0e189de43ac96cf79754d0b8e245aa4e4`.
+SHA-256: `fe8328cf3947d333dccc8e311967d0a5819853d708346a03a267ac50af777a41`.
 
 ### `src/Orbis.Stream.Core/Streaming/LivePlatformEmbeds.cs`
 
@@ -1180,13 +1209,19 @@ Metodi pubblici: `Of`, `TryParse`.
 
 SHA-256: `424061f06190daaaabefb07327d921724629c30a8efbe5b637b1658f19debd82`.
 
+### `src/Orbis.Stream.Core/Streaming/NvencOptions.cs`
+
+Tipi: `NvencOptions`.
+
+SHA-256: `1db4ee9be4335ad9a03011d502307c6c638612e8a9f059a9344e72ecefb5604c`.
+
 ### `src/Orbis.Stream.Core/Streaming/OverlayMedia.cs`
 
 Tipi: `OverlayMedia`.
 
 Metodi pubblici: `Of`.
 
-SHA-256: `49a5c757e830497df963135cfa0f1a68454c7643f694b08124091abf4c634a2e`.
+SHA-256: `6f43024675d5daeabd5e8107dcbd47856e40a626b0544ae4f4baaa672ecd4b42`.
 
 ### `src/Orbis.Stream.Core/Streaming/Rtmp/Amf0.cs`
 
@@ -1206,11 +1241,21 @@ SHA-256: `c00dd2455ef6840ad36d9bdf11c798c4719eeb8262b9b68c0170ac12ff11d5bc`.
 
 ### `src/Orbis.Stream.Core/Streaming/StreamPlatform.cs`
 
-Tipi: `StreamPlatform`, `RelayTransport`, `RelayPacing`, `StreamPlatformProfile`, `StreamPlatforms`.
+Tipi: `StreamPlatform`, `RelayTransport`, `RelayPacing`, `StreamPlatformProfile`, `and`, `StreamPlatforms`.
 
 Metodi pubblici: `Detect`, `For`, `NormalizeIngestUrl`, `Orient`, `WithTransport`.
 
-SHA-256: `e45dd690223ab75f574e34504b028d7e74a6b8f13eb49285602ec88c885a1351`.
+SHA-256: `b0f3024c88144f938434928c322f0a4dd3879a89d13608e8c52caa87705cb32c`.
+
+### `src/Orbis.Stream.Core/Streaming/WebpOverlayInputs.cs`
+
+Tipi: `WebpOverlayInputs`.
+
+Proprietà: `Items`.
+
+Metodi pubblici: `Dispose`, `Prepare`.
+
+SHA-256: `6a6474308c9255ea59a812bb6d86ffc6683ceeab2ee5ffaf3f2768bf30e0d8c9`.
 
 ### `src/Orbis.Stream.Core/SystemInfo/AppInfo.cs`
 
@@ -1228,171 +1273,171 @@ SHA-256: `0c4e8ab6c32da392a5f5c9e5c4f2c6d9d239903099794a710f1116d1d4e0ece0`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.ar.json`
 
-SHA-256: `a3469b422b2b5864be3239dc0ea0bb063a58e721abcabd3af921199f3432a454`.
+SHA-256: `5d7ca8f057e0cb97f1c8b706914659131167d173cd81c9ffb2ee54ca45d6a6c6`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.da.json`
 
-SHA-256: `2a335c11776c80db8a9e03bb4a20acd115d912a3124363da5efc20bac6917d33`.
+SHA-256: `ea3b90448aaac986921e49a2fab88a7e2c39268d29cf4bc43b994ea394e4966e`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.de.json`
 
-SHA-256: `b7f54e7ca5066a8d45e54f2283a47f55e42bc077acb0757c3c51335fedf4d611`.
+SHA-256: `b092b1e9c9e95b408bc6110735b24bdf16968569a77df019c9dc964eb3526e38`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.el.json`
 
-SHA-256: `50792dae2c0d9c80f40f18e7f0f28c86ff2e6278fab0cc57b2088dcabcc2048c`.
+SHA-256: `5a8df4f23d0b0df4e7f6f2f52561d5a2ead52d99d050a5533092eac899ab34ea`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.en.json`
 
-SHA-256: `725bc786b8778d288b4410cd05dea7ec3831e2acab2bbe0e32dcaa47dd6f5a5d`.
+SHA-256: `928d18add074e8a813867d75baab7fe0f90b1131e68b065b75a2041d6d64af8c`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.es.json`
 
-SHA-256: `4c14fd6ab23157438869d1f7af1ac90612288f83339f8163505d3b4aa19d8f18`.
+SHA-256: `8e0a1bf4ef4cc1990edc64c25e3b7bdbc5677ddf8fa09f505fdcb786db1d3091`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.fil.json`
 
-SHA-256: `55bb70cef390570bf3460668d7553ef449ba861027006bfc2a54010f96ccc370`.
+SHA-256: `2efeee8d5b9d6127501193be3ae27539aa57d1f6b9fb7114139167006e1c26ee`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.fr.json`
 
-SHA-256: `7327757ecbb340eae6bfb7e10987c8ecc3a073fc67774b5f30b5e516f148ab4d`.
+SHA-256: `f327270b404f0f830db0f7292ea0c004bf3e601ac3bef638bfc2a31f82fdc1f6`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.hi.json`
 
-SHA-256: `0b947eb1a8ebe10a4163ed301a473797bc792b3f36610848cc2908430842e8c1`.
+SHA-256: `7586a040cd726dc33461d038db4cdd2fd786d1650e799da304430e45cc4d7c35`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.hod.json`
 
-SHA-256: `dba78c2b6c1d7861c17b1a503a2eb4e4adff4155d683eb0603eaea8078fe9c3b`.
+SHA-256: `c781cc9e18405d08aca7b96aa1c331ca2b130a6aecd7eb6e69fabdfb62becc1f`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.it.json`
 
-SHA-256: `17be7419b9aa3122ec53a15d74ba6d397ef0401072760a08dce5dcc05d555981`.
+SHA-256: `1fc5e8576e4b03f9446e30322e463711e1dd41c2f7a3eafbd134928ac09493d0`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.ja.json`
 
-SHA-256: `35a0035e6a37f9dffec0470ea743771fb585d8b0bbfb75ea49e75c9504239c65`.
+SHA-256: `0ae529d9057f966a387284305d2e2f4973ee3b4f7f9ab4367c00555c96e9f03d`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.ko.json`
 
-SHA-256: `214b1cfd9e060a302b4915ff74d84caf1ca35ff13580468604c2fce8be3ce248`.
+SHA-256: `7696137ef0e57d30120271e7b7957ecf1c54296717d3ea28f002295ee692ad10`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.la.json`
 
-SHA-256: `80ec1037dadd1b5ac686060cf47896c63fff1e088013798458b86ea0bba434bf`.
+SHA-256: `14b8b3d1802f6c813e8e5cd1a91c43fe4a57b1262a71aeb5502a6c9cbf73d396`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.nl.json`
 
-SHA-256: `b5e0a6af12d3e354361ae5110391f67b8f0736b93e689852fccfe4cd8efb0864`.
+SHA-256: `cd83973bd7a426d45ae83c710fe099e0f64ccbeabac678fd5e13593d5775342a`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.pt.json`
 
-SHA-256: `05faf8fcbb26cc87c33b75ba291fd0fcc37055c505df22c246c17362856b8a60`.
+SHA-256: `db25d894db914dd00fa459774762cfaae4d03286a081dfb65267362d93eefa48`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.ro.json`
 
-SHA-256: `706351cb03edb567a5cefe6975e1ddb94ef9cbe521c437ea403d95a51416c634`.
+SHA-256: `76e37c08bd521688821c9d1606bde84934a1609a80268cae0153d603b1ed5470`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.ru.json`
 
-SHA-256: `dc8a1a9fea31c599613e7115ea0fdc014bc88b15e4dc01ebd1a939888b8ee193`.
+SHA-256: `6cc400828b1d0e5a61c79c23833a5eedda9d627026b3ebd9a5349d6c51b31b72`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.tlh.json`
 
-SHA-256: `b878c3e180ab8731cc88919220124b5f69e629c209c7112dd8f4481030f3462f`.
+SHA-256: `d8906802baa5254fb83cf4dbf92d26fc2927942b8eab760136e4a406f2827109`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.tr.json`
 
-SHA-256: `1d7459f466320f5758e65a84609ba684554f3258dfab2754423c020c4182c338`.
+SHA-256: `3d5a71bc98d11dbd05a14bb2cb555e89d3aa77550cf5191cc9f27dac6d16813b`.
 
 ### `src/Orbis.Stream.Core/Ui/manual.zh.json`
 
-SHA-256: `9473ce491e0697b70e57f5b782433521dc6f93d26f62faa72fae86e2d5cb44f4`.
+SHA-256: `d98cd5498437b47ccefdf5e171a1f14163f94efe49a4059bc7c89073ff936800`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.ar.json`
 
-SHA-256: `19fa4b103eec238d3d6737f364647da7f933e0e0796461c6e580634f1f183938`.
+SHA-256: `848b3be5216f826c09e82800f092861aeee49f087e60d35011fbbe26c656c892`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.da.json`
 
-SHA-256: `9d7d9fafa58c48d67cd7469c051a5b9ba44d2cf9b8ee8b04f8098799bc26f948`.
+SHA-256: `7228ecc25869faa64e32b12600f931e4a65592a4aeca7c17f7b91175a0fd15c0`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.de.json`
 
-SHA-256: `81c8e7c7d18fba311d8f1a4175e54e50466e5796bf19e3c02ba095113997a307`.
+SHA-256: `dda04cba3ceeb8df8d1698cdd69e82e11e33102c05bcebb7c9e0db36fab16a41`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.el.json`
 
-SHA-256: `09e046e0cdd41470cc40f91e6ea144ec6991e5f1b1259670f8f1ec7de9625586`.
+SHA-256: `7e804d778caa936f4c65d1097dfa7b925c0f81982c3383a9c37cf7330710e367`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.en.json`
 
-SHA-256: `8fe17a62131af67a3c46664c07d8db319d1ad6040f3f4422fa8286ce8e4d24c3`.
+SHA-256: `c11eedaeaf001b56872a0d2c9f7a5321ce95e1f3cc6b82f70eb7625e50c020a1`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.es.json`
 
-SHA-256: `6a6f303710cdad20c50e611814d036de46b4e3a773e05c18498c5db9b24d6493`.
+SHA-256: `6294018f164643f668d0e45bee3165112921fc59808140e64a109ae219211464`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.fil.json`
 
-SHA-256: `7a3b1fe8da20599d34a089ff81ba65d089dce7db635c4163e4abff89ce25c968`.
+SHA-256: `af148299b1a42fa5ae6aa7dfbdac66fa33e4ee2286da3ba29eeedeaab4ec625d`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.fr.json`
 
-SHA-256: `13bee91c2c66ff1f31d284096e10978adb45ee4add854f8b1d29dc5acdf85964`.
+SHA-256: `3cda01d235024956ead69ef69e27b535fcba2a948e96b6ea8c83d3e5a5ea4f8a`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.hi.json`
 
-SHA-256: `84a784d175067c650b977acbd8533f83ecf81a89daa4cd28da49e78a19cc7c5e`.
+SHA-256: `9dedf4ab7e03a466eb5a384a26c68e757c3d06c91c9655d3461c2a32077590f3`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.hod.json`
 
-SHA-256: `168267bb6f6dccafcc7e45d137c01c1d19c19ddfaefbe1e11f80d67e34b564a3`.
+SHA-256: `07b3c3036d9b69417ee9d62c4104e938975aa5f404b6f40b1d6d9347e1aaf602`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.it.json`
 
-SHA-256: `0a8cb4e0a02b46a47e0838471db6dc21a1e2445395363ecfcba86a3612579ef5`.
+SHA-256: `f72273b642b4a3abf86a4cb1e24d62f0cc2f7332c6d2571a6e43b764ccb0b777`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.ja.json`
 
-SHA-256: `f0d128b020ca86491381acacc6a04c2db07918a2b836cf39f37ffd6e69a28670`.
+SHA-256: `1907e33ba9249a47fa204449a3a9dfd377ed0df3558aeb72c50941e4e2076a58`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.ko.json`
 
-SHA-256: `3fe17174a6dd548e01a72408d58825797795a077bb842c008b36fba7955af366`.
+SHA-256: `6e47983814d8db5e73c3ef2f684aa616cac42a8d28749401509ddc49b510820f`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.la.json`
 
-SHA-256: `c2845f592acd0fc38874cfb9f8f40821694b698cd9bf46bd793ac294354f9bb9`.
+SHA-256: `fce05409d0b96d56c6fa787880e83b86b457faa5158f934abb75d07a7a873ad7`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.nl.json`
 
-SHA-256: `0e57efe8276ef23962e9d20af417081c21c80a365f29853c2937be8c2f7b4ac9`.
+SHA-256: `a71a19fa40b9cca729f928c4b6ff2dc30dc2341619227746fb03dd9dac92424c`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.pt.json`
 
-SHA-256: `277eaf19904f570547dc29f63e257474860a1a1418e1835b1f95ebb9404f03fa`.
+SHA-256: `6c2eec42f641b151df126f47caa5adf16f4b77c187e4238df0205160d458ab28`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.ro.json`
 
-SHA-256: `14038c227d8217ddce0bf32335cecf7f19d6893666d7fe1398e74ef2f840e12e`.
+SHA-256: `70417c6fc3f47603d73b98dfce913d8c643d19b70d9b2e6c2a8d3c8711ce5687`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.ru.json`
 
-SHA-256: `8a25f3f14e12144f539db21be9d9708940b59c71a079fa0b7533f2da9c2e97ab`.
+SHA-256: `e0287f885cd3a86932f3f6169e44b83c0e3199478453760f0b2b7fc718da17bb`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.tlh.json`
 
-SHA-256: `a7897555b4f5b290c83da73ff747b1db256449b3abcd982c2799039e0bf2fcab`.
+SHA-256: `acf80379122c02c10458db365c5818ac0accc51ada26bfa441e924bb59cf0215`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.tr.json`
 
-SHA-256: `c96b726c3aa94cab345c44835c1ab865e686e5606d5a9900caccfd7d3fe1195a`.
+SHA-256: `9c4ba8f5a1cb4abee13b5335c6e1b16f4d31618328998a969907b4de848801e3`.
 
 ### `src/Orbis.Stream.Core/Ui/ui.zh.json`
 
-SHA-256: `a71efe43fcb6cd083045620648a0d1b1850783cb63f55195ad8fac2d325c9c6d`.
+SHA-256: `2fe8d533d8c494e9439327e6d5832ee62dae82e798f5e1bf41571864391a065d`.
 
 ### `src/Orbis.Stream.Tests/AdaptiveBitrateSwitchTests.cs`
 
@@ -1401,6 +1446,14 @@ Tipi: `AdaptiveBitrateSwitchTests`.
 Metodi pubblici: `OffTheLiveGoesOutAtTheBitrateOfTheSettingWhateverTheLadderDecided`, `OnlyAnExplicitNoTurnsItOff`, `SetReplacesWhatTheSettingSaidBefore`, `TheFormStartsOnAndCarriesTheSwitchBothWays`, `TheSwitchIsADecisionOfThisApplicationNotAnOptionOfFfmpeg`.
 
 SHA-256: `9c394fce1a0a012a64fa952ba3a708d3b786a2adc97c715fdbf022438d827a41`.
+
+### `src/Orbis.Stream.Tests/AnimatedWebpTests.cs`
+
+Tipi: `AnimatedWebpTests`.
+
+Metodi pubblici: `Ffmpeg9DecodesAndLoopsAnimatedWebpWithTransparencyOnTheCanvas`.
+
+SHA-256: `56432b4ce11b27b2681177f4cb5a8383b374481f0b28e020ca1e187cb05c8052`.
 
 ### `src/Orbis.Stream.Tests/BitrateLadderTests.cs`
 
@@ -1418,25 +1471,25 @@ Tipi: `TemporaryDatabase`, `DatabaseSchemaTests`, `SceneRepositoryTests`, `Video
 
 Proprietà: `LiveHistoryId`, `Directory`, `DatabasePath`.
 
-Metodi pubblici: `Delete_RemovesTheRow`, `Delete_TakesTheItemsWithIt`, `Dispose`, `EnsureCreated_IsIdempotent`, `EnsureCreated_KeepsExistingData`, `EnsureCreated_MigratesAPreviousDatabase`, `EnsureCreated_MovesTheOldYouTubeIngest`, `EnsureCreated_TurnsTheOldScenesIntoLayouts`, `FindAll_ReturnsTheItemsInStackingOrder`, `FindAll_SupportsDynamicFilters`, `FindByLiveStatusAndChannelName_CombinesBothConditions`, `FindChannelNames_ListsEveryChannelOfTheVideosOnceAndInOrder`, `FindLayouts_LeavesTheScenesOfTheLivesOut`, `FindPaged_AppliesFiltersSortingAndPaging`, `FindPaged_CombinesTheChannelTheStatusAndTheSearch`, `FindPaged_KeepsOnlyTheRowsWhoseContainerIsAVideo`, `FindPaged_LooksTheWildcardsOfASearchForThemselves`, `FindPaged_SearchesTheTitleAsAPartOfItAndNotAsAllOfIt`, `FindPaged_SupportsTheVideoLiveHistoryJoin`, `FindPaged_WithoutTheWhitelistStillAnswerEveryRow`, `InsertAndFind_KeepsTheTileAndTheResolutionOfTheFile`, `InsertAndFind_RoundTripsEveryColumn`, `Insert_GeneratesTheNextIdentifier`, `Insert_ThenUpdate_ReplacesTheItemsInOrder`, `SetStopFlag_UpdatesThePollingFlagOfTheStreamer`, `SetVideoSetting_UpdatesOnlyTheConfigurationReference`, `SetVolume_SurvivesTheStreamerWritingTheRowItHolds`, `StartAsync_ReleasesTheLivesLeftRunning`, `TheLivePageListsTheLivesOfOnePlatform`, `Update_ReplacesEveryField`.
+Metodi pubblici: `Delete_RemovesTheRow`, `Delete_TakesTheItemsWithIt`, `Dispose`, `EnsureCreated_IsIdempotent`, `EnsureCreated_KeepsExistingData`, `EnsureCreated_MigratesAPreviousDatabase`, `EnsureCreated_MovesTheOldYouTubeIngest`, `EnsureCreated_TurnsTheOldScenesIntoLayouts`, `FindAll_ReturnsTheItemsInStackingOrder`, `FindAll_SupportsDynamicFilters`, `FindByLiveStatusAndChannelName_CombinesBothConditions`, `FindChannelNames_ListsEveryChannelOfTheVideosOnceAndInOrder`, `FindLayouts_LeavesTheScenesOfTheLivesOut`, `FindPaged_AppliesFiltersSortingAndPaging`, `FindPaged_CombinesTheChannelTheStatusAndTheSearch`, `FindPaged_KeepsOnlyTheRowsWhoseContainerIsAVideo`, `FindPaged_LooksTheWildcardsOfASearchForThemselves`, `FindPaged_SearchesTheTitleAsAPartOfItAndNotAsAllOfIt`, `FindPaged_SupportsTheVideoLiveHistoryJoin`, `FindPaged_WithoutTheWhitelistStillAnswerEveryRow`, `InsertAndFind_KeepsTheTileAndTheResolutionOfTheFile`, `InsertAndFind_RoundTripsEveryColumn`, `Insert_GeneratesTheNextIdentifier`, `Insert_ThenUpdate_ReplacesTheItemsInOrder`, `PendingPublishIsActiveButDoesNotAppearInTheLiveFilter`, `SetStopFlag_UpdatesThePollingFlagOfTheStreamer`, `SetVideoSetting_UpdatesOnlyTheConfigurationReference`, `SetVolume_SurvivesTheStreamerWritingTheRowItHolds`, `StartAsync_ReleasesTheLivesLeftRunning`, `TheLivePageListsTheLivesOfOnePlatform`, `Update_ReplacesEveryField`.
 
-SHA-256: `d43e5526bad1f13ba9705aac917351ad783cd775a5b72b86705eba639757f400`.
+SHA-256: `fb05441e02c00efe9da810bf969d8fd9c8f2e91684ca74ba10946ee08fb0b615`.
 
 ### `src/Orbis.Stream.Tests/DomainAndPagingTests.cs`
 
 Tipi: `LiveStatusTests`, `PageRequestTests`, `FilterValueConverterTests`, `AutoCleanupServiceTests`, `DatabaseBootstrapperTests`, `FfmpegCodecCatalogTests`, `values`, `UserPathTests`, `LiveLinkTests`, `SystemFactTests`, `TemperatureTests`, `LiveChangeNotifierTests`.
 
-Metodi pubblici: `AChangeThatArrivesBetweenTheTestAndTheWaitIsNotLost`, `AListenerResumesFromTheChangeItAlreadyHas`, `AListenerThatArrivesLateIsAnsweredAtOnce`, `AListenerThatGoesAwayDoesNotHoldTheOnesThatStay`, `AListenerWaitsForAChangeAndIsToldWhichOneItIs`, `AMachineWithoutSensorsIsNotAskedAgainEverySecond`, `AudioCodecs_FollowTheFfmpegEnum`, `ChoiceOf_ReadsTheNameThenTheIngestOfAConfiguration`, `Convert_ParsesTheSupportedKinds`, `Convert_ThrowsTheOrbisQueryExceptionOfTheDynamicSpecification`, `DelayAsync_TakesAnIntervalOfMonthsWithoutStoppingTheApplication`, `EachPlatformHasItsOwnMarkAndItsOwnColour`, `EveryChangeHasItsOwnNumber`, `Facts_DescribeTheMachineThatRunsThem`, `Facts_NeverCarryAnEmptyValue`, `FormatBytes_UsesTheBinaryDivisorAndNoLocale`, `FormatUptime_IsReadableWithoutAnyLanguage`, `FormatUptime_OfAClockThatWentBackwardsIsZero`, `FromStorage_AlsoReadsTheWireNameAndTheOrdinalAsText`, `FromStorage_FallsBackToOfflineForUnknownValues`, `FromStorage_ReadsTheHibernateOrdinal`, `KickAndFacebookGamingHaveTheirNamesMarksAndColours`, `LabelAndMark_AreTheOnesOfTheConfigurationForm`, `ManyListenersAreAllWokenByTheSameChange`, `NormalizeUserPath_StripsCopyAsPathQuotes`, `Ordinals_MatchTheHibernateColumnOfTheJavaEntity`, `Parse_ClampsThePagingParameters`, `Parse_ReadsTheSpringSortSyntax`, `Parse_UsesTheDefaultPageSizeAndSort`, `PixelFormats_FollowTheFfmpegEnum`, `PlatformOf_HasNoAnswerForAnIngestItDoesNotKnow`, `PlatformOf_KnowsKickAndFacebookByTheDomainOfTheirIngest`, `PlatformOf_ReadsTheIngestOfTheLive`, `PlatformOf_StillWantsThePresetForTheIngestsThatAreTheSameForEverybody`, `Schema_TurnsTheFfmpegDeliveryOnForYouTubeOnceAndOffForTwitch`, `SpringPageMetadata_IsConsistentWithTheContent`, `StartAsync_AddsTheNewPlatformsOnceToAnInstallationThatHadTheOldOnes`, `StartAsync_CreatesOneDefaultConfigurationPerPlatform`, `StartAsync_KeepsASingleDefaultConfigurationPerPlatform`, `StartAsync_MovesTheLegacyYouTubeDefaultsButNotOnesTheUserEdited`, `StartAsync_RenamesThePlaceholderDefaultInsteadOfAddingAnother`, `StartAsync_SeedsKickAndFacebookGamingWithTheirOwnDefaults`, `StartAsync_SeedsTikTokStandingUp`, `StartAsync_SeedsYouTubeAtAFixedPictureWithNothingThatReplacesTheConstantRate`, `Temperatures_AnswerAPlausibleReadingOrNoneAtAll`, `Temperatures_AreReadOnceForAsManyAsksAsThereAre`, `TheChannelSettingsOfferTheFivePlatformsWithTheirIngest`, `TheLowDefaultsAreShownInTheLanguageOfThePage`, `UrlOf_EscapesWhatWouldBreakTheAddress`, `UrlOf_FallsBackToTheNameOfTheApiWhenTheChannelIsNotThere`, `UrlOf_HasNoLinkWithoutAPlatformOrAChannel`, `UrlOf_KickIsTheChannelAndFacebookGamingThePage`, `UrlOf_TakesTheChannelOfTheConfigurationNotThePlatform`, `UrlOf_TikTokIsTheLiveOfTheAccount`, `UrlOf_TwitchIsTheChannelPage`, `UrlOf_YouTubeBeforeTheBroadcastIsSeenIsTheControlRoomOfTheChannel`, `UrlOf_YouTubeIsTheLiveControlRoomOfTheBroadcastOnAir`, `VideoCodecName_WinsOverTheNumericCodec`, `VideoExtensions_AcceptTheSupportedContainers`, `YouTubeChannelUrl_IsThePageOfTheHandleOrOfTheId`.
+Metodi pubblici: `AChangeThatArrivesBetweenTheTestAndTheWaitIsNotLost`, `AListenerResumesFromTheChangeItAlreadyHas`, `AListenerThatArrivesLateIsAnsweredAtOnce`, `AListenerThatGoesAwayDoesNotHoldTheOnesThatStay`, `AListenerWaitsForAChangeAndIsToldWhichOneItIs`, `AMachineWithoutSensorsIsNotAskedAgainEverySecond`, `AudioCodecs_FollowTheFfmpegEnum`, `ChoiceOfSetting_ReadsThePlatformADefaultSettingWasSeededFor`, `ChoiceOf_ReadsTheNameThenTheIngestOfAConfiguration`, `Convert_ParsesTheSupportedKinds`, `Convert_ThrowsTheOrbisQueryExceptionOfTheDynamicSpecification`, `DelayAsync_TakesAnIntervalOfMonthsWithoutStoppingTheApplication`, `EachPlatformHasItsOwnMarkAndItsOwnColour`, `EveryChangeHasItsOwnNumber`, `Facts_DescribeTheMachineThatRunsThem`, `Facts_NeverCarryAnEmptyValue`, `FormatBytes_UsesTheBinaryDivisorAndNoLocale`, `FormatUptime_IsReadableWithoutAnyLanguage`, `FormatUptime_OfAClockThatWentBackwardsIsZero`, `FromStorage_AlsoReadsTheWireNameAndTheOrdinalAsText`, `FromStorage_FallsBackToOfflineForUnknownValues`, `FromStorage_ReadsTheHibernateOrdinal`, `KickAndFacebookGamingHaveTheirNamesMarksAndColours`, `LabelAndMark_AreTheOnesOfTheConfigurationForm`, `ManyListenersAreAllWokenByTheSameChange`, `NormalizeUserPath_StripsCopyAsPathQuotes`, `Ordinals_MatchTheHibernateColumnOfTheJavaEntity`, `Parse_ClampsThePagingParameters`, `Parse_ReadsTheSpringSortSyntax`, `Parse_UsesTheDefaultPageSizeAndSort`, `PixelFormats_FollowTheFfmpegEnum`, `PlatformOf_HasNoAnswerForAnIngestItDoesNotKnow`, `PlatformOf_KnowsKickAndFacebookByTheDomainOfTheirIngest`, `PlatformOf_ReadsTheIngestOfTheLive`, `PlatformOf_StillWantsThePresetForTheIngestsThatAreTheSameForEverybody`, `Schema_TurnsTheFfmpegDeliveryOnForYouTubeOnceAndOffForTwitch`, `SpringPageMetadata_IsConsistentWithTheContent`, `StartAsync_AddsTheNewPlatformsOnceToAnInstallationThatHadTheOldOnes`, `StartAsync_CreatesOneDefaultConfigurationPerPlatform`, `StartAsync_KeepsASingleDefaultConfigurationPerPlatform`, `StartAsync_MovesTheLegacyYouTubeDefaultsButNotOnesTheUserEdited`, `StartAsync_RenamesThePlaceholderDefaultInsteadOfAddingAnother`, `StartAsync_SeedsKickAndFacebookGamingWithTheirOwnDefaults`, `StartAsync_SeedsTikTokStandingUp`, `StartAsync_SeedsYouTubeAtAFixedPictureWithNothingThatReplacesTheConstantRate`, `Temperatures_AnswerAPlausibleReadingOrNoneAtAll`, `Temperatures_AreReadOnceForAsManyAsksAsThereAre`, `TheChannelSettingsOfferTheFivePlatformsWithTheirIngest`, `TheLowDefaultsAreShownInTheLanguageOfThePage`, `UrlOf_EscapesWhatWouldBreakTheAddress`, `UrlOf_FallsBackToTheNameOfTheApiWhenTheChannelIsNotThere`, `UrlOf_HasNoLinkWithoutAPlatformOrAChannel`, `UrlOf_KickIsTheChannelAndFacebookGamingThePage`, `UrlOf_TakesTheChannelOfTheConfigurationNotThePlatform`, `UrlOf_TikTokIsTheLiveOfTheAccount`, `UrlOf_TwitchIsTheChannelPage`, `UrlOf_YouTubeBeforeTheBroadcastIsSeenIsTheControlRoomOfTheChannel`, `UrlOf_YouTubeIsTheLiveControlRoomOfTheBroadcastOnAir`, `VideoCodecName_WinsOverTheNumericCodec`, `VideoExtensions_AcceptTheSupportedContainers`, `YouTubeChannelUrl_IsThePageOfTheHandleOrOfTheId`.
 
-SHA-256: `86119e95c3e221ea8d3e1780c1537b4d835705cb1ddaa606540c985146ef7333`.
+SHA-256: `9910787dc860d9ca2c92b566c802c60a0fae155efaec7742e5718be5279c62ee`.
 
 ### `src/Orbis.Stream.Tests/EncoderQualityTests.cs`
 
 Tipi: `EncoderQualityTests`.
 
-Metodi pubblici: `ALevelChosenByTheUserIsNeverMeasured`, `APresetTypedByHandWinsOverTheLevel`, `Auto_FallsBackToTheLightLevelOnAGpuThatDoesNotKeepUp`, `Auto_GetsTheBalancedLevelOnAMachineThatKeepsUp`, `EveryEncoderSpellsTheLevelItsOwnWay`, `TheDecisionsOfTheApplicationNeverReachFfmpeg`, `TheDefaultsAreLeftAloneWhenFfmpegDoesNotRun`, `TheDefaultsGoToTheGpuAndLeaveTheSettingsOfTheUserAlone`, `TheFormKeepsTheLevel`, `TheMeasuredLevelOverridesTheAutomaticOne`, `WithoutLowLatencyThePresetAndTheTuneAreRequired`.
+Metodi pubblici: `ALevelChosenByTheUserIsNeverMeasured`, `APresetTypedByHandWinsOverTheLevel`, `Auto_FallsBackToTheLightLevelOnAGpuThatDoesNotKeepUp`, `Auto_GetsTheBalancedLevelOnAMachineThatKeepsUp`, `EveryEncoderSpellsTheLevelItsOwnWay`, `LegacyNvencPresetsStillStartWithFfmpeg9`, `NvencCompatibilityLeavesOtherEncodersAndModernPresetsAlone`, `RemovedNvencFlagsAreConvertedAndModernOverridesWin`, `RemovedNvencRateControlsUseTheModernModeAndMultipass`, `TheDecisionsOfTheApplicationNeverReachFfmpeg`, `TheDefaultsAreLeftAloneWhenFfmpegDoesNotRun`, `TheDefaultsGoToTheGpuAndLeaveTheSettingsOfTheUserAlone`, `TheFormKeepsTheLevel`, `TheMeasuredLevelOverridesTheAutomaticOne`, `WithoutLowLatencyThePresetAndTheTuneAreRequired`.
 
-SHA-256: `d7e75ae0358702984dc229427d5c3da15eb0cb9cbafdc2ccdcc929d9882dc057`.
+SHA-256: `91b146afd077331475b93eb8babcea94016da80296a9605da6c725006daca8b4`.
 
 ### `src/Orbis.Stream.Tests/EndToEndApiTests.cs`
 
@@ -1448,13 +1501,29 @@ Metodi pubblici: `ALayout_KeepsOnlyItsSlots_AndTheScenesOfTheLivesAreNotListed`,
 
 SHA-256: `be497cd7572edf730eb93ed0774858938d9e7baf30b5efc0c4b984e58f6fd757`.
 
+### `src/Orbis.Stream.Tests/ErrorReportTests.cs`
+
+Tipi: `ErrorReportTests`.
+
+Metodi pubblici: `FailedLiveHasReportButtonsAndALocalQrReportWithoutItsStreamKey`, `LongUnicodeErrorsRemainCompleteAcrossQrPages`.
+
+SHA-256: `a0f8ab0728de2469a50fe444565be853d8d4773478447c2eed29b25223b5f015`.
+
 ### `src/Orbis.Stream.Tests/FfmpegCommandBuilderTests.cs`
 
 Tipi: `FfmpegCommandBuilderTests`, `FfmpegCompositionTests`, `SourceCatalogTests`.
 
 Metodi pubblici: `ACameraOpenedForItsPictureCarriesNoSound`, `ACanvasIsNotBoundedWhileThereIsSomethingThatNeverEnds`, `ACanvasOfFilesBehindARelayIsPacedByTheRelayAlone`, `ACanvasOfFilesIsBoundedByItsLongestFile`, `ACanvasOfFilesWithoutARelayIsPacedOnceOnWhatComesOut`, `ACanvasStartedAgainFromWhereItStoppedStillLastsAsLong`, `ACanvasWithADeviceKeepsTheFilesInStepWithIt`, `ACompositionWithNoPictureIsRejected`, `ACompositionWithNoSizeIsRejected`, `ADeviceGetsARealTimeBufferLargerThanAFrame`, `AFileIsPacedAndSeeked`, `AMicrophoneIsHeardAndNotSeen`, `AMonitorIsTheDesktopCroppedToItsRectangle`, `AScreenCarriesNoSound`, `ASnapshotIsNotPaced`, `ATileWithNoRectangleIsRejected`, `AWebcamWithItsMicrophoneIsOneInputAndIsHeard`, `BuildStreamingUrl_JoinsWithASingleSeparator`, `Build_ComputesGopAsFrameRateTimesGopSize`, `Build_LeavesTheResolutionOfTheSourceAloneWhenTheSettingHasNone`, `Build_PassesTheInputPathAsOneVerbatimArgument`, `Build_RoundsTheScaleDownToAnEvenFrameSize`, `Build_ScalesToTheResolutionOfTheSetting`, `Build_SkipsAudioFlagsWhenTheInputHasNoAudioTrack`, `Build_TakesTheFrameRateOfTheSettingOverTheOneOfTheSource`, `Build_UsesTheVideoSettingAsEncoderConfiguration`, `Build_WithoutAPresetEncodesClean`, `Desktop_WebcamAndMicrophone_ComposeThroughOneGraph`, `DeviceList_OfFfmpeg4_IsReadBySection_AndHandlesColons`, `DeviceList_OfFfmpeg5_NamesItsOwnKind_AndHandlesColons`, `EveryInputIsOpenedBeforeTheGraph`, `EverySourceIsMixedAtItsOwnVolume`, `EveryTileStartsItsClockAtZero`, `MonitorTarget_RoundTrips`, `ResolveOutput_AnswersWhatTheCommandLineAsksFor`, `ResolveOutput_FallsBackToWhatTheSourceCarries`, `SettingFrameRate_WinsOverTheCanvasOne`, `SourcesAreStackedInTheOrderTheyWereDropped`, `TheCanvasIsABlankFrameOfTheSceneSize`, `TheEncoderIsTheSameOneAFileWouldUse`, `ThePreviewOfACanvasIsThirtySharpFramesASecond`, `ThePreviewOfAFileIsThirtySharpFramesASecond`, `TheStreamKeyNeverReachesAnErrorMessage`, `TileRectanglesAreRoundedDownToEvenPixels`, `TwoSoundsAreMixed`.
 
-SHA-256: `ca110c4ce303ba7267408052936c3b4338a99d98d6fae7b77b49f6f07fcaf304`.
+SHA-256: `f9cbfb3009f40b0b46704a69d18f0465b30ccd1c768e318cb62b480f2e901dc4`.
+
+### `src/Orbis.Stream.Tests/FfmpegProcessLogTests.cs`
+
+Tipi: `FfmpegProcessLogTests`, `CapturingLogger`.
+
+Metodi pubblici: `AWarningIsLoggedBeforeTheRunningProcessClosesItsPipe`, `DiagnosticsRetainABoundedTailAndTheirSeverity`, `FacebookGamingIsGivenTheSameCodecProbeAsYouTube`, `FacebookGamingReportsItsEncoderAndSenderLikeYouTube`, `IsEnabled`, `SenderKeepsConnectionDebugButDropsPacketDebugAfterOpeningOutput`, `YouTubeEncoderAndSenderExposeCodecInformationAndWarnings`.
+
+SHA-256: `9a5d9a6bc762aab8171641944176c8b66d1f5b86d10d88bf94d6aa8cc707792b`.
 
 ### `src/Orbis.Stream.Tests/FfmpegStreamingTests.cs`
 
@@ -1522,7 +1591,7 @@ Tipi: `LivePreviewTests`, `VideoExtensionsTests`.
 
 Metodi pubblici: `ALiveOnAPlatform_IsAlsoWatchableWithThePlayerOfThatPlatform`, `ALiveRowShowsTheMarkOfItsPlatformWithTheOtherIcons`, `ContentType_AnswersWhatTheBrowserAsksFor`, `DisposeAsync`, `InitializeAsync`, `IsBrowserPlayable_SaysWhatThePreviewCanShow`, `PreviewPage_IsServedWithAndWithoutALive`, `Preview_AnswersAnUnchangedRequestWithoutTouchingTheEncoder`, `Preview_AnswersTheStateOfTheLiveAndServesItsFile`, `Preview_AnswersWithTheFrameAsSoonAsItIsWritten`, `Preview_ChangesTheParametersOfARunningLive`, `Preview_IsEmptyWithoutALiveAndRefusesToChangeAStoppedOne`, `Preview_KeepsUpWithTheFramesFfmpegWrites`, `Preview_PutsTheResolutionBackToTheSourceWhenAskedForZero`, `Preview_RefusesAHalfResolution`, `Preview_RefusesAValueThatCannotBeEncoded`, `WithTwoLivesOnAir_ThePreviewPageOffersThemInAList`.
 
-SHA-256: `a2906211145eccef34c452c6eca0600249e0c500aeb75e81c6be66b12addbe73`.
+SHA-256: `ab6d424c820035d62342bc470d0d2217a05fc1aca6c66a786d150c76f3ed99e3`.
 
 ### `src/Orbis.Stream.Tests/ManualTextTests.cs`
 
@@ -1564,9 +1633,9 @@ SHA-256: `da09e6f5e1d6b40bb5109e187cb5ca602aaa86317433e1fd3cd9b29b5c29ea85`.
 
 Tipi: `OverlayCommandTests`.
 
-Metodi pubblici: `ACanvasOfFilesAndOverlaysIsPacedByTheRelayAlone`, `ACanvasStandsOnItsFirstSourceEvenWhenAnOverlayIsUnderIt`, `AStillIsDecodedOnceAndLaidWithItsAlpha`, `AStillIsOpenedOnceAndAnAnimationLoopsWithTheDecoderThatKeepsItsAlpha`, `AnAnimationLoopsForAsLongAsTheLiveThroughTheDecoderItNeeds`, `AnOverlayIsNeverHeard`, `AnOverlayIsNeverSoughtIntoWhenTheLiveResumes`, `OnlyPicturesAndVideosWithAlphaJoinTheLibrary`, `TheLibraryShowsTheNameAFileWasAddedWith`, `ThePageReadsTheFormatTheCodecTheFramesAndTheAlphaOfAWebM`, `TheStillOfAnOverlayKeepsItsAlpha`, `TheStoredNameIsSafeOnAnyDiskAndInAnyUrl`, `WithADeviceOnTheCanvasAnAnimationIsReadAtItsOwnPace`.
+Metodi pubblici: `ACanvasOfFilesAndOverlaysIsPacedByTheRelayAlone`, `ACanvasStandsOnItsFirstSourceEvenWhenAnOverlayIsUnderIt`, `AStillIsDecodedOnceAndLaidWithItsAlpha`, `AStillIsOpenedOnceAndAnAnimationLoopsWithTheDecoderThatKeepsItsAlpha`, `AnAnimatedWebPFromFfmpeg9LoopsWithoutForcingTheStillDecoder`, `AnAnimationLoopsForAsLongAsTheLiveThroughTheDecoderItNeeds`, `AnOverlayIsNeverHeard`, `AnOverlayIsNeverSoughtIntoWhenTheLiveResumes`, `OnlyPicturesAndVideosWithAlphaJoinTheLibrary`, `TheLibraryShowsTheNameAFileWasAddedWith`, `ThePageReadsTheFormatTheCodecTheFramesAndTheAlphaOfAWebM`, `TheStillOfAnOverlayKeepsItsAlpha`, `TheStoredNameIsSafeOnAnyDiskAndInAnyUrl`, `WithADeviceOnTheCanvasAnAnimationIsReadAtItsOwnPace`.
 
-SHA-256: `8fa33d43f33da7a276d0bd151efb3c440ca34c9c93d71b5926cbf709534b5688`.
+SHA-256: `1c7299401d4e2d0f7b67fb18cf25d837b7024d5515ae0216fc8d0c6befac0e75`.
 
 ### `src/Orbis.Stream.Tests/OverlayLiveTests.cs`
 
@@ -1582,9 +1651,9 @@ Tipi: `StreamPlatformTests`, `HybridWaiterTests`, `FlvPacedRelayTests`, `TimedSt
 
 Proprietà: `Writes`, `StallOnWrite`, `Stall`.
 
-Metodi pubblici: `Detect_ReadsThePlatformOffTheHost`, `Direct_WithoutAProfileTheCommandIsTheOneOfBefore`, `For_GivesEveryPlatformItsProfile`, `KickIsDeliveredTheWayTwitchIsAndFacebookGamingTheWayYouTubeIs`, `LiveOutput_LowersTheLevelOneStepAtATimeDownToTheLightest`, `LowLatencySwitch_KeepsTheEncoderDefaultsOnlyWhenItIsOn`, `LowLatencySwitch_ReachesTheHardwareEncoderToo`, `NormalizeIngestUrl_LeavesAnUnreadableUrlAlone`, `NormalizeIngestUrl_PutsYouTubeOnTheTlsItOnlyTakesIngestOver`, `Relay_AStreamThatMustCarrySoundMapsItAsMandatory`, `Relay_CountsWhatItSentForTheBitrateLadder`, `Relay_EncoderWritesFlvOnItsOutputAndLeavesThePacingToTheRelay`, `Relay_FailsWhenTheSenderIsGone`, `Relay_ForwardsEveryByteUnchanged`, `Relay_KeepsTheConnectionOpenBetweenEncoders`, `Relay_LaysEncodersEndToEndOnOneConnection`, `Relay_RefusesAStreamThatIsNotFlv`, `Relay_SendsEveryTagWhenItsTimestampIsDue`, `Relay_SendsFasterThanRealTimeWhileItIsBehind`, `Relay_SendsThePrerollAtOnce`, `Relay_SplicesTwoEncodersIntoOneContinuousStream`, `Relay_StartsTheClockOnAFullJitterBuffer`, `Relay_StreamsACanvasOfTwoFilesInRealTime`, `Relay_StreamsAFileInRealTimeAndIsOnAir`, `Relay_WinsTheGapBackInsteadOfWritingItOff`, `Relay_YouTubeGetsASilentTrackWhenTheFileHasNoSound`, `Relay_YouTubeSilenceFollowsTheLastSourceOfACanvas`, `Sender_CopiesThePacedStreamToTheIngestWithATimeout`, `ThePlatformsAdaptTheirBitrateAtTheirOwnPaceAndBoundTheirKeyframes`, `WaitUntil_HonoursCancellation`, `WaitUntil_ReturnsAtOnceForATargetInThePast`, `WaitUntil_WakesOnTimeAndNotBefore`.
+Metodi pubblici: `Detect_ReadsThePlatformOffTheHost`, `Direct_WithoutAProfileTheCommandIsTheOneOfBefore`, `For_GivesEveryPlatformItsProfile`, `KickIsDeliveredTheWayTwitchIsAndFacebookGamingTheWayYouTubeIs`, `LiveOutput_LowersTheLevelOneStepAtATimeDownToTheLightest`, `LowLatencySwitch_KeepsTheEncoderDefaultsOnlyWhenItIsOn`, `LowLatencySwitch_ReachesTheHardwareEncoderToo`, `NormalizeIngestUrl_LeavesAnUnreadableUrlAlone`, `NormalizeIngestUrl_PutsYouTubeOnTheTlsItOnlyTakesIngestOver`, `NormalizeIngestUrl_UsesLiveProducerForLegacyFacebookConfigurations`, `Relay_AStreamThatMustCarrySoundMapsItAsMandatory`, `Relay_CountsWhatItSentForTheBitrateLadder`, `Relay_EncoderWritesFlvOnItsOutputAndLeavesThePacingToTheRelay`, `Relay_FailsWhenTheSenderIsGone`, `Relay_ForwardsEveryByteUnchanged`, `Relay_KeepsTheConnectionOpenBetweenEncoders`, `Relay_LaysEncodersEndToEndOnOneConnection`, `Relay_RefusesAStreamThatIsNotFlv`, `Relay_SendsEveryTagWhenItsTimestampIsDue`, `Relay_SendsFasterThanRealTimeWhileItIsBehind`, `Relay_SendsThePrerollAtOnce`, `Relay_SplicesTwoEncodersIntoOneContinuousStream`, `Relay_StartsTheClockOnAFullJitterBuffer`, `Relay_StreamsACanvasOfTwoFilesInRealTime`, `Relay_StreamsAFileInRealTimeAndIsOnAir`, `Relay_WinsTheGapBackInsteadOfWritingItOff`, `Relay_YouTubeGetsASilentTrackWhenTheFileHasNoSound`, `Relay_YouTubeSilenceFollowsTheLastSourceOfACanvas`, `Sender_CopiesThePacedStreamToTheIngestWithATimeout`, `ThePlatformsAdaptTheirBitrateAtTheirOwnPaceAndBoundTheirKeyframes`, `WaitUntil_HonoursCancellation`, `WaitUntil_ReturnsAtOnceForATargetInThePast`, `WaitUntil_WakesOnTimeAndNotBefore`.
 
-SHA-256: `569875b9a5478b82de23557299eeec5f8ab3adb647c71b73c63503350e1caf7a`.
+SHA-256: `1b85e0e6c1e1bbc7e1eaeefb6701c4648a7080bed587d2b8ee555ffb689c7848`.
 
 ### `src/Orbis.Stream.Tests/PlaylistTests.cs`
 
@@ -1592,15 +1661,15 @@ Tipi: `NaturalFileNameComparerTests`, `PlaylistTests`, `where`.
 
 Metodi pubblici: `ACanvasLastsAsLongAsItsLongestFile`, `DisposeAsync`, `EnqueueSpot_PausesCurrentVideo_PlaysSpot_AndResumesWhileRemainingLive`, `EnqueueSpot_StreamsSpotThroughAndResumesMainVideo`, `InitializeAsync`, `OrdersNumbersByValueAndIgnoresCase`, `StartPlaylist_RefusesAFileAndAMissingFolder`, `StartPlaylist_StreamsOnlyTheVideosInOrder_AndAStopHoldsForTheWholePlaylist`.
 
-SHA-256: `5467a36c30c2e01b86b1eb7e1521ed5abe4c51b332d1fbf4b1ab0743fc3b5e7c`.
+SHA-256: `0b796250ace8ccc1cabf5af3543088f6349ef2acbe03b69bc55b2ae107e5dcea`.
 
 ### `src/Orbis.Stream.Tests/RelayTransportTests.cs`
 
 Tipi: `RelayTransportTests`.
 
-Metodi pubblici: `ACustomIngestHasNoRelayWhateverTheChannelAsks`, `ATwitchSenderOnlyCopiesWhatTheRelayPaced`, `AYouTubeChannelWithTheSwitchOffGoesOutOnTheNativePublisherPacedByTheRelay`, `EveryLiveOnARelayHasTheBitrateLadderOfItsPlatform`, `FacebookGamingGoesOutThroughAnFfmpegSenderThatReadsAtRealTimeWithItsBurst`, `KickGoesOutOnTheNativePublisherPacedByTheRelayAndHasNoSwitch`, `OnlyYouTubeKeepsOneFormatForTheWholeConnection`, `TheYouTubeSenderReadsAtRealTimeWithThePrerollAsItsBurst`, `TwitchHasNoSwitch`, `TwitchKeepsTheRelayClockAndTheNativeRtmp`, `YouTubeGoesOutThroughAnFfmpegSenderThatKeepsTheTime`.
+Metodi pubblici: `ACustomIngestHasNoRelayWhateverTheChannelAsks`, `ATwitchSenderOnlyCopiesWhatTheRelayPaced`, `AYouTubeChannelWithTheSwitchOffGoesOutOnTheNativePublisherPacedByTheRelay`, `EveryLiveOnARelayHasTheBitrateLadderOfItsPlatform`, `FacebookGamingGoesOutThroughAnFfmpegSenderThatReadsAtRealTimeWithItsBurst`, `FacebookKeepsTheWholeKeyOutOfTheApplicationName`, `KickGoesOutOnTheNativePublisherPacedByTheRelayAndHasNoSwitch`, `OnlyYouTubeKeepsOneFormatForTheWholeConnection`, `TheYouTubeSenderReadsAtRealTimeWithThePrerollAsItsBurst`, `TwitchHasNoSwitch`, `TwitchKeepsTheRelayClockAndTheNativeRtmp`, `YouTubeGoesOutThroughAnFfmpegSenderThatKeepsTheTime`.
 
-SHA-256: `4e75505f43b6847719f7bd868731f01fb6abb3eff669a7b6d3c6bad8b33a263a`.
+SHA-256: `962903d6f9c9ba9ce81a6b927816881c70e2e0d21de6248c2aaad6956a06de9f`.
 
 ### `src/Orbis.Stream.Tests/RtmpPublisherTests.cs`
 
@@ -1608,7 +1677,7 @@ Tipi: `Amf0Tests`, `RtmpPublisherUrlTests`, `RtmpPublisherFfmpegTests`, `OutputL
 
 Metodi pubblici: `Amf0_ReadsBackWhatItWrites`, `Amf0_StopsAtWhatItCannotReadInsteadOfFailing`, `IsEnabled`, `Native_PublishesThePacedStreamToAnRtmpServer`, `Publisher_FailsWithinItsTimeoutWhenNobodyAnswers`, `Publisher_RefusesAUrlThatIsNotAnIngestWithAKey`.
 
-SHA-256: `6b71de7a226108e980a65678bc8a1409dd8b2f7bae84b7dc165888854a9fbf6a`.
+SHA-256: `ed48799d08938e257cd91b3bc1b6304405a9c1e7a52a10e2c476f19678aa02de`.
 
 ### `src/Orbis.Stream.Tests/RuntimeOptionsTests.cs`
 
@@ -1642,7 +1711,7 @@ Tipi: `SceneLiveTests`.
 
 Metodi pubblici: `DisposeAsync`, `InitializeAsync`, `SceneLive_EnqueueSpot_StreamsSpotThroughAndResumesScene`, `SceneLive_IsOneRow_ShowsItsLightPreview_AndStopsFromItsRow`, `SceneLive_OfOneSource_LeavesTheConfigurationOfTheUserAlone`, `SceneLive_StopAndReplay_ResumesFromLastTimeStamp`, `SceneLive_StoppedFromAnyOfItsRows_StopsTheWholeComposition`, `SceneLive_TurnsLowLatencyOn_ForTheSettingOfTheRowsAndNotForTheOneTheUserChose`.
 
-SHA-256: `56164d6c04adee0a0fb9a44d6ee3abe043830d4470ba8cbb69ba87f6916cda89`.
+SHA-256: `00afc1d9cc8de1c2686ea0979fc3dab5e64e621e9b867af75605ddd0618f5e26`.
 
 ### `src/Orbis.Stream.Tests/SceneSwitchLiveTests.cs`
 
@@ -1651,6 +1720,22 @@ Tipi: `needs`, `SceneSwitchLiveTests`.
 Metodi pubblici: `A_canvas_hands_over_to_a_picture_and_comes_back`, `A_picture_stands_in_until_it_is_resumed_and_a_clip_goes_back_by_itself`, `DisposeAsync`, `InitializeAsync`.
 
 SHA-256: `c7a22cf6f60e61e7d73d69918470e9e32004d2c3b2f38aa2cab21a66c2bf47dd`.
+
+### `src/Orbis.Stream.Tests/SharedPublisherStateTests.cs`
+
+Tipi: `SharedPublisherStateTests`.
+
+Metodi pubblici: `BufferedFramesDoNotMakeABlockedPublishLive`, `PreviewTracksTheSenderUntilItExits`.
+
+SHA-256: `30495b970bec9a3be58def75db72032c442c5edc17fa02cb332377f16f27d322`.
+
+### `src/Orbis.Stream.Tests/StreamingPlatformPageTests.cs`
+
+Tipi: `StreamingPlatformPageTests`.
+
+Metodi pubblici: `Presets_of_a_retired_platform_are_hidden_and_cannot_prefill_the_editor`, `The_channel_settings_show_the_personal_ingest_help`, `The_wizard_lays_the_settings_out_in_columns_with_the_mark_of_their_platform`.
+
+SHA-256: `7bd551f0465885be511afa7c3af64e856cfe3c467c3f4d9a87b9e7cbe7ee425f`.
 
 ### `src/Orbis.Stream.Tests/StyleSheetTests.cs`
 
@@ -1674,7 +1759,7 @@ Tipi: `TikTokDeliveryTests`, `TikTokKeyTests`.
 
 Metodi pubblici: `ALandscapeCanvasOnTikTokIsFittedIntoTheUprightFrame`, `ALandscapeFileOnTikTokIsFittedIntoTheUprightFrameAndPreviewedUpright`, `A_configuration_of_TikTok_keeps_no_key`, `A_live_never_goes_out_with_the_stand_in`, `A_live_to_TikTok_started_again_goes_out_with_the_key_of_the_new_live`, `AnUprightCanvasGoesOutAsItIs`, `TheFirstVideoOfATikTokLiveFixesAPictureThatStandsUp`, `The_channel_page_saves_a_TikTok_configuration_without_a_key_and_never_shows_the_stand_in`, `The_key_of_a_live_to_TikTok_is_the_one_typed_for_it`, `The_wizard_asks_for_the_key_of_a_live_to_TikTok_only`, `TikTokGoesOutThroughAnFfmpegSenderThatReadsAtRealTimeWithItsBurst`, `TikTokIsDeliveredTheWayYouTubeIsStandingUp`, `TikTokStandsThePictureUp`.
 
-SHA-256: `217af0fe3a905e3b7e0f6ea0337e645d15fa7a6bb5507ab7077919568a960f22`.
+SHA-256: `0ff2bc64666d6023462849e8ecaaea64749940561acafb78a9c7c476145b78e0`.
 
 ### `src/Orbis.Stream.Tests/UiTextTests.cs`
 
@@ -1684,6 +1769,14 @@ Metodi pubblici: `EveryBundleDefinesTheSameKeysInTheSameOrderAsEnglish`, `EveryB
 
 SHA-256: `0aa7ebc96b8071c9d9b6c343972837692eae16bb9ed675449357de1faa9994bb`.
 
+### `src/Orbis.Stream.Tests/WebpOverlayInputsTests.cs`
+
+Tipi: `WebpOverlayInputsTests`.
+
+Metodi pubblici: `FiniteAnimationsGetOneOwnedCopyWithOnlyTheirRepeatCountChanged`, `InfiniteAnimationsNeedNoCopyAndMalformedInputsAreRefused`.
+
+SHA-256: `943d47c9b9f86977a97e04534b46bf8397f521e40eee2c0020977cb7caabe12f`.
+
 ### `src/Orbis.Stream.Tests/YouTubeAirWatchTests.cs`
 
 Tipi: `YouTubeAirWatchTests`.
@@ -1691,4 +1784,20 @@ Tipi: `YouTubeAirWatchTests`.
 Metodi pubblici: `AChannelYouTubeKeepsFailingToAnswerForIsSaidToBeUnverified`, `ALiveFoundAgainForgetsTheEndingsCounted`, `ALiveFoundOnAirClearsTheFlagAndStartsCountingAgain`, `ALiveIsFlaggedOnlyAfterEnoughAnswersInARowSayItIsNotOnAir`, `ALiveIsForgottenOnlyAfterSomePassesWithNothingRunning`, `ALiveIsStoppedOnlyAfterEnoughAnswersInARowSayTheBroadcastEnded`, `APlatformThatCouldNotBeAskedLeavesTheMissesAsTheyWere`, `AnAnswerThatIsNotAnEndStartsTheCountAgain`, `ThePageOfAVideoSaysEndedOnlyWhenItIsALiveThatIsNoLongerLive`, `TheVideoOnAirIsRememberedAndFollowsABroadcastYouTubeReplaced`, `TheWaitRunsOnceForTheWholeLiveNotForEveryVideoOfIt`, `TheWarningStaysUntilTheUserClosesItAndComesBackOnlyAfterTheLiveWasFound`.
 
 SHA-256: `06ab0e3ae7d39159e3497fc2550477c288d24f02b06d706e0265f6eaddd71b64`.
+
+### `src/Orbis.Stream.Tests/YouTubeDeliveryTests.cs`
+
+Tipi: `YouTubeDeliveryTests`, `OutputLogger`.
+
+Metodi pubblici: `IsEnabled`, `YouTubeSenderPublishesDecodableAudioAndVideoAcrossEncoderChanges`.
+
+SHA-256: `fbf0df0191d0ce5a594131a78c69a3bcc4c40e0a9c7553d05f67d61d504625e8`.
+
+### `src/Orbis.Stream.Tests/YouTubeProbeTests.cs`
+
+Tipi: `YouTubeProbeTests`.
+
+Metodi pubblici: `TheSenderRecognizes48KhzAacAfterALargeInitialVideoKeyframe`.
+
+SHA-256: `e8bffd72b0edd6999df764d0cbad36aa2c3ba5ce1851862de6801311c374192f`.
 

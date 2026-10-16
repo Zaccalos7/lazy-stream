@@ -1,4 +1,4 @@
-# Interfaccia Linux nativa — 0.0.10
+# Interfaccia Linux nativa — 0.0.11
 
 ## Architettura
 
@@ -37,7 +37,7 @@ Il compositore riprende da `_SceneComposer.cshtml` la separazione tra sorgenti/s
 
 L'anteprima contiene il mixer in percentuale (0–200%, reset a 100%) e modifica i parametri dell'encoder senza cambiare l'identità della live. Il GOP resta di sola lettura. Il layout dell'anteprima si dispone in verticale sulle finestre strette. La selezione dei layout avviene nel composer; gli overlay caricati entrano nella libreria e si aggiungono al canvas selezionandoli. Indietro dal composer riporta alle scelte di avvio, conservandole; Chiudi annulla. Lo storico espande i video della playlist nelle otto colonne Windows, conserva insieme canale/stato/titolo, pagina a 20 righe e mostra il progresso della pulizia.
 
-Le prove native trasmettono a un server RTMP locale e verificano aggiornamenti reali di volume e bitrate audio, oltre a filtri e pulizia dello storico. L'anteprima locale usa i fotogrammi FFmpeg; il player Twitch/YouTube è incorporato con Qt WebEngine; resta disponibile il collegamento pubblico. Il catalogo delle liste codec Windows è importato in `web/resources/codec-catalog.json`, rigenerabile con `scripts/sync-codec-catalog.py`. Le opzioni native selezionabili restano limitate ai formati supportati dal motore Linux (H.264, yuv420p, AAC); le altre sono visibili e disabilitate.
+Le prove native trasmettono a un server RTMP locale e verificano aggiornamenti reali di volume e bitrate audio, oltre a filtri e pulizia dello storico. L'anteprima locale usa i fotogrammi FFmpeg; il player Twitch/YouTube è incorporato con Qt WebEngine; resta disponibile il collegamento pubblico. Il catalogo delle liste codec Windows è importato in `web/resources/codec-catalog.json`, rigenerabile con `scripts/sync-codec-catalog.py`. I cataloghi sono selezionabili; encoder e formati pixel sono risolti mediante FFmpeg 9.0.2 e le opzioni sono verificate contro gli AVOption dell’encoder. NVENC, QSV e VAAPI richiedono driver e hardware; le live RTMP vengono trasportate in FLV.
 
 ## Differenze ancora da trasferire o verificare
 
@@ -54,3 +54,5 @@ I vecchi HTML/CSS restano nel repository e nel servizio headless come riferiment
 Il contratto delle pagine è descritto in [PARITA_PAGINE.md](PARITA_PAGINE.md). Canali e profili usano schede con azioni e toggle; Impostazioni apre le stesse due sezioni Windows. Storico apre il messaggio completo e il rapporto QR; il progresso della pulizia è separato dalla tabella. Anteprima mantiene player, identità, posizione/durata, pulsanti scena, mixer e parametri in colonne equivalenti. Il player remoto usa `QWebEngineView`, con origine localhost e parametri embed Windows, senza trasformare l’app in un frontend HTML. Il manuale mostra tutti i capitoli e mantiene l’indice di navigazione.
 
 Per le dipendenze di build di Qt WebEngine vedere README e `scripts/prepare-webengine.py`. I servizi pubblici richiedono comunque una verifica con un account in onda; i test locali provano il componente incorporato e le transizioni del player, senza pubblicare su account esterni.
+
+La GUI riceve le modifiche tramite `ChangeNotifier`, con aggiornamento Qt accodato nel thread grafico. Il compositore usa `CompositionPreview` per generare fotogrammi reali senza encoder H.264 né audio in ascolto; i job vengono cancellati quando il dialogo viene chiuso. Le richieste del player pubblico e il monitoraggio YouTube sono interrompibili alla chiusura.
