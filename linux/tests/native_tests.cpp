@@ -32,6 +32,15 @@
 
 using namespace orbis;
 
+static void deactivateSeedProfiles(Studio& studio) {
+    const auto profiles = studio.store.list("profiles");
+    for (size_t i = 0; i < profiles.size(); ++i) {
+        auto profile = profiles.at(i).clone();
+        profile.set("isActive", false);
+        studio.store.save("profiles", profile, profile.get("id").num());
+    }
+}
+
 // I test attraversano widget, cambi lingua e dialoghi reali, senza il server HTTP.
 class NativeTests : public QObject {
     Q_OBJECT
@@ -303,7 +312,7 @@ class NativeTests : public QObject {
         profile.set("videoCodec", 27.);
         profile.set("audioCodec", 86018.);
         profile.set("videoCodecName", "libx264");
-        studio.store.save("profiles", profile);
+        const long customId = studio.store.save("profiles", profile);
         NativeWindow window(studio, ORBIS_TEST_RESOURCES);
         window.setLanguage("en");
         window.show();
@@ -311,8 +320,15 @@ class NativeTests : public QObject {
         QCOMPARE(window.findChildren<QPushButton*>("videoAndAudio").size(), 1);
         QCOMPARE(window.findChildren<QPushButton*>("channelSettings").size(), 1);
         window.navigate("profiles");
+        auto customCard = [&]() -> QFrame* {
+            for (auto card : window.findChildren<QFrame*>("configurationRow"))
+                if (card->property("recordId").toLongLong() == customId)
+                    return card;
+            return nullptr;
+        };
+        QVERIFY(customCard());
         auto original = studio.store.list("profiles").size();
-        auto duplicate = window.findChild<QToolButton*>("duplicateConfiguration");
+        auto duplicate = customCard()->findChild<QToolButton*>("duplicateConfiguration");
         QVERIFY(duplicate);
         duplicate->click();
         QCOMPARE(studio.store.list("profiles").size(), original + 1);
@@ -333,7 +349,7 @@ class NativeTests : public QObject {
                 QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-profile-editor"));
             dialog->reject();
         });
-        window.findChild<QToolButton*>("editConfiguration")->click();
+        customCard()->findChild<QToolButton*>("editConfiguration")->click();
         window.navigate("manual");
         auto text = window.findChild<QTextBrowser*>("manualText");
         auto contents = window.findChild<QListWidget*>("manualContents");
@@ -604,6 +620,7 @@ class NativeTests : public QObject {
     void sceneWizardNavigation() {
         QTemporaryDir directory;
         Studio studio(directory.path().toStdString());
+        deactivateSeedProfiles(studio);
         const QStringList platforms = {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"};
         for (int i = 0; i < 11; ++i) {
             Json profile;
@@ -709,6 +726,7 @@ class NativeTests : public QObject {
         QFETCH(bool, sceneLive);
         QTemporaryDir directory;
         Studio studio(directory.path().toStdString());
+        deactivateSeedProfiles(studio);
         auto root = fs::path(directory.path().toStdString());
         auto video = root / "sample.mp4";
         capture({"ffmpeg",      "-v",        "error", "-y",

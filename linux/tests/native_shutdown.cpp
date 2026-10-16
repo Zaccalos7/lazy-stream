@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
     files.push(orbis::Json::string(video.string()));
     request.set("files", files);
     request.set("outputFile", (studio.store.root / "output.flv").string());
+    if (argc > 1)
+        request.set("transport", argv[1]);
     auto id = studio.start(request);
     long producer = 0, publisher = 0;
     int result = 1;
@@ -45,7 +47,8 @@ int main(int argc, char** argv) {
             }
             producer = state.get("producerPid").num();
             publisher = state.get("publisherPid").num();
-            if (producer <= 0 || publisher <= 0 || state.get("outputKbps").num() <= 0)
+            const bool native = state.get("delivery").get("transport").str() == "native-libavformat";
+            if (producer <= 0 || (!native && publisher <= 0) || state.get("outputKbps").num() <= 0)
                 return;
             closeTimer.stop();
             QTimer::singleShot(0, &window, [] {
@@ -58,7 +61,7 @@ int main(int argc, char** argv) {
         QTimer::singleShot(15000, &window, [&] { app.exit(2); });
         result = app.exec();
     }
-    auto gone = [](long pid) { return pid > 0 && kill(pid, 0) == -1 && errno == ESRCH; };
+    auto gone = [](long pid) { return pid <= 0 || (kill(pid, 0) == -1 && errno == ESRCH); };
     if (result || !studio.session(id)->done() || !gone(producer) || !gone(publisher)) {
         std::cerr << "Main window close left the event loop or streaming children running: "
                   << result << " " << studio.session(id)->snapshot().dump() << '\n';

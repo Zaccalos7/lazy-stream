@@ -152,7 +152,7 @@ int main() {
         relay.segment();
         out = relay.feed(v.data(), v.size(), false);
         expect(out.size() == v.size() - 13, "single header");
-        expect(relay.timestamp() == 1, "continuous FLV");
+        expect(relay.timestamp() == 33, "continuous FLV frame interval");
         auto dir = fs::temp_directory_path() / ("orbis-core-" + std::to_string(getpid()));
         fs::create_directories(dir);
         {

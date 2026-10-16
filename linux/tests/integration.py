@@ -32,7 +32,18 @@ def main():
         resources = binary.parent.parent/'share/orbis-stream/web'
         if not resources.is_dir():
             resources = pathlib.Path(__file__).resolve().parent.parent/'web'
-        proc = subprocess.Popen([str(running_binary), '--no-browser', '--data-dir', str(root/'data'), '--port', str(port), '--web-root', str(resources)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        environment = dict(os.environ)
+        # This test removes a copied executable inode. Preserve the SDK/runtime belonging to the
+        # original executable, including when exercising an extracted release package.
+        for sdk in [binary.parent.parent/'libexec/orbis-stream/ffmpeg', binary.parent/'ffmpeg-9.0.2/bin']:
+            if (sdk/'ffmpeg').is_file():
+                environment['FFMPEG_PATH'] = str(sdk/'ffmpeg')
+                environment['FFPROBE_PATH'] = str(sdk/'ffprobe')
+                break
+        library = binary.parent.parent/'lib/orbis-stream/ffmpeg'
+        if library.is_dir():
+            environment['LD_LIBRARY_PATH'] = str(library)+':'+environment.get('LD_LIBRARY_PATH','')
+        proc = subprocess.Popen([str(running_binary), '--no-browser', '--data-dir', str(root/'data'), '--port', str(port), '--web-root', str(resources)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=environment)
         try:
             url = ''
             for _ in range(3):
@@ -76,8 +87,22 @@ def main():
             for page_name in ['MainLive','_LiveRows','_StartWizardSetting','_StartWizardConfiguration']:
                 with urllib.request.urlopen(urllib.request.Request(base+f'/pages/{page_name}.html',headers={'Authorization':'Bearer '+token}),timeout=5) as r:
                     assert f'Pages/{page_name}.cshtml'.encode() in r.read(), 'installed live wizard resource: '+page_name
+            defaults = api('profiles')
+            assert len(defaults) == 10 and all(p['isActive'] for p in defaults), defaults
+            for default in defaults:
+                api('profiles/'+str(default['id']), 'PUT', {**default, 'isActive':False})
             p = {'title':'Test','videoWidth':320,'videoHeight':180,'frameRate':25,'videoBitrate':500,'audioBitrate':64,'gopSize':1,'preset':'ultrafast','lowLatency':True}
-            profile=api('profiles','POST',p)['id']
+            with urllib.request.urlopen(urllib.request.Request(base+'/updates?watch=rows', headers={'Authorization':'Bearer '+token}), timeout=3) as updates:
+                assert updates.headers['Content-Type']=='text/event-stream'
+                def next_change():
+                    for _ in range(20):
+                        line=updates.readline().decode().strip()
+                        if line.startswith('data: '): return int(line[6:])
+                    raise AssertionError('No change notification')
+                before=next_change()
+                profile=api('profiles','POST',p)['id']
+                assert next_change()>before, 'SSE did not wake on the saved profile'
+
             clip=root/'clip.mp4'
             subprocess.run(['ffmpeg','-v','error','-y','-f','lavfi','-i','testsrc2=size=320x180:rate=25','-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','2','-c:v','libx264','-preset','ultrafast','-c:a','aac',str(clip)],check=True,timeout=20)
             # CheckSlots/CheckLayout devono valere anche per richieste HTTP senza editor.
@@ -206,7 +231,11 @@ def main():
             # Mixed mute, takeover and resume go through the persistent publisher.
             output2=root/'switch.flv'
             live2=api('live/start','POST',{'files':[str(clip)],'profileId':profile,'loop':True,'outputFile':str(output2)})['id']
-            time.sleep(.6)
+            for _ in range(160):
+                switched=next(s for s in api('live') if s['id']==live2)
+                if switched['status'] in ('LIVE','ERROR'): break
+                time.sleep(.05)
+            assert switched['status']=='LIVE', switched
             api(f'live/{live2}/volume','POST',{'index':0,'volume':30,'audioEnabled':True})
             api(f'live/{live2}/takeover','POST',{'scene':{'name':'Takeover','items':[{'sourceKind':'FILE','sourceTarget':str(clip),'audioEnabled':True}]},'durationSeconds':1})
             time.sleep(1.3)
