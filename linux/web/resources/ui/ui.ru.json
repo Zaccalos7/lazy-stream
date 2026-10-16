@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "Показать сообщение полностью",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "После запуска трансляции в Orbis откройте Facebook Live Producer и нажмите «В прямой эфир», чтобы начать эфир.",
   "success": "Успешно",
   "ffmpegProcessesDetails": "Сведения о процессах FFmpeg",
   "noActiveFfmpegProcess": "Нет активного процесса FFmpeg.",
@@ -106,6 +115,8 @@
   "data": "Дата",
   "outcome": "Результат",
   "liveStatusLive": "В эфире",
+  "liveStatusConnecting": "Подключение",
+  "liveStatusReconnecting": "Переподключение",
   "liveStatusOffline": "Офлайн",
   "liveStatusEnded": "Завершен",
   "liveStatusError": "Ошибка",
@@ -437,7 +448,5 @@
   "manualIntro": "Всё, что умеет Orbis Stream, — по странице на функцию: изображение приложения и стрелка на кнопке, которую нужно нажать. Руководство можно скачать в PDF, чтобы сохранить или распечатать.",
   "manualDownloadPdf": "Скачать PDF",
   "manualPrint": "Печать",
-  "manualToc": "В этом руководстве",
-  "liveStatusConnecting": "Подключение",
-  "liveStatusReconnecting": "Переподключение"
+  "manualToc": "В этом руководстве"
 }

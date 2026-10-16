@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "Se hele meddelelsen",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "Når streamen er startet i Orbis, skal du åbne Facebook Live Producer og trykke på “Gå live” for at aktivere udsendelsen.",
   "success": "Gennemført",
   "ffmpegProcessesDetails": "Detaljer om FFmpeg-processer",
   "noActiveFfmpegProcess": "Ingen aktiv FFmpeg-proces.",
@@ -106,6 +115,8 @@
   "data": "Dato",
   "outcome": "Resultat",
   "liveStatusLive": "Live",
+  "liveStatusConnecting": "Forbinder",
+  "liveStatusReconnecting": "Genopretter forbindelse",
   "liveStatusOffline": "Offline",
   "liveStatusEnded": "Afsluttet",
   "liveStatusError": "Fejl",
@@ -437,7 +448,5 @@
   "manualIntro": "Alt, hvad Orbis Stream kan, en side pr. funktion: et billede af appen og en pil på den knap, du skal trykke på. Du kan downloade manualen som PDF for at gemme eller printe den.",
   "manualDownloadPdf": "Download PDF",
   "manualPrint": "Print",
-  "manualToc": "I denne manual",
-  "liveStatusConnecting": "Forbinder",
-  "liveStatusReconnecting": "Genopretter forbindelse"
+  "manualToc": "I denne manual"
 }

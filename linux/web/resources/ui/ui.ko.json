@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "전체 메시지 보기",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "Orbis에서 스트리밍을 시작한 후 Facebook Live Producer를 열고 “라이브 방송 시작”을 눌러 방송을 활성화하세요.",
   "success": "성공",
   "ffmpegProcessesDetails": "FFmpeg 프로세스 상세 정보",
   "noActiveFfmpegProcess": "활성화된 FFmpeg 프로세스가 없습니다.",
@@ -106,6 +115,8 @@
   "data": "날짜",
   "outcome": "결과",
   "liveStatusLive": "방송 중",
+  "liveStatusConnecting": "연결 중",
+  "liveStatusReconnecting": "재연결 중",
   "liveStatusOffline": "오프라인",
   "liveStatusEnded": "종료됨",
   "liveStatusError": "오류",
@@ -437,7 +448,5 @@
   "manualIntro": "Orbis Stream이 할 수 있는 모든 것, 기능마다 한 페이지: 앱 화면과 눌러야 할 버튼을 가리키는 화살표. 이 설명서를 PDF로 내려받아 보관하거나 인쇄할 수 있습니다.",
   "manualDownloadPdf": "PDF 내려받기",
   "manualPrint": "인쇄",
-  "manualToc": "이 설명서에서",
-  "liveStatusConnecting": "연결 중",
-  "liveStatusReconnecting": "재연결 중"
+  "manualToc": "이 설명서에서"
 }

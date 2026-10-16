@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "查看完整消息",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "在 Orbis 中启动推流后，打开 Facebook Live Producer 并点击“开始直播”以启用直播。",
   "success": "成功",
   "ffmpegProcessesDetails": "FFmpeg 进程详情",
   "noActiveFfmpegProcess": "没有活动的 FFmpeg 进程。",
@@ -106,6 +115,8 @@
   "data": "日期",
   "outcome": "结果",
   "liveStatusLive": "直播中",
+  "liveStatusConnecting": "连接中",
+  "liveStatusReconnecting": "重新连接中",
   "liveStatusOffline": "离线",
   "liveStatusEnded": "已结束",
   "liveStatusError": "错误",
@@ -437,7 +448,5 @@
   "manualIntro": "Orbis Stream 能做的所有事情，每项功能一页：一张应用截图，以及指向要按的按钮的箭头。你可以把手册下载为 PDF，方便保存或打印。",
   "manualDownloadPdf": "下载 PDF",
   "manualPrint": "打印",
-  "manualToc": "本手册内容",
-  "liveStatusConnecting": "连接中",
-  "liveStatusReconnecting": "重新连接中"
+  "manualToc": "本手册内容"
 }

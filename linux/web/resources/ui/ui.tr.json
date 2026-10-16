@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "Mesajın tamamını görüntüle",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "Orbis’te yayını başlattıktan sonra Facebook Live Producer’ı açın ve canlı yayını etkinleştirmek için “Canlı yayına geç” düğmesine basın.",
   "success": "Başarılı",
   "ffmpegProcessesDetails": "FFmpeg süreç ayrıntıları",
   "noActiveFfmpegProcess": "Etkin FFmpeg süreci yok.",
@@ -106,6 +115,8 @@
   "data": "Tarih",
   "outcome": "Sonuç",
   "liveStatusLive": "Yayında",
+  "liveStatusConnecting": "Bağlanıyor",
+  "liveStatusReconnecting": "Yeniden bağlanıyor",
   "liveStatusOffline": "Çevrimdışı",
   "liveStatusEnded": "Sona Erdi",
   "liveStatusError": "Hata",
@@ -437,7 +448,5 @@
   "manualIntro": "Orbis Stream'in yapabildiği her şey, her özellik için bir sayfa: uygulamanın bir görüntüsü ve basılacak düğmeyi gösteren bir ok. Bu kılavuzu PDF olarak indirip saklayabilir ya da yazdırabilirsiniz.",
   "manualDownloadPdf": "PDF indir",
   "manualPrint": "Yazdır",
-  "manualToc": "Bu kılavuzda",
-  "liveStatusConnecting": "Bağlanıyor",
-  "liveStatusReconnecting": "Yeniden bağlanıyor"
+  "manualToc": "Bu kılavuzda"
 }

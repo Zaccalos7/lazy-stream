@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "عرض الرسالة كاملة",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "بعد بدء البث في Orbis، افتح Facebook Live Producer واضغط على «بدء البث المباشر» لتفعيل البث.",
   "success": "نجاح",
   "ffmpegProcessesDetails": "تفاصيل عمليات FFmpeg",
   "noActiveFfmpegProcess": "لا توجد عملية FFmpeg نشطة.",
@@ -106,6 +115,8 @@
   "data": "التاريخ",
   "outcome": "النتيجة",
   "liveStatusLive": "مباشر",
+  "liveStatusConnecting": "جارٍ الاتصال",
+  "liveStatusReconnecting": "جارٍ إعادة الاتصال",
   "liveStatusOffline": "غير متصل",
   "liveStatusEnded": "انتهى",
   "liveStatusError": "خطأ",
@@ -437,7 +448,5 @@
   "manualIntro": "كل ما يمكن أن يفعله Orbis Stream، صفحة لكل ميزة: صورة للتطبيق وسهم على الزر الذي يجب الضغط عليه. يمكنك تنزيل هذا الدليل بصيغة PDF لحفظه أو طباعته.",
   "manualDownloadPdf": "تنزيل PDF",
   "manualPrint": "طباعة",
-  "manualToc": "في هذا الدليل",
-  "liveStatusConnecting": "جارٍ الاتصال",
-  "liveStatusReconnecting": "جارٍ إعادة الاتصال"
+  "manualToc": "في هذا الدليل"
 }

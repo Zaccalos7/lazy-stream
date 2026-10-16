@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "Vedi il messaggio completo",
+  "reportError": "Segnala errore",
+  "reportHelp": "Fai uno screenshot o una foto del QR code e apri una issue su GitHub. Se il problema dipende dal software, cercheremo di risolverlo.",
+  "reportMultiple": "Se ci sono più QR code, fotografa tutte le pagine per includere l’errore completo.",
+  "reportOpenIssue": "Apri una issue su GitHub",
+  "reportText": "Testo della segnalazione",
+  "reportQrAlt": "QR code contenente la segnalazione dell’errore",
+  "reportLoadFailed": "Impossibile caricare la segnalazione. Chiudi questa finestra e riprova.",
+  "facebookGoLiveHelp": "Dopo aver avviato lo streaming in Orbis, apri Facebook Live Producer e premi «Trasmetti» per attivare la diretta.",
   "success": "Successo",
   "ffmpegProcessesDetails": "Dettaglio processi FFmpeg",
   "noActiveFfmpegProcess": "Nessun processo FFmpeg attivo.",
@@ -106,6 +115,8 @@
   "data": "Data",
   "outcome": "Esito",
   "liveStatusLive": "In diretta",
+  "liveStatusConnecting": "Connessione",
+  "liveStatusReconnecting": "Riconnessione",
   "liveStatusOffline": "Non in diretta",
   "liveStatusEnded": "Terminata",
   "liveStatusError": "In errore",
@@ -249,7 +260,7 @@
   "slotsHint": "Una sagoma è un rettangolo vuoto: alla partenza della live ci trascinerai dentro uno schermo, una webcam o un video.",
   "addSlot": "Aggiungi sagoma",
   "overlays": "Overlay e immagini",
-  "overlaysHint": "PNG, GIF, WebP o WebM con trasparenza: le parti trasparenti lasciano vedere le sagome sotto. Trascinali qui per la libreria o direttamente sul canvas.",
+  "overlaysHint": "PNG, GIF, WebP statici o animati, o WebM con trasparenza: le parti trasparenti lasciano vedere le sagome sotto. Trascinali qui per la libreria o direttamente sul canvas.",
   "overlaysEmpty": "La libreria è vuota: carica il primo overlay.",
   "overlaysFailed": "Impossibile leggere la libreria degli overlay.",
   "overlayUploading": "Caricamento…",
@@ -437,7 +448,5 @@
   "manualIntro": "Tutto quello che Orbis Stream sa fare, una pagina per funzione: un'immagine dell'app e una freccia sul pulsante da premere. Puoi scaricare questo manuale in PDF, per conservarlo o stamparlo.",
   "manualDownloadPdf": "Scarica PDF",
   "manualPrint": "Stampa",
-  "manualToc": "In questo manuale",
-  "liveStatusConnecting": "Connessione",
-  "liveStatusReconnecting": "Riconnessione"
+  "manualToc": "In questo manuale"
 }

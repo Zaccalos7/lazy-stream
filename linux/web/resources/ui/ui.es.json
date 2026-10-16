@@ -1,4 +1,13 @@
 {
+  "viewFullMessage": "Ver el mensaje completo",
+  "reportError": "Report error",
+  "reportHelp": "Take a screenshot or a photo of the QR code and open an issue on GitHub. If the problem is caused by the software, we will try to fix it.",
+  "reportMultiple": "If there are several QR codes, capture every page so the complete error is included.",
+  "reportOpenIssue": "Open an issue on GitHub",
+  "reportText": "Error report text",
+  "reportQrAlt": "QR code containing the error report",
+  "reportLoadFailed": "The error report could not be loaded. Close this window and try again.",
+  "facebookGoLiveHelp": "Después de iniciar la transmisión en Orbis, abre Facebook Live Producer y pulsa «Transmitir» para activar el directo.",
   "success": "Éxito",
   "ffmpegProcessesDetails": "Detalles del proceso FFmpeg",
   "noActiveFfmpegProcess": "No hay procesos FFmpeg activos.",
@@ -106,6 +115,8 @@
   "data": "Fecha",
   "outcome": "Resultado",
   "liveStatusLive": "En vivo",
+  "liveStatusConnecting": "Conectando",
+  "liveStatusReconnecting": "Reconectando",
   "liveStatusOffline": "Desconectado",
   "liveStatusEnded": "Finalizado",
   "liveStatusError": "Error",
@@ -437,7 +448,5 @@
   "manualIntro": "Todo lo que Orbis Stream puede hacer, una página por función: una imagen de la aplicación y una flecha sobre el botón que hay que pulsar. Puedes descargar este manual en PDF, para guardarlo o imprimirlo.",
   "manualDownloadPdf": "Descargar PDF",
   "manualPrint": "Imprimir",
-  "manualToc": "En este manual",
-  "liveStatusConnecting": "Conectando",
-  "liveStatusReconnecting": "Reconectando"
+  "manualToc": "En este manual"
 }
