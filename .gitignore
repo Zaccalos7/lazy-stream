@@ -73,3 +73,5 @@ dist/
 linux/build*/
 linux/.cache/
 linux/node_modules/
+
+linux/**/__pycache__/

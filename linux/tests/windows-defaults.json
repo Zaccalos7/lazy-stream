@@ -1,0 +1,98 @@
+[
+  {
+    "platform": "Twitch",
+    "isDefaultConfiguration": true,
+    "videoBitrate": 6000,
+    "audioBitrate": 160,
+    "videoWidth": null,
+    "videoHeight": null,
+    "frameRate": null,
+    "preset": "veryfast",
+    "profile": "high",
+    "x264-params": "rc_lookahead=20"
+  },
+  {
+    "platform": "Twitch",
+    "isDefaultConfiguration": false,
+    "videoBitrate": 3000,
+    "audioBitrate": 96,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "frameRate": 30.0,
+    "preset": "ultrafast",
+    "profile": "main",
+    "x264-params": "scenecut=0:rc_lookahead=0"
+  },
+  {
+    "platform": "YouTube",
+    "isDefaultConfiguration": true,
+    "videoBitrate": 6000,
+    "audioBitrate": 128,
+    "videoWidth": 1920,
+    "videoHeight": 1080,
+    "frameRate": 30.0,
+    "preset": "veryfast",
+    "profile": "high",
+    "x264-params": null
+  },
+  {
+    "platform": "YouTube",
+    "isDefaultConfiguration": false,
+    "videoBitrate": 3000,
+    "audioBitrate": 128,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "frameRate": 30.0,
+    "preset": "superfast",
+    "profile": "main",
+    "x264-params": "scenecut=0:rc_lookahead=0"
+  },
+  {
+    "platform": "Kick",
+    "isDefaultConfiguration": true,
+    "videoBitrate": 6000,
+    "audioBitrate": 160,
+    "videoWidth": 1920,
+    "videoHeight": 1080,
+    "frameRate": 30.0,
+    "preset": "veryfast",
+    "profile": "high",
+    "x264-params": null
+  },
+  {
+    "platform": "Kick",
+    "isDefaultConfiguration": false,
+    "videoBitrate": 3000,
+    "audioBitrate": 128,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "frameRate": 30.0,
+    "preset": "superfast",
+    "profile": "main",
+    "x264-params": "scenecut=0:rc_lookahead=0"
+  },
+  {
+    "platform": "Facebook",
+    "isDefaultConfiguration": true,
+    "videoBitrate": 4500,
+    "audioBitrate": 128,
+    "videoWidth": 1920,
+    "videoHeight": 1080,
+    "frameRate": 30.0,
+    "preset": "veryfast",
+    "profile": "main",
+    "x264-params": null
+  },
+  {
+    "platform": "Facebook",
+    "isDefaultConfiguration": false,
+    "videoBitrate": 3000,
+    "audioBitrate": 128,
+    "videoWidth": 1280,
+    "videoHeight": 720,
+    "frameRate": 30.0,
+    "preset": "superfast",
+    "profile": "main",
+    "x264-params": "scenecut=0:rc_lookahead=0"
+  }
+]
