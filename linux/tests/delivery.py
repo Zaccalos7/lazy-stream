@@ -84,6 +84,19 @@ def main():
             original = webp.read_bytes()
             background = root/'background.mkv'
             run(ffmpeg,'-v','error','-f','lavfi','-i','color=c=blue:s=64x32:r=8','-t','3','-c:v','ffv1',background)
+            for encoder, name, options in [
+                ('libx265','hevc',[{'key':'x265-params','value':'log-level=error:pools=1:frame-threads=1'}]),
+                ('libvpx-vp9','vp9',[{'key':'deadline','value':'realtime'},{'key':'cpu-used','value':'8'}]),
+                ('libaom-av1','av1',[{'key':'usage','value':'realtime'},{'key':'cpu-used','value':'8'}]),
+            ]:
+                codec_output=root/(name+'.flv')
+                completed({'files':[str(background),str(background)],'profile':{**profile,'videoWidth':64,'videoHeight':32,
+                    'frameRate':8,'videoCodecName':encoder,'videoSettingsOptions':options},
+                    'outputFile':str(codec_output),'reconnect':False})
+                run(ffmpeg,'-v','error','-xerror','-i',codec_output,'-map','0:v','-map','0:a','-f','null','-')
+                codecs=json.loads(run(ffprobe,'-v','error','-count_frames','-show_streams','-of','json',codec_output))['streams']
+                video=next(stream for stream in codecs if stream['codec_type']=='video')
+                assert video['codec_name']==name and int(video['nb_read_frames'])==48, codecs
             output = root/'alpha.flv'
             scene = {'name':'Animated alpha','width':64,'height':32,'items':[
                 {'sourceKind':kind,'sourceTarget':str(path),'x':0,'y':0,'width':64,'height':32,'audioEnabled':False}
@@ -104,7 +117,7 @@ def main():
                 color = pixel(frame,48)
                 assert color[2]>180 and color[0]<60, ('transparent background',frame,list(color))
             assert webp.read_bytes() == original, 'Original animated WebP was modified'
-            print('Both transports: complete decoded audio/video, uniform format, silent source, DTS continuity; FFmpeg 9 WebP animation/loops/alpha: OK')
+            print('Both transports: complete decoded audio/video, uniform format, silent source, DTS continuity; HEVC/VP9/AV1; FFmpeg 9 WebP animation/loops/alpha: OK')
         finally:
             process.send_signal(signal.SIGTERM)
             try: process.wait(timeout=8)

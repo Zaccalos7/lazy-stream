@@ -247,7 +247,7 @@ class NativeTests : public QObject {
         QTRY_COMPARE(table->rowCount(), 6);
         QVERIFY(!window.findChild<QFrame*>("cleanupProgress")->isVisible());
         QCOMPARE(table->columnCount(), 8);
-        QCOMPARE(table->horizontalHeaderItem(4)->text(), QString("Path"));
+        QCOMPARE(table->horizontalHeaderItem(4)->text(), QString("PATH"));
         QVERIFY(!window.findChild<QComboBox*>("platformFilter"));
         window.findChild<QLineEdit*>("search")->setText("history-1-2");
         QTRY_COMPARE(table->rowCount(), 1);
@@ -833,10 +833,13 @@ class NativeTests : public QObject {
         QVERIFY(slider);
         slider->setValue(175);
         QMetaObject::invokeMethod(slider, "sliderReleased");
-        QTRY_COMPARE(
+        // The snapshot follows delivery, including the bounded platform queue and encoder start.
+        QTRY_COMPARE_WITH_TIMEOUT(
             studio.session(id)->snapshot().get("scene").get("items").at(0).get("volume").num(),
-            175.0);
-        window.findChild<QDoubleSpinBox*>("param_audioBitrate")->setValue(96);
+            175.0, 8000);
+        auto audioBitrate = window.findChild<QDoubleSpinBox*>("param_audioBitrate");
+        QVERIFY(audioBitrate);
+        audioBitrate->setValue(96);
         QTRY_COMPARE_WITH_TIMEOUT(
             studio.session(id)->snapshot().get("profile").get("audioBitrate").num(), 96.0, 3000);
         QVERIFY(window.grab().save(
@@ -1057,7 +1060,7 @@ class NativeTests : public QObject {
         QStringList headers;
         for (int c = 0; c < table->columnCount(); ++c)
             headers << table->horizontalHeaderItem(c)->text();
-        QCOMPARE(headers, QStringList({"Live Status", "Title", "Channel", "Start Date", ""}));
+        QCOMPARE(headers, QStringList({"LIVE STATUS", "TITLE", "CHANNEL", "START DATE", ""}));
         // Il marchio di ogni piattaforma nota si disegna davvero (percorsi SVG, non icone Qt).
         for (auto name : {"twitch", "youtube", "kick", "facebook", "tiktok"}) {
             QImage mark(24, 24, QImage::Format_ARGB32);

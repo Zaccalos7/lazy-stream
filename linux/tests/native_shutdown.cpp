@@ -47,7 +47,8 @@ int main(int argc, char** argv) {
             }
             producer = state.get("producerPid").num();
             publisher = state.get("publisherPid").num();
-            const bool native = state.get("delivery").get("transport").str() == "native-libavformat";
+            const bool native =
+                state.get("delivery").get("transport").str() == "native-libavformat";
             if (producer <= 0 || (!native && publisher <= 0) || state.get("outputKbps").num() <= 0)
                 return;
             closeTimer.stop();
