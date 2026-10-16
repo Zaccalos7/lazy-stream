@@ -34,6 +34,30 @@ int main() {
         expect(Json::parse("27").num() == 27, "numeric codec option roundtrip");
         expect(Json::parse("true").flag(), "boolean scalar roundtrip");
         expect(Json::parse("null").num(77) == 77, "nullable dimension roundtrip");
+        {
+            auto scene = Json::parse(
+                R"({"width":320,"height":180,"frameRate":15,"items":[{"sourceKind":"CAMERA","sourceTarget":"/dev/video0"}]})");
+            auto profile = Json::parse(
+                R"({"videoWidth":null,"videoHeight":null,"frameRate":null,"encoderQuality":"high","videoCodecName":"libx264","lowLatency":false,"tune":"film"})");
+            auto arguments = buildProducer(scene, profile, 0, {}).args;
+            auto selected = [&](const std::string& option) {
+                auto found = std::find(arguments.begin(), arguments.end(), option);
+                expect(found != arguments.end() && found + 1 != arguments.end(),
+                       "encoder option present");
+                return *(found + 1);
+            };
+            expect(selected("-preset") == "faster", "Windows x264 high quality");
+            expect(selected("-tune") == "film", "manual tune with low latency disabled");
+            expect(selected("-framerate") == "15", "keep source FPS");
+            profile.set("videoCodecName", "h264_nvenc");
+            profile.set("encoderQuality", "light");
+            arguments = buildProducer(scene, profile, 0, {}).args;
+            expect(selected("-preset") == "p1", "Windows NVENC light quality");
+            profile.set("videoCodecName", "h264_qsv");
+            profile.set("encoderQuality", "balanced");
+            arguments = buildProducer(scene, profile, 0, {}).args;
+            expect(selected("-preset") == "medium", "Windows QSV balanced quality");
+        }
         bool bad = false;
         try {
             Json::parse("{} bad");
@@ -158,6 +182,19 @@ int main() {
         }
         {
             Store store(dir);
+            {
+                auto request = Json::parse(
+                    R"({"profile":{},"scene":{"width":320,"height":180,"items":[{"sourceKind":"CAMERA","sourceTarget":"/dev/video0","volume":100}]}})");
+                Session session(store, request, 0);
+                auto snapshot = session.snapshot();
+                snapshot.get("scene").set("width", 640.);
+                snapshot.get("videoResults").at(0).set("status", "ERROR");
+                const auto independent = session.snapshot();
+                expect(independent.get("scene").get("width").num() == 320,
+                       "snapshot scene detached from worker");
+                expect(independent.get("videoResults").at(0).get("status").str() == "OFFLINE",
+                       "snapshot results detached from worker");
+            }
             Json c;
             c.set("channelName", "Test");
             c.set("streamUrl", "rtmp://example.test/live");
@@ -375,6 +412,21 @@ int main() {
                 bad = true;
             }
             expect(bad, "incompatible database rejected");
+        }
+        {
+            Store beforeRestart(dir / "video-recovery");
+            beforeRestart.save(
+                "history",
+                Json::parse(
+                    R"({"status":"LIVE","videoResults":[{"status":"LIVE"},{"status":"ENDED"}]})"));
+        }
+        {
+            Store afterRestart(dir / "video-recovery");
+            const auto result = afterRestart.list("history").at(0).get("videoResults");
+            expect(result.at(0).get("status").str() == "INTERRUPTED",
+                   "recover active video after restart");
+            expect(result.at(1).get("status").str() == "ENDED",
+                   "preserve completed video after restart");
         }
         fs::remove_all(dir);
         expect(capture({"printf", "%s", "$(touch /tmp/orbis-must-not-exist)"}) ==

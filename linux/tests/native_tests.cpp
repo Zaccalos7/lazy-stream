@@ -236,6 +236,7 @@ class NativeTests : public QObject {
         window.navigate("history");
         auto table = window.findChild<QTableWidget*>("recordsTable");
         QTRY_COMPARE(table->rowCount(), 6);
+        QVERIFY(!window.findChild<QFrame*>("cleanupProgress")->isVisible());
         QCOMPARE(table->columnCount(), 8);
         QCOMPARE(table->horizontalHeaderItem(4)->text(), QString("Path"));
         QVERIFY(!window.findChild<QComboBox*>("platformFilter"));
@@ -365,6 +366,7 @@ class NativeTests : public QObject {
         window.setLanguage("en");
         window.show();
         window.navigate("history");
+        QTRY_VERIFY(window.findChild<QPushButton*>("viewFullMessage"));
         QTimer::singleShot(0, &window, [&] {
             auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
             QVERIFY(dialog);
@@ -373,7 +375,6 @@ class NativeTests : public QObject {
             dialog->accept();
         });
         auto full = window.findChild<QPushButton*>("viewFullMessage");
-        QVERIFY(full);
         full->click();
         QTimer::singleShot(0, &window, [&] {
             auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
@@ -398,6 +399,96 @@ class NativeTests : public QObject {
         auto report = window.findChild<QToolButton*>("reportError");
         QVERIFY(report);
         report->click();
+    }
+
+    void playlistDetailsHaveWindowsActions() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        auto history = Json::parse(
+            R"({"status":"STOPPED","channelName":"Saved playlist","startedAt":"2026-10-16T10:00:00Z","request":{"profile":{},"files":["/tmp/first.mp4","/tmp/second.mp4"]},"videoResults":[{"status":"ENDED"},{"status":"STOPPED","offsetSeconds":125}]})");
+        studio.store.save("history", history);
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.show();
+        window.navigate("live");
+        auto records = window.findChild<QTableWidget*>("recordsTable");
+        QTRY_COMPARE(records->rowCount(), 1);
+        QToolButton* details = nullptr;
+        for (auto button : records->cellWidget(0, 4)->findChildren<QToolButton*>())
+            if (button->toolTip() == "Playlist details")
+                details = button;
+        QVERIFY(details);
+        QTimer::singleShot(0, &window, [&] {
+            auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            QTimer::singleShot(5000, dialog, &QDialog::reject);
+            QCOMPARE(dialog->objectName(), QString("liveDetailsDialog"));
+            auto table = dialog->findChild<QTableWidget*>("playlistVideos");
+            QVERIFY(table);
+            QCOMPARE(table->rowCount(), 2);
+            QCOMPARE(table->columnCount(), 5);
+            QCOMPARE(table->item(1, 3)->text(), QString("00:02:05"));
+            for (const auto& name : {"playSpot", "stopLiveIconLabel", "playlistStartFrom",
+                                     "restartLiveIconLabel", "deleteLiveRow"})
+                QVERIFY(table->cellWidget(1, 4)->findChild<QToolButton*>(name));
+            QVERIFY(!table->cellWidget(1, 4)->findChild<QToolButton*>("playSpot")->isEnabled());
+            QVERIFY(
+                table->cellWidget(1, 4)->findChild<QToolButton*>("playlistStartFrom")->isEnabled());
+            dialog->grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-playlist-details"));
+            dialog->accept();
+        });
+        details->click();
+    }
+
+    void sceneDeckEditsInsideSameDialog() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        auto history = Json::parse(
+            R"({"status":"STOPPED","channelName":"Deck test","request":{"scene":{"name":"Scene","items":[]},"profile":{}}})");
+        studio.store.save("history", history);
+        auto button = Json::parse(
+            R"({"label":"Logo","position":0,"displayMode":"fullscreen","mediaName":"logo.png"})");
+        studio.store.save("buttons", button);
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.show();
+        window.navigate("live");
+        auto table = window.findChild<QTableWidget*>("recordsTable");
+        QTRY_COMPARE(table->rowCount(), 1);
+        NativeTranslations words(ORBIS_TEST_RESOURCES "/ui");
+        QToolButton* open = nullptr;
+        for (auto control : table->cellWidget(0, 4)->findChildren<QToolButton*>())
+            if (control->toolTip() == words.text("sceneDeckOpen"))
+                open = control;
+        QVERIFY(open);
+        QTimer::singleShot(0, &window, [&] {
+            auto deck = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(deck);
+            QCOMPARE(deck->objectName(), QString("sceneDeckDialog"));
+            QTimer::singleShot(5000, deck, &QDialog::reject);
+            QVERIFY(!deck->findChild<QPushButton*>("sceneDeckTile")->isEnabled());
+            QTimer::singleShot(0, deck, [&, deck] {
+                QCOMPARE(QApplication::activeModalWidget(), deck);
+                auto editor = deck->findChild<QDialog*>("sceneButtonEditor");
+                QVERIFY(editor);
+                QVERIFY(!editor->isWindow());
+                auto mode = editor->findChild<QComboBox*>("displayMode");
+                auto placement = editor->findChild<QComboBox*>("placement");
+                QVERIFY(!placement->isVisible());
+                mode->setCurrentIndex(1);
+                QVERIFY(placement->isVisible());
+                placement->setCurrentIndex(placement->count() - 1);
+                QVERIFY(editor->findChild<QDoubleSpinBox*>("x")->isVisible());
+                auto indefinite = editor->findChild<QCheckBox*>("sceneDurationForever");
+                QVERIFY(indefinite->isChecked());
+                QVERIFY(!editor->findChild<QDoubleSpinBox*>("durationSeconds")->isEnabled());
+                editor->reject();
+            });
+            deck->findChild<QPushButton*>("editSceneButton")->click();
+            deck->accept();
+        });
+        open->click();
     }
 
     // Le schede devono restare intere e i comandi senza sessione non devono inviare richieste.

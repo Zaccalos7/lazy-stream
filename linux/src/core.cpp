@@ -285,6 +285,12 @@ Store::Store(fs::path path) : root(std::move(path)) {
             h.get("status").str() == "RECONNECTING") {
             h.set("status", "INTERRUPTED");
             h.set("endedAt", now());
+            auto results = h.get("videoResults");
+            for (size_t n = 0; n < results.size(); ++n) {
+                const auto status = results.at(n).get("status").str();
+                if (status == "LIVE" || status == "STARTING" || status == "RECONNECTING")
+                    results.at(n).set("status", "INTERRUPTED");
+            }
             save("history", h, h.get("id").num());
         }
     }

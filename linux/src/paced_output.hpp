@@ -19,6 +19,7 @@ class PacedOutput {
     int64_t lastAdvance = 0;
     bool ended = false, aborted = false, completed = false, published = false;
     std::string failure;
+    std::shared_ptr<const Json> context;
     int64_t maxLead, preroll;
     bool pacing;
     std::function<bool()> cancelled;

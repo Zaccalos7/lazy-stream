@@ -128,21 +128,31 @@ struct Build {
 
 Build buildProducer(const Json& scene, const Json& profile, double offset, const fs::path& preview);
 
+struct FlvChunk {
+    std::vector<unsigned char> bytes;
+    uint64_t timestamp = 0;
+    bool media = false;
+    std::shared_ptr<const Json> context;
+};
+
 class FlvRelay {
     std::vector<unsigned char> pending;
+    size_t cursor = 0;
     bool header = false, sentHeader = false;
     uint64_t base = 0, last = 0;
-    uint32_t first = 0;
+    uint64_t first = 0, lastRaw = 0, wrap = 0, lastVideo = 0, frameStep = 33;
     bool firstTag = true;
     std::chrono::steady_clock::time_point epoch;
 
   public:
     void segment();
+    std::vector<FlvChunk> packets(const unsigned char* bytes, size_t size);
     std::vector<unsigned char> feed(const unsigned char* bytes, size_t size, bool pace = true);
 
     uint64_t timestamp() const {
         return last;
     }
+    uint64_t segmentBase() const { return base; }
 };
 
 class Session {
@@ -151,7 +161,7 @@ class Session {
     std::mutex stopMutex;
     std::thread worker;
     std::atomic<bool> stopped{false}, finished{false}, changed{false};
-    Json request, profile, original, outputProfile, videoResults;
+    Json request, profile, original, outputProfile, videoResults, delivery;
     std::vector<Json> videoProfiles;
     std::vector<Json> playlist;
     int index = 0;

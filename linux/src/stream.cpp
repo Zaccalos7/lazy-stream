@@ -2,6 +2,7 @@
 #include "history_cleanup_service.hpp"
 #include "live_stream_keys.hpp"
 #include "stream_platform.hpp"
+#include "paced_output.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -28,6 +29,72 @@ std::string number(double n) {
 // Accoda argomenti distinti, mantenendo i parametri FFmpeg separati senza quoting da shell.
 void add(std::vector<std::string>& a, std::initializer_list<std::string> b) {
     a.insert(a.end(), b);
+}
+
+// Windows quality levels describe encoder work, independently of its software/hardware presets.
+std::string qualityPreset(const std::string& codec, const std::string& quality) {
+    if (codec == "h264_nvenc")
+        return quality == "light" ? "p1" : quality == "high" ? "p6" : "p4";
+    if (codec == "h264_qsv")
+        return quality == "light" ? "veryfast" : quality == "high" ? "slower" : "medium";
+    return quality == "light" ? "superfast" : quality == "high" ? "faster" : "veryfast";
+}
+
+std::string resolvedPreset(const Json& profile, int width, int height, double fps) {
+    const auto codec = profile.get("videoCodecName").str("libx264");
+    auto quality = profile.get("encoderQuality").str();
+    if (quality.empty())
+        return profile.get("preset").str(codec == "libx264" ? "veryfast" : "medium");
+    if (quality == "auto") {
+        static std::mutex cacheMutex;
+        static std::map<std::string, std::string> measured;
+        const auto key = codec + "|" + number(width) + "x" + number(height) + "|" + number(fps);
+        std::lock_guard lock(cacheMutex);
+        auto found = measured.find(key);
+        if (found != measured.end())
+            return found->second;
+        quality = "light";
+        for (const auto& level : {"balanced", "light"}) {
+            auto started = std::chrono::steady_clock::now();
+            try {
+                capture({ffmpeg(),
+                         "-v",
+                         "error",
+                         "-f",
+                         "lavfi",
+                         "-i",
+                         "testsrc2=s=" + number(width) + "x" + number(height) + ":r=" + number(fps),
+                         "-t",
+                         "3",
+                         "-an",
+                         "-c:v",
+                         codec,
+                         "-preset",
+                         qualityPreset(codec, level),
+                         "-b:v",
+                         number(profile.get("videoBitrate").num(4500)) + "k",
+                         "-pix_fmt",
+                         "yuv420p",
+                         "-f",
+                         "null",
+                         "-"},
+                        8);
+                const double elapsed =
+                    std::chrono::duration<double>(std::chrono::steady_clock::now() - started)
+                        .count();
+                if (elapsed > 0 && 3 / elapsed >= 2) {
+                    quality = level;
+                    break;
+                }
+            } catch (...) {
+                // The real producer retains its full failure diagnostic if this encoder cannot
+                // open.
+            }
+        }
+        measured[key] = qualityPreset(codec, quality);
+        return measured[key];
+    }
+    return qualityPreset(codec, quality);
 }
 
 // Normalizza il tipo della sorgente per condividere la costruzione dei filtri tra scene e playlist.
@@ -271,7 +338,9 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
                 if (offset > 0 && k == "FILE")
                     add(a, {"-ss", number(offset)});
             }
-            add(a, {"-re", "-i", target});
+            if (!profile.get("queueRelay").flag())
+                a.push_back("-re");
+            add(a, {"-i", target});
             double d = p.get("format").get("duration").num();
             if (k == "FILE" && !still(target) && !t.get("loop").flag() && d > 0) {
                 duration = std::max(duration, d - offset);
@@ -343,8 +412,9 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
             number(std::round(profile.get("gopSize").num(2) * fps)), "-pix_fmt", "yuv420p",
             "-force_key_frames",
             "expr:gte(t,n_forced*" + number(profile.get("gopSize").num(2)) + ")"});
+    if (codec == "libx264" || profile.has("encoderQuality"))
+        add(a, {"-preset", resolvedPreset(profile, w, h, fps)});
     if (codec == "libx264") {
-        add(a, {"-preset", profile.get("preset").str("veryfast")});
         if (profile.get("lowLatency").flag(true))
             add(a, {"-tune", "zerolatency"});
         else if (!profile.get("tune").str().empty())
@@ -383,73 +453,98 @@ Build buildProducer(const Json& scene, const Json& profile, double offset,
 // continui.
 void FlvRelay::segment() {
     pending.clear();
+    cursor = 0;
     header = false;
     firstTag = true;
-    base = sentHeader ? last + 1 : 0;
+    first = lastRaw = wrap = lastVideo = 0;
+    base = sentHeader ? last + frameStep : 0;
     if (!sentHeader)
         epoch = std::chrono::steady_clock::now();
 }
 
-// Ricompone tag FLV anche da letture parziali e riscrive i timestamp; invia una sola intestazione
-// al publisher.
-std::vector<unsigned char> FlvRelay::feed(const unsigned char* bytes, size_t size, bool pace) {
+// Reassemble once, move whole compressed tags to the sender, and compact only when necessary.
+std::vector<FlvChunk> FlvRelay::packets(const unsigned char* bytes, size_t size) {
+    if (cursor && (cursor >= 65536 || cursor == pending.size())) {
+        pending.erase(pending.begin(), pending.begin() + cursor);
+        cursor = 0;
+    }
     pending.insert(pending.end(), bytes, bytes + size);
-    if (pending.size() > 32 * 1024 * 1024)
+    if (pending.size() - cursor > 32 * 1024 * 1024)
         throw std::runtime_error("FLV oltre il limite");
-    std::vector<unsigned char> out;
-    size_t used = 0;
+    std::vector<FlvChunk> out;
     if (!header) {
-        if (pending.size() < 13)
+        if (pending.size() - cursor < 13)
             return out;
-        if (pending[0] != 'F' || pending[1] != 'L' || pending[2] != 'V')
+        const auto* p = pending.data() + cursor;
+        if (p[0] != 'F' || p[1] != 'L' || p[2] != 'V' || p[3] != 1)
             throw std::runtime_error("Header FLV non valido");
-        uint32_t offset = (uint32_t(pending[5]) << 24) | (uint32_t(pending[6]) << 16) |
-                          (uint32_t(pending[7]) << 8) | pending[8];
-        if (offset < 9 || offset > 1024)
+        const uint32_t offset = (uint32_t(p[5]) << 24) | (uint32_t(p[6]) << 16) |
+                                (uint32_t(p[7]) << 8) | p[8];
+        if (offset < 9 || offset > 1024 * 1024)
             throw std::runtime_error("Offset FLV non valido");
-        if (pending.size() < offset + 4)
+        if (pending.size() - cursor < offset + 4)
             return out;
         if (!sentHeader) {
-            out.insert(out.end(), pending.begin(), pending.begin() + offset + 4);
+            out.push_back({{'F','L','V',1,p[4],0,0,0,9,0,0,0,0}, 0, false});
             sentHeader = true;
         }
-        used = offset + 4;
+        cursor += offset + 4;
         header = true;
     }
-    while (pending.size() - used >= 15) {
-        auto* p = pending.data() + used;
-        uint32_t len = u24(p + 1);
-        if (len > 16 * 1024 * 1024)
-            throw std::runtime_error("Tag FLV troppo grande");
-        if (pending.size() - used < len + 15)
+    while (pending.size() - cursor >= 15) {
+        const auto* p = pending.data() + cursor;
+        const uint32_t len = u24(p + 1);
+        if (pending.size() - cursor < len + 15)
             break;
-        uint32_t previous = (uint32_t(p[11 + len]) << 24) | (uint32_t(p[12 + len]) << 16) |
-                            (uint32_t(p[13 + len]) << 8) | p[14 + len];
-        if (previous != len + 11)
-            throw std::runtime_error("Dimensione FLV non valida");
-        if (p[0] != 8 && p[0] != 9 && p[0] != 18)
-            throw std::runtime_error("Tipo tag FLV non valido");
-        uint32_t ts = u24(p + 4) | (uint32_t(p[7]) << 24);
-        if (firstTag && (p[0] == 8 || p[0] == 9)) {
-            first = ts;
+        const uint32_t previous = (uint32_t(p[11 + len]) << 24) | (uint32_t(p[12 + len]) << 16) |
+                                  (uint32_t(p[13 + len]) << 8) | p[14 + len];
+        if (previous != len + 11 || (p[0] != 8 && p[0] != 9 && p[0] != 18) || u24(p + 8))
+            throw std::runtime_error("Tag FLV non valido");
+        const auto raw = uint64_t(u24(p + 4) | (uint32_t(p[7]) << 24));
+        const bool sequence = len >= 2 &&
+            ((p[0] == 9 && (p[11] & 15) == 7 && p[12] != 1) ||
+             (p[0] == 8 && (p[11] >> 4) == 10 && p[12] == 0));
+        const bool media = (p[0] == 8 || p[0] == 9) && !sequence;
+        if (media && raw < lastRaw && lastRaw - raw > 0x80000000ULL)
+            wrap += 1ULL << 32;
+        const auto timestamp = raw + wrap;
+        if (media && firstTag) {
+            first = timestamp;
             firstTag = false;
         }
-        uint64_t normalized = firstTag ? base : base + (ts >= first ? ts - first : 0);
+        uint64_t normalized = firstTag || !media ? base : base + (timestamp >= first ? timestamp - first : 0);
+        if (media && normalized > last + 5000 && last > base) {
+            // Discontinuities are rebased; network lateness never rewrites this clock.
+            first += normalized - last - frameStep;
+            normalized = last + frameStep;
+        }
         normalized = std::max(last, normalized);
-        last = normalized;
-        put24(p + 4, uint32_t(normalized));
-        p[7] = normalized >> 24;
-        out.insert(out.end(), p, p + len + 15);
-        used += len + 15;
+        if (media) {
+            if (p[0] == 9) {
+                if (lastVideo && normalized > lastVideo && normalized - lastVideo < 1000)
+                    frameStep = normalized - lastVideo;
+                lastVideo = normalized;
+            }
+            last = normalized;
+            lastRaw = raw;
+        }
+        FlvChunk chunk{{p, p + len + 15}, normalized, media};
+        put24(chunk.bytes.data() + 4, uint32_t(normalized));
+        chunk.bytes[7] = normalized >> 24;
+        out.push_back(std::move(chunk));
+        cursor += len + 15;
     }
-    pending.erase(pending.begin(), pending.begin() + used);
+    return out;
+}
+
+// Compatibility helper for callers/tests that need one FLV byte vector rather than queued tags.
+std::vector<unsigned char> FlvRelay::feed(const unsigned char* bytes, size_t size, bool pace) {
+    std::vector<unsigned char> out;
+    for (auto& chunk : packets(bytes, size))
+        out.insert(out.end(), chunk.bytes.begin(), chunk.bytes.end());
     if (pace && last) {
-        auto target = epoch + std::chrono::milliseconds(last);
-        auto current = std::chrono::steady_clock::now();
-        if (target > current)
-            std::this_thread::sleep_for(
-                std::min(target - current,
-                         std::chrono::steady_clock::duration(std::chrono::milliseconds(250))));
+        const auto target = epoch + std::chrono::milliseconds(last);
+        std::this_thread::sleep_until(target);
     }
     return out;
 }
@@ -529,6 +624,15 @@ Json Session::snapshot() {
     s.set("offsetSeconds", offset);
     s.set("scene", original);
     s.set("takeover", takeover);
+    const auto onAir = delivery.get("context");
+    if (onAir.isObject()) {
+        s.set("position", onAir.get("position"));
+        s.set("scene", onAir.get("scene"));
+        s.set("takeover", onAir.get("takeover"));
+        const double advance = onAir.get("advances").flag() ?
+            std::max(0., delivery.get("timestamp").num() - onAir.get("base").num()) / 1000 : 0;
+        s.set("offsetSeconds", onAir.get("offset").num() + advance);
+    }
     s.set("producerPid", double(producerPid));
     s.set("publisherPid", double(publisherPid));
     if (producerPid > 0)
@@ -537,10 +641,15 @@ Json Session::snapshot() {
         s.set("publisherMetrics", processMetrics(publisherPid));
     s.set("profile", profile);
     s.set("output", outputProfile);
+    if (onAir.isObject())
+        s.set("output", onAir.get("profile"));
     s.set("videoResults", videoResults);
+    s.set("delivery", delivery);
     s.set("outputKbps", outputKbps);
     s.set("reconnectAttempts", double(reconnectAttempts));
-    return s;
+    // JSON nodes use shared, non-atomic json-c references. Detach the whole snapshot while the
+    // session lock is held: UI/API readers must not share nodes being mutated by the worker.
+    return s.clone();
 }
 
 // Aggiorna i comandi sotto mutex e segnala il cambio al worker, evitando interventi concorrenti sui
@@ -600,12 +709,13 @@ void Session::run() {
     int relayPipe[2]{-1, -1};
     Process publisher, producer;
     FlvRelay relay;
-    auto recordVideo = [&](const std::string& status, const std::string& message = "") {
+    auto recordVideo = [&](const std::string& status, const std::string& message = "", int selected = -1) {
         Json results;
         {
             std::lock_guard lock(mutex);
-            if (index >= 0 && index < int(videoResults.size())) {
-                auto video = videoResults.at(index);
+            const int videoIndex = selected >= 0 ? selected : index;
+            if (videoIndex >= 0 && videoIndex < int(videoResults.size())) {
+                auto video = videoResults.at(videoIndex);
                 video.set("status", status);
                 video.set("error", message);
                 video.set("offsetSeconds", offset);
@@ -633,6 +743,9 @@ void Session::run() {
             command.push(Json::string(redact(arg)));
         log(role, command.dump());
     };
+    std::atomic<bool> publisherCancelled{false};
+    std::unique_ptr<NativePublisher> native;
+    std::unique_ptr<PacedOutput> paced;
     std::string phase = "prepare";
     log(phase, "attempt=" + std::to_string(reconnectAttempts + 1) +
                    " channel=" + request.get("channelName").str());
@@ -646,76 +759,152 @@ void Session::run() {
                 throw std::runtime_error("Server e chiave richiesti");
             output = normalizeIngestUrl(url + (url.ends_with('/') ? "" : "/") + key);
         }
-        if (pipe2(relayPipe, O_CLOEXEC))
-            throw std::runtime_error("Relay pipe fallita");
+        const auto platform = detectStreamPlatform(output);
+        const bool buffered = platform == StreamPlatform::YouTube ||
+                              platform == StreamPlatform::Facebook || platform == StreamPlatform::TikTok;
+        const bool senderClock = buffered && !(platform == StreamPlatform::YouTube &&
+                                               !request.get("ffmpegSender").flag(true));
+        const bool nativeMode = NativePublisher::available() && !senderClock &&
+                                request.get("transport").str() != "ffmpeg";
+        if (request.get("transport").str() == "native" && !NativePublisher::available())
+            throw std::runtime_error("Native transport requires FFmpeg 9.0.2 libraries");
+        const auto cancelled = [&] { return stopped.load() || publisherCancelled.load(); };
+        const int64_t maxLead = buffered ? (platform == StreamPlatform::TikTok ? 3000 : 4000) : 1000;
         phase = "publisher-start";
-        auto publisherArgs = buildPublisher(output);
-        logCommand(phase, publisherArgs);
-        publisher.start(publisherArgs, relayPipe[0], publisherLog, true, redact);
-        log(phase, "pid=" + std::to_string(publisher.id()));
-        close(relayPipe[0]);
-        relayPipe[0] = -1;
-        fcntl(relayPipe[1], F_SETFL, O_NONBLOCK);
+        if (nativeMode) {
+            native = std::make_unique<NativePublisher>(output, cancelled, [&](const std::string& line) {
+                std::ofstream file(publisherLog, std::ios::app);
+                file << now() << " " << redact(line) << '\n';
+                std::error_code ec;
+                fs::permissions(publisherLog, fs::perms::owner_read | fs::perms::owner_write, ec);
+            });
+            log(phase, "native libavformat transport; no sender process");
+        } else {
+            if (pipe2(relayPipe, O_CLOEXEC))
+                throw std::runtime_error("Relay pipe fallita");
+            auto publisherArgs = buildPublisher(output);
+            if (senderClock) {
+                const auto input = std::find(publisherArgs.begin(), publisherArgs.end(), "-f");
+                publisherArgs.insert(input, {"-readrate", "1", "-readrate_initial_burst", "2"});
+            }
+            logCommand(phase, publisherArgs);
+            publisher.start(publisherArgs, relayPipe[0], publisherLog, true, redact);
+            log(phase, "pid=" + std::to_string(publisher.id()));
+            close(relayPipe[0]);
+            relayPipe[0] = -1;
+            fcntl(relayPipe[1], F_SETFL, O_NONBLOCK);
+        }
+        paced = std::make_unique<PacedOutput>(maxLead, buffered ? 2000 : 0, !senderClock,
+            cancelled, [&] { if (native) native->open(); },
+            [&](const FlvChunk& chunk) {
+                if (native) {
+                    native->write(chunk);
+                    return;
+                }
+                size_t sent = 0;
+                auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+                while (sent < chunk.bytes.size() && !cancelled()) {
+                    pollfd fd{relayPipe[1], POLLOUT, 0};
+                    const auto ready = poll(&fd, 1, 50);
+                    if (ready < 0 && errno == EINTR)
+                        continue;
+                    if (ready < 0 || (fd.revents & (POLLERR | POLLHUP)))
+                        throw std::runtime_error("Publisher pipe disconnected");
+                    if (ready > 0) {
+                        const auto count = write(relayPipe[1], chunk.bytes.data() + sent,
+                                                 chunk.bytes.size() - sent);
+                        if (count > 0) sent += size_t(count);
+                        else if (errno != EAGAIN && errno != EINTR)
+                            throw std::runtime_error("Publisher pipe write failed");
+                    }
+                    if (std::chrono::steady_clock::now() > deadline)
+                        throw std::runtime_error("Publisher pipe stalled for 30 seconds");
+                }
+            }, [&] { if (native) native->close(); });
         {
             std::lock_guard lock(mutex);
-            publisherPid = publisher.id();
+            publisherPid = nativeMode ? -1 : publisher.id();
             state = reconnectAttempts ? "RECONNECTING" : "STARTING";
             error.clear();
             outputKbps = 0;
         }
         bool publishing = false;
+        int onAirVideo = -1;
         std::string progress;
-        auto connectStarted = std::chrono::steady_clock::now();
+        const auto connectStarted = std::chrono::steady_clock::now();
         auto lastProgress = connectStarted;
         long long lastOutputTime = 0;
+        auto rateSample = paced->sample();
         auto checkPublisher = [&] {
-            pollfd fd{publisher.fd(), POLLIN, 0};
-            if (poll(&fd, 1, 0) > 0 && (fd.revents & POLLIN)) {
-                char buffer[4096];
-                auto count = read(publisher.fd(), buffer, sizeof(buffer));
-                if (count > 0)
-                    progress.append(buffer, count);
-                size_t newline;
-                while ((newline = progress.find('\n')) != std::string::npos) {
-                    const auto line = progress.substr(0, newline);
-                    progress.erase(0, newline + 1);
-                    if (line.starts_with("out_time_us=")) {
-                        const auto time = std::strtoll(line.c_str() + 12, nullptr, 10);
-                        if (time > lastOutputTime) {
-                            lastOutputTime = time;
-                            lastProgress = std::chrono::steady_clock::now();
+            paced->check();
+            auto current = paced->sample();
+            if (nativeMode) {
+                const auto counters = paced->snapshot();
+                if (counters.get("published").flag() && (current.media > lastOutputTime || !publishing)) {
+                    lastOutputTime = current.media;
+                    lastProgress = std::chrono::steady_clock::now();
+                }
+            } else {
+                pollfd fd{publisher.fd(), POLLIN, 0};
+                if (poll(&fd, 1, 0) > 0 && (fd.revents & POLLIN)) {
+                    char buffer[4096];
+                    const auto count = read(publisher.fd(), buffer, sizeof(buffer));
+                    if (count > 0) progress.append(buffer, count);
+                    size_t newline;
+                    while ((newline = progress.find('\n')) != std::string::npos) {
+                        const auto line = progress.substr(0, newline);
+                        progress.erase(0, newline + 1);
+                        if (line.starts_with("out_time_us=")) {
+                            const auto stamp = std::strtoll(line.c_str() + 12, nullptr, 10) / 1000;
+                            if (stamp > lastOutputTime) {
+                                lastOutputTime = stamp;
+                                lastProgress = std::chrono::steady_clock::now();
+                            }
                         }
-                    }
-                    if (!publishing && lastOutputTime > 0) {
-                        publishing = true;
-                        log("publishing",
-                            "first output timestamp=" + std::to_string(lastOutputTime));
-                        {
-                            std::lock_guard lock(mutex);
-                            state = "LIVE";
-                        }
-                        recordVideo("LIVE");
-                        auto h = store.get("history", id);
-                        h.set("status", "LIVE");
-                        store.save("history", h, id);
                     }
                 }
+                if (!publisher.running()) {
+                    phase = "publisher-exit";
+                    throw std::runtime_error("Publisher terminato, exit=" + std::to_string(publisher.wait()));
+                }
             }
-            if (!publisher.running()) {
-                phase = "publisher-exit";
-                throw std::runtime_error("Publisher terminato, exit=" +
-                                         std::to_string(publisher.wait()));
+            if (!publishing && (lastOutputTime > 0 || (nativeMode && paced->snapshot().get("published").flag()))) {
+                publishing = true;
+                log("publishing", "first delivered timestamp=" + std::to_string(lastOutputTime));
+                {
+                    std::lock_guard lock(mutex);
+                    state = "LIVE";
+                }
+                recordVideo("LIVE");
+                auto history = store.get("history", id);
+                history.set("status", "LIVE");
+                store.save("history", history, id);
             }
-            const auto clock = std::chrono::steady_clock::now();
-            if (!publishing && clock - connectStarted > std::chrono::seconds(30)) {
-                phase = "publisher-connect";
-                throw std::runtime_error(
-                    "Timeout avvio publisher: nessun avanzamento in 30 secondi");
+            auto counters = paced->snapshot();
+            if (publishing && counters.has("context")) {
+                const int video = counters.get("context").get("position").num();
+                if (video != onAirVideo) {
+                    if (onAirVideo >= 0)
+                        recordVideo("ENDED", "", onAirVideo);
+                    recordVideo("LIVE", "", video);
+                    onAirVideo = video;
+                }
             }
-            if (publishing && clock - lastProgress > std::chrono::seconds(30)) {
-                phase = "publisher-stall";
+            counters.set("transport", nativeMode ? "native-libavformat" : "ffmpeg-sender");
+            {
+                std::lock_guard lock(mutex);
+                delivery = counters;
+                if (current.ticks - rateSample.ticks >= 1000) {
+                    outputKbps = publishing ? (current.bytes - rateSample.bytes) * 8. /
+                                               (current.ticks - rateSample.ticks) : 0;
+                    rateSample = current;
+                }
+            }
+            const auto now = std::chrono::steady_clock::now();
+            if (!publishing && now - connectStarted > std::chrono::seconds(30))
+                throw std::runtime_error("Timeout avvio publisher: nessun avanzamento in 30 secondi");
+            if (publishing && now - lastProgress > std::chrono::seconds(30))
                 throw std::runtime_error("Publisher bloccato: nessun avanzamento in 30 secondi");
-            }
         };
         auto relayEpoch = std::chrono::steady_clock::now();
         auto lastAdapt = relayEpoch;
@@ -750,6 +939,12 @@ void Session::run() {
                 segmentIndex = index;
             }
             phase = "producer-build";
+            params.set("queueRelay", true);
+            if (buffered && outputProfile.has("videoWidth")) {
+                params.set("videoWidth", outputProfile.get("videoWidth"));
+                params.set("videoHeight", outputProfile.get("videoHeight"));
+                params.set("frameRate", outputProfile.get("frameRate"));
+            }
             if (!isTakeover)
                 recordVideo(publishing ? "LIVE" : "STARTING");
             if (detectStreamPlatform(output) == StreamPlatform::YouTube ||
@@ -785,7 +980,19 @@ void Session::run() {
                 producerPid = producer.id();
             }
             relay.segment();
-            auto mediaStart = relay.timestamp();
+            auto mediaStart = relay.segmentBase();
+            Json context;
+            {
+                std::lock_guard lock(mutex);
+                context.set("position", double(segmentIndex));
+                context.set("offset", offset);
+                context.set("scene", original.clone());
+                context.set("takeover", takeover.clone());
+                context.set("profile", outputProfile.clone());
+            }
+            context.set("base", double(mediaStart));
+            context.set("advances", !isTakeover || inScene);
+            auto packetContext = std::make_shared<const Json>(context.clone());
             auto lastByte = std::chrono::steady_clock::now();
             bool received = false;
             unsigned char bytes[32768];
@@ -804,41 +1011,15 @@ void Session::run() {
                         log("producer-output", "first FLV bytes=" + std::to_string(count));
                     received = true;
                     lastByte = std::chrono::steady_clock::now();
-                    auto tags = relay.feed(bytes, count);
-                    size_t pos = 0;
-                    while (pos < tags.size() && !stopped) {
-                        pollfd wr{relayPipe[1], POLLOUT, 0};
-                        int ready = poll(&wr, 1, 100);
-                        if (ready < 0 && errno != EINTR)
-                            throw std::runtime_error("Scrittura relay: poll fallita");
-                        if (ready == 0)
-                            ++stalledPolls;
-                        if (ready > 0) {
-                            if (wr.revents & (POLLERR | POLLHUP))
-                                throw std::runtime_error("Connessione di uscita interrotta");
-                            auto written =
-                                write(relayPipe[1], tags.data() + pos, tags.size() - pos);
-                            if (written > 0) {
-                                pos += written;
-                                sentBytes += written;
-                                double seconds = std::chrono::duration<double>(
-                                                     std::chrono::steady_clock::now() - relayEpoch)
-                                                     .count();
-                                std::lock_guard lock(mutex);
-                                outputKbps = publishing && seconds > 0
-                                                 ? sentBytes * 8.0 / seconds / 1000
-                                                 : 0;
-                            } else if (errno != EAGAIN && errno != EINTR)
-                                throw std::runtime_error("Publisher non disponibile");
-                        }
-                        checkPublisher();
-                        if (std::chrono::steady_clock::now() - lastByte > std::chrono::seconds(30))
-                            throw std::runtime_error("Uscita bloccata da 30 secondi");
+                    for (auto& packet : relay.packets(bytes, count)) {
+                        packet.context = packetContext;
+                        paced->push(std::move(packet));
                     }
+                    checkPublisher();
                     if (!isTakeover || inScene) {
                         std::lock_guard lock(mutex);
                         if (index == segmentIndex)
-                            offset = startOffset + double(relay.timestamp() - mediaStart) / 1000;
+                            offset = startOffset + std::max(0., double(paced->sample().media) - double(mediaStart)) / 1000;
                     }
                     if (stalledPolls >= 20 &&
                         std::chrono::steady_clock::now() - lastAdapt > std::chrono::seconds(10)) {
@@ -885,8 +1066,6 @@ void Session::run() {
                 throw std::runtime_error("Codifica fallita, exit=" + std::to_string(result));
             if (interrupted)
                 continue;
-            if (!isTakeover)
-                recordVideo("ENDED");
             {
                 std::lock_guard lock(mutex);
                 if (isTakeover) {
@@ -923,6 +1102,9 @@ void Session::run() {
             }
         }
         producer.stop();
+        paced->finish();
+        if (!stopped && nativeMode)
+            checkPublisher();
         if (relayPipe[1] >= 0) {
             close(relayPipe[1]);
             relayPipe[1] = -1;
@@ -943,6 +1125,9 @@ void Session::run() {
             state = stopped ? "STOPPED" : "ENDED";
         }
     } catch (const std::exception& e) {
+        publisherCancelled = true;
+        if (paced) paced->abort();
+        if (native) native->close();
         producer.stop();
         publisher.stop();
         log("error", "phase=" + phase + " error=" + e.what() +
@@ -951,9 +1136,27 @@ void Session::run() {
         auto detail = "[producer]\n" + streamDiagnostic(producerLog, request) + "\n[publisher]\n" +
                       streamDiagnostic(publisherLog, request);
         std::lock_guard lock(mutex);
-        state = stopped ? "STOPPED" : "ERROR";
-        error = stopped ? "" : redact("phase=" + phase + ": " + e.what() + "\n" + detail);
+        const auto nextState = stopped ? "STOPPED" : "ERROR";
+        const auto nextError =
+            stopped ? "" : redact("phase=" + phase + ": " + e.what() + "\n" + detail);
+        // Publish the diagnostic in history before readers can observe a terminal session status.
+        // Per-video finalization below can involve another database write.
+        try {
+            auto history = store.get("history", id);
+            const bool reconnecting =
+                !stopped && request.get("reconnect").flag(true) && reconnectAttempts < 3;
+            history.set("status", reconnecting ? "RECONNECTING" : nextState);
+            history.set("error", nextError);
+            store.save("history", history, id);
+        } catch (const std::exception& persistError) {
+            log("history-error", persistError.what());
+        }
+        state = nextState;
+        error = nextError;
     }
+    publisherCancelled = true;
+    if (paced) paced->abort();
+    if (native) native->close();
     producer.stop();
     publisher.stop();
     for (auto fd : relayPipe)
@@ -989,8 +1192,8 @@ void Session::run() {
     try {
         auto h = store.get("history", id);
         auto s = snapshot();
-        if (s.get("status").str() == "ERROR" || s.get("status").str() == "STOPPED")
-            recordVideo(s.get("status").str(), s.get("error").str());
+        if (s.get("status").str() == "ERROR" || s.get("status").str() == "STOPPED" || s.get("status").str() == "ENDED")
+            recordVideo(s.get("status").str(), s.get("error").str(), s.get("position").num());
         h.set("videoResults", snapshot().get("videoResults"));
         h.set("status", s.get("status"));
         h.set("error", s.get("error"));
@@ -1071,6 +1274,7 @@ long Studio::start(Json r) {
         // Lo storico conserva l'identità al momento della diretta, anche se il canale cambia.
         r.set("channelName", c.get("channelName"));
         r.set("platform", c.get("platform"));
+        r.set("ffmpegSender", c.get("ffmpegSender").flag(true));
         if (!asksForStreamKey(c.get("platform").str(), c.get("platformStreamName").str(),
                               c.get("streamUrl").str()))
             r.set("streamKey", c.get("streamKey"));

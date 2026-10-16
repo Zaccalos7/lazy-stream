@@ -70,6 +70,7 @@ bool LiveHistoryCleanupService::tryStart(int months, long channel) {
         worker.join();
     Json initial;
     initial.set("running", true);
+    initial.set("startedAt", now());
     initial.set("totalVideos", 0.0);
     initial.set("deletedVideos", 0.0);
     initial.set("deletedLives", 0.0);
