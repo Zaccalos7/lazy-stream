@@ -11,6 +11,7 @@ class PlatformPreview : public QWebEngineView {
     QString currentEmbed;
     QTimer refresh;
     bool querying = false;
+    Qt::WindowStates previousWindowState;
     void resolve();
 
   public:
@@ -19,6 +20,7 @@ class PlatformPreview : public QWebEngineView {
     void loadEmbed(const QUrl& url);
   signals:
     void playerState(const QString& state);
+    void diagnostic(const QString& message);
 };
 
 void configureWebEngineRuntime();

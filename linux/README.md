@@ -1,6 +1,6 @@
 # OrbisStream Linux · C++20
 
-Port Linux del progetto `lazy-stream-windows`, contenuto nella cartella `linux/` del repository macOS. Il motore e l’interfaccia sono compilati in **C++20 con Qt 6 Widgets e Qt Multimedia**. L’avvio normale apre una finestra Linux nativa: controlli, dialoghi, canvas e player sono widget Qt, collegati direttamente al motore. FFmpeg esegue composizione e codifica; SQLite conserva i dati. Non vengono avviati browser, WebView o server HTTP in modalità grafica.
+Port Linux del progetto `lazy-stream-windows`, contenuto nella cartella `linux/` del repository macOS. Il motore e l’interfaccia sono compilati in **C++20 con Qt 6 Widgets, Qt Multimedia e Qt WebEngine**. L’avvio normale apre una finestra Linux nativa: controlli, dialoghi, canvas e player sono widget Qt, collegati direttamente al motore. FFmpeg esegue composizione e codifica; SQLite conserva i dati. Le pagine dell’app sono widget C++: non viene avviato un server HTTP né un browser esterno. Solo il player pubblico Twitch/YouTube nell’Anteprima usa un QWebEngineView, controllato da C++, con il frame FFmpeg disponibile in fallback.
 
 Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mappa file per file](docs/PORTING_MAP.md) associa ciascuno dei **257 file Windows** al codice Linux o al lavoro mancante; l'[inventario](docs/INVENTARIO_WINDOWS.md) conserva hash, simboli e 61 route. Il [versionamento](docs/VERSIONAMENTO.md) collega binario, API e pacchetto Debian.
 
@@ -8,10 +8,12 @@ Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mapp
 
 ## Compilare e avviare
 
+È richiesto Qt 6.4 o successivo. Se non puoi installare i pacchetti di sviluppo a livello di sistema, `python3 scripts/prepare-webengine.py` scarica le dipendenze Qt WebEngine dai repository APT configurati e le estrae in `build/qt-webengine/`; CMake le rileva automaticamente. Questa preparazione non richiede sudo e non modifica il sistema. Il pacchetto Debian finale dichiara invece le dipendenze Qt WebEngine della distribuzione.
+
 Su Debian/Ubuntu:
 
 ```sh
-sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-translations-l10n fonts-noto-core fonts-noto-cjk
+sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-translations-l10n fonts-noto-core fonts-noto-cjk
 cd linux
 bash scripts/build-linux.sh
 ./build/orbis-stream

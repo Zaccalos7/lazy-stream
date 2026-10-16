@@ -11,6 +11,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
+#include <QFile>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHeaderView>
@@ -1066,6 +1067,17 @@ void NativeWindow::updatePreview() {
         preview->setProperty("playerFor", qlonglong(watched));
         auto player = new PlatformPreview(preview);
         player->setGeometry(preview->rect());
+        connect(player, &PlatformPreview::diagnostic, this, [this, id = watched](QString message) {
+            const auto root = studio.store.root / "logs";
+            fs::create_directories(root);
+            QFile file(
+                QString::fromStdString((root / (std::to_string(id) + ".preview.log")).string()));
+            if (file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+                file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+                file.write(QByteArray::fromStdString(
+                    now() + " " + redactStreamText(message.toStdString()) + "\n"));
+            }
+        });
         connect(player, &PlatformPreview::playerState, this, [this, player](const QString& state) {
             auto notice = body->findChild<QFrame*>("platformNotice");
             if (!notice)

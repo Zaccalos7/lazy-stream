@@ -2,7 +2,7 @@
 
 ## Architettura
 
-1. `main.cpp` avvia normalmente `QApplication` e `NativeWindow`, senza avviare `serve()` o processi browser. `--headless`/`--no-browser` abilita esplicitamente il servizio precedente per test e automazioni.
+1. `main.cpp` avvia normalmente `QApplication` e `NativeWindow`, senza avviare `serve()` o un browser esterno. `PlatformPreview` usa Qt WebEngine soltanto per il player pubblico incorporato. `--headless`/`--no-browser` abilita esplicitamente il servizio precedente per test e automazioni.
 2. `native_window.cpp` riprende navigazione e sezioni Windows: Pannello, Gestione Live, Anteprima, Layout, Gestore attività, Manuale e Impostazioni. Tabelle e filtri sono widget Qt.
 3. `native_live_pages.cpp` contiene Gestione Live, anteprima con parametri/mixer/deck integrati e storico con filtri e pulizia. `native_dialogs.cpp` contiene configurazioni, avvio profilo → canale → composer, avvio playlist con profilo/canale/cartella sullo stesso foglio, dettagli, collegamento profilo, deck e import/export. Gli ID sono separati dalle diciture tradotte.
 4. `native_composer.cpp` sostituisce il canvas JavaScript con QGraphicsView: sorgenti selezionabili, spostamento, angolo per ridimensionare, Shift, frecce/Canc, livelli, slot, overlay, file dal file manager e inspector. Il salvataggio richiama lo stesso `scene_service.cpp`.
@@ -48,3 +48,9 @@ La conversione nativa non certifica parità completa con Windows. Restano da con
 Cattura Wayland tramite portale, monitoraggio automatico YouTube, publisher RTMP interno e notifiche push sono ancora i limiti del motore già riportati in MIGRAZIONE.md. Servizi di piattaforme pubbliche, camera/microfoni, driver GPU, stampa fisica e rendering di ogni alfabeto devono essere verificati sul computer di destinazione. I cataloghi non sono stati sottoposti a revisione linguistica.
 
 I vecchi HTML/CSS restano nel repository e nel servizio headless come riferimento file per file; non vengono mostrati né usati dalla finestra Qt.
+
+## Allineamento delle pagine — 16 ottobre 2026
+
+Il contratto delle pagine è descritto in [PARITA_PAGINE.md](PARITA_PAGINE.md). Canali e profili usano schede con azioni e toggle; Impostazioni apre le stesse due sezioni Windows. Storico apre il messaggio completo e il rapporto QR; il progresso della pulizia è separato dalla tabella. Anteprima mantiene player, identità, posizione/durata, pulsanti scena, mixer e parametri in colonne equivalenti. Il player remoto usa `QWebEngineView`, con origine localhost e parametri embed Windows, senza trasformare l’app in un frontend HTML. Il manuale mostra tutti i capitoli e mantiene l’indice di navigazione.
+
+Per le dipendenze di build di Qt WebEngine vedere README e `scripts/prepare-webengine.py`. I servizi pubblici richiedono comunque una verifica con un account in onda; i test locali provano il componente incorporato e le transizioni del player, senza pubblicare su account esterni.

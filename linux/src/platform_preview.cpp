@@ -10,6 +10,26 @@
 #include <QtConcurrent>
 
 namespace orbis {
+namespace {
+class PlayerPage : public QWebEnginePage {
+    std::function<void(QString)> log;
+
+  public:
+    PlayerPage(QObject* parent, std::function<void(QString)> log)
+        : QWebEnginePage(parent), log(std::move(log)) {}
+
+  protected:
+    void javaScriptConsoleMessage(JavaScriptConsoleMessageLevel level, const QString& message,
+                                  int line, const QString& source) override {
+        if (level != InfoMessageLevel)
+            log(QString("console level=%1 line=%2 source=%3: %4")
+                    .arg(int(level))
+                    .arg(line)
+                    .arg(source, message));
+    }
+};
+} // namespace
+
 void configureWebEngineRuntime() {
     // A developer build can use unprivileged, extracted distro packages. Installed builds use Qt's
     // paths.
@@ -32,6 +52,7 @@ void configureWebEngineRuntime() {
 
 PlatformPreview::PlatformPreview(QWidget* parent) : QWebEngineView(parent) {
     setObjectName("platformPreview");
+    setPage(new PlayerPage(this, [this](QString message) { emit diagnostic(message); }));
     setContextMenuPolicy(Qt::NoContextMenu);
     settings()->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture, false);
     settings()->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
@@ -39,19 +60,26 @@ PlatformPreview::PlatformPreview(QWidget* parent) : QWebEngineView(parent) {
     connect(this, &QWebEngineView::loadStarted, this, [this] { emit playerState("LOADING"); });
     connect(this, &QWebEngineView::loadFinished, this, [this](bool ok) {
         setVisible(ok);
+        if (!ok)
+            currentEmbed.clear();
+        emit diagnostic(ok ? "embed document loaded" : "embed document failed");
         emit playerState(ok ? "READY" : "FAILED");
     });
-    connect(this, &QWebEngineView::renderProcessTerminated, this, [this] {
+    connect(this, &QWebEngineView::renderProcessTerminated, this, [this](auto status, int code) {
         hide();
+        currentEmbed.clear();
+        emit diagnostic(
+            QString("renderer terminated status=%1 exit=%2").arg(int(status)).arg(code));
         emit playerState("FAILED");
     });
     connect(page(), &QWebEnginePage::fullScreenRequested, this,
             [this](QWebEngineFullScreenRequest request) {
                 request.accept();
-                if (request.toggleOn())
+                if (request.toggleOn()) {
+                    previousWindowState = window()->windowState();
                     window()->showFullScreen();
-                else
-                    window()->showNormal();
+                } else
+                    window()->setWindowState(previousWindowState);
             });
     refresh.setInterval(30000);
     connect(&refresh, &QTimer::timeout, this, &PlatformPreview::resolve);
@@ -73,10 +101,12 @@ void PlatformPreview::resolve() {
     connect(watcher, &QFutureWatcher<Json>::finished, this, [this, watcher] {
         querying = false;
         auto result = watcher->result();
+        emit diagnostic(QString::fromStdString(result.dump()));
         watcher->deleteLater();
         const auto embed = QString::fromStdString(result.get("embed").str());
         if (embed.isEmpty()) {
             hide();
+            currentEmbed.clear();
             emit playerState(QString::fromStdString(result.get("air").str("UNAVAILABLE")));
             return;
         }

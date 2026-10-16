@@ -930,16 +930,17 @@ void NativeWindow::replay(Json history, bool beginning, int index) {
             return;
         request.set("streamKey", dialog.value().get("streamKey"));
     }
-    runAsync([this, request, history] {
-                 if (auto previous = studio.session(history.get("id").num());
-                     previous && !previous->done())
-                     previous->stop();
-                 return Json::number(studio.start(request));
-             },
-             [this](Json id) {
-                 watched = id.num();
-                 navigate("preview");
-             });
+    runAsync(
+        [this, request, history] {
+            if (auto previous = studio.session(history.get("id").num());
+                previous && !previous->done())
+                previous->stop();
+            return Json::number(studio.start(request));
+        },
+        [this](Json id) {
+            watched = id.num();
+            navigate("preview");
+        });
 }
 
 // Aggiorna il profilo attivo e quello da riusare nei riavvii, senza alterare le altre richieste
@@ -1091,8 +1092,8 @@ void NativeWindow::showLiveDetails(Json history) {
                         showErrorReport(report, i);
                     });
                 }
-                auto action = [&](const char* name, const char* icon, QColor color,
-                                  bool enabled, std::function<void()> handler) {
+                auto action = [&](const char* name, const char* icon, QColor color, bool enabled,
+                                  std::function<void()> handler) {
                     auto control = new QToolButton(actions);
                     control->setObjectName(name);
                     control->setProperty("rowAction", true);
@@ -1110,11 +1111,9 @@ void NativeWindow::showLiveDetails(Json history) {
                         navigate("preview");
                     });
                 }
-                action("playSpot", "spot", {}, status == "LIVE", [this, record] {
-                    playSpot(record.get("id").num());
-                });
-                action("stopLiveIconLabel", "stop", QColor("#ff453a"), active,
-                       [this, record] {
+                action("playSpot", "spot", {}, status == "LIVE",
+                       [this, record] { playSpot(record.get("id").num()); });
+                action("stopLiveIconLabel", "stop", QColor("#ff453a"), active, [this, record] {
                     if (confirm("stopLive"))
                         runAsync([this, record] {
                             if (auto session = studio.session(record.get("id").num()))
@@ -1134,17 +1133,17 @@ void NativeWindow::showLiveDetails(Json history) {
                 });
                 action("restartLiveIconLabel", "restart", QColor("#ffd60a"), true,
                        [this, record, i, &dialog] {
-                    dialog.accept();
-                    replay(record, true, i);
-                });
-                action("deleteLiveRow", "delete", QColor("#ff453a"), !active,
-                       [this, record, i] {
+                           dialog.accept();
+                           replay(record, true, i);
+                       });
+                action("deleteLiveRow", "delete", QColor("#ff453a"), !active, [this, record, i] {
                     run([&] {
                         if (!confirm("deleteLiveRowConfirm"))
                             return;
                         auto updated = studio.store.get("history", record.get("id").num());
                         auto request = updated.get("request").clone();
-                        auto files = Json::array(), results = Json::array(), profiles = Json::array();
+                        auto files = Json::array(), results = Json::array(),
+                             profiles = Json::array();
                         for (size_t n = 0; n < request.get("files").size(); ++n)
                             if (n != i) {
                                 files.push(request.get("files").at(n));
@@ -1457,8 +1456,8 @@ void NativeWindow::editButton(Json button) {
     });
     dialog.setObjectName("sceneButtonEditor");
     auto mode = dialog.choice("displayMode", t("sceneDisplayMode"),
-                  {{t("sceneModeFullscreen"), Json::string("fullscreen")},
-                   {t("sceneModeInScene"), Json::string("in_scene")}});
+                              {{t("sceneModeFullscreen"), Json::string("fullscreen")},
+                               {t("sceneModeInScene"), Json::string("in_scene")}});
     QList<QPair<QString, Json>> placements;
     for (auto p : {"bottomRight", "bottomLeft", "topRight", "topLeft", "center", "custom"}) {
         QString title = QString(p);
@@ -1485,18 +1484,23 @@ void NativeWindow::editButton(Json button) {
                       : field == std::string("height") ? 180
                                                        : 0,
                       0, 7680);
-    dialog.grid({{"label", t("sceneButtonName")}, {"hotkey", t("sceneKey")},
-                 {"displayMode", t("sceneDisplayMode")}, {"placement", t("scenePlacement")},
-                 {"durationSeconds", t("sceneDuration")}}, 2);
-    auto coordinates = dialog.grid({{"x", "X"}, {"y", "Y"},
-                                     {"width", t("width")}, {"height", t("height")}}, 4);
+    dialog.grid({{"label", t("sceneButtonName")},
+                 {"hotkey", t("sceneKey")},
+                 {"displayMode", t("sceneDisplayMode")},
+                 {"placement", t("scenePlacement")},
+                 {"durationSeconds", t("sceneDuration")}},
+                2);
+    auto coordinates =
+        dialog.grid({{"x", "X"}, {"y", "Y"}, {"width", t("width")}, {"height", t("height")}}, 4);
     auto sync = [mode, placement, duration, indefinite, coordinates] {
-        const bool overlay = Json::parse(mode->currentData().toString().toStdString()).str() == "in_scene";
+        const bool overlay =
+            Json::parse(mode->currentData().toString().toStdString()).str() == "in_scene";
         placement->parentWidget()->setVisible(overlay);
         duration->parentWidget()->setVisible(overlay);
         indefinite->setVisible(overlay);
         duration->setEnabled(!indefinite->isChecked());
-        coordinates->setVisible(overlay &&
+        coordinates->setVisible(
+            overlay &&
             Json::parse(placement->currentData().toString().toStdString()).str() == "custom");
     };
     connect(mode, &QComboBox::currentIndexChanged, &dialog, sync);
@@ -1504,7 +1508,8 @@ void NativeWindow::editButton(Json button) {
     connect(indefinite, &QCheckBox::toggled, &dialog, sync);
     sync();
     if (button.has("id")) {
-        auto remove = dialog.buttons->addButton(t("sceneDelete"), QDialogButtonBox::DestructiveRole);
+        auto remove =
+            dialog.buttons->addButton(t("sceneDelete"), QDialogButtonBox::DestructiveRole);
         remove->setIcon(studioIcon("delete"));
         connect(remove, &QPushButton::clicked, &dialog, [&] {
             if (confirm("sceneDeleteConfirm")) {

@@ -433,8 +433,7 @@ void NativeWindow::buildMetrics() {
         col->addWidget(expand);
         auto processes = new QTableWidget(0, 5, container);
         processes->setObjectName("ffmpegProcesses");
-        processes->setHorizontalHeaderLabels(
-            {"PID", "CPU", "RAM", "Threads", t("liveManagement")});
+        processes->setHorizontalHeaderLabels({"PID", "CPU", "RAM", "Threads", t("liveManagement")});
         processes->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
         processes->verticalHeader()->hide();
         processes->setEditTriggers(QAbstractItemView::NoEditTriggers);

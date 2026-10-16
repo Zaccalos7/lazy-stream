@@ -138,7 +138,7 @@ std::string redactStreamText(std::string message, const Json& request) {
 // Bound each section so a long live can be inspected without loading the entire log into the UI.
 std::string readStreamLogs(const fs::path& root, long id) {
     std::string result;
-    for (auto suffix : {".session.log", ".publisher.log", ".log"}) {
+    for (auto suffix : {".session.log", ".publisher.log", ".log", ".preview.log"}) {
         const auto path = root / "logs" / (std::to_string(id) + suffix);
         auto section = streamDiagnostic(path, Json{}, 65536);
         if (!section.empty())

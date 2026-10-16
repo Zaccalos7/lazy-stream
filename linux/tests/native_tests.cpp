@@ -22,9 +22,9 @@
 #include <QTcpServer>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QTextBrowser>
 #include <QTimer>
 #include <QToolButton>
-#include <QTextBrowser>
 #include <QVideoFrame>
 #include <QVideoSink>
 #include <QVideoWidget>
@@ -308,7 +308,7 @@ class NativeTests : public QObject {
         window.show();
         window.navigate("settings");
         QCOMPARE(window.findChildren<QPushButton*>("videoAndAudio").size(), 1);
-        QCOMPARE(window.findChildren<QPushButton*>("configuration").size(), 1);
+        QCOMPARE(window.findChildren<QPushButton*>("channelSettings").size(), 1);
         window.navigate("profiles");
         auto original = studio.store.list("profiles").size();
         auto duplicate = window.findChild<QToolButton*>("duplicateConfiguration");
@@ -328,7 +328,8 @@ class NativeTests : public QObject {
             width->setValue(0);
             QVERIFY(width->property("nullable").toBool());
             QVERIFY(dialog->findChild<QPushButton*>("preset_Twitch"));
-            dialog->grab().save(QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-profile-editor"));
+            dialog->grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-profile-editor"));
             dialog->reject();
         });
         window.findChild<QToolButton*>("editConfiguration")->click();
@@ -349,7 +350,9 @@ class NativeTests : public QObject {
         files.push(Json::string("/tmp/broadcast.mp4"));
         request.set("files", files);
         request.set("streamKey", "secret-report-key");
-        const auto error = QString("FFmpeg: secret-report-key rtmp://localhost/live/secret-report-key\n") + QString(1300, QChar(0x00e8));
+        const auto error =
+            QString("FFmpeg: secret-report-key rtmp://localhost/live/secret-report-key\n") +
+            QString(1300, QChar(0x00e8));
         result.set("status", "ERROR");
         result.set("error", error.toStdString());
         results.push(result);
@@ -388,7 +391,8 @@ class NativeTests : public QObject {
                     button->click();
                 }
             QVERIFY(qr->pixmap().cacheKey() != first);
-            dialog->grab().save(QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-error-report"));
+            dialog->grab().save(
+                QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-error-report"));
             dialog->accept();
         });
         auto report = window.findChild<QToolButton*>("reportError");

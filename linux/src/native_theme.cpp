@@ -381,7 +381,8 @@ QIcon studioIcon(const QString& name, const QColor& color) {
             p.drawLine(12, 3, 12, 16);
             p.drawLine(7, 11, 12, 16);
             p.drawLine(17, 11, 12, 16);
-            p.drawPolyline(QPolygonF{QPointF(4, 17), QPointF(4, 21), QPointF(20, 21), QPointF(20, 17)});
+            p.drawPolyline(
+                QPolygonF{QPointF(4, 17), QPointF(4, 21), QPointF(20, 21), QPointF(20, 17)});
         } else if (name == "print") {
             p.drawRect(QRectF(6, 2, 12, 6));
             p.drawRoundedRect(QRectF(3, 8, 18, 10), 2, 2);
