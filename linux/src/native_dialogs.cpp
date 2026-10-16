@@ -1,9 +1,11 @@
 #include "live_stream_keys.hpp"
+#include "native_controls.hpp"
 #include "native_forms.hpp"
 #include "native_theme.hpp"
 #include "native_window.hpp"
 #include "scene_service.hpp"
 #include <QApplication>
+#include <QButtonGroup>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHeaderView>
@@ -15,11 +17,12 @@
 #include <QRadioButton>
 #include <QShortcut>
 #include <QSlider>
+#include <QStandardItemModel>
 #include <QStyle>
 #include <QStyledItemDelegate>
-#include <QStandardItemModel>
 #include <QTableWidget>
 #include <QTimer>
+#include <QToolButton>
 #include <QUuid>
 #include <QWizard>
 #include <QWizardPage>
@@ -209,111 +212,314 @@ std::string copyMedia(const fs::path& root, const QString& file) {
 // Il form del canale mantiene ingest e chiave separati; TikTok richiede una nuova chiave a ogni
 // avvio.
 void NativeWindow::editChannel(Json channel) {
-    NativeForm dialog(this, t("channelSettings"), channel);
-    auto platforms = QList<QPair<QString, Json>>{};
-    for (auto name : {"Custom", "Twitch", "YouTube", "Kick", "Facebook", "TikTok"})
+    NativeForm dialog(this, t(channel.has("id") ? "editModalTitle" : "addConfiguration"), channel);
+    dialog.setObjectName("channelEditor");
+    dialog.resize(std::max(800, std::min(1050, width() - 40)),
+                  std::min(850, screen()->availableGeometry().height() - 40));
+    dialog.buttons->button(QDialogButtonBox::Save)->setText(t("save"));
+    dialog.buttons->button(QDialogButtonBox::Cancel)->setText(t("cancel"));
+    const QMap<QString, QString> servers = {
+        {"Twitch", "rtmp://live.twitch.tv/app"},
+        {"YouTube", "rtmps://a.rtmps.youtube.com/live2"},
+        {"Kick", "rtmps://fa723fc1b171.global-contribute.live-video.net/app"},
+        {"Facebook", "rtmps://rtmp-api.facebook.com:443/rtmp"},
+        {"TikTok", "rtmp://push-rtmp-l11-va01.tiktokcdn.com/stage"},
+        {"Custom", ""}};
+    QList<QPair<QString, Json>> platforms;
+    for (const auto& name : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok", "Custom"})
         platforms.append({name, Json::string(name)});
     auto platform = dialog.choice("platform", t("platform"), platforms);
+    platform->hide();
+    dialog.form->labelForField(platform)->hide();
+    auto choices = new QWidget(&dialog);
+    auto column = new QVBoxLayout(choices);
+    column->setContentsMargins(0, 0, 0, 0);
+    column->setSpacing(6);
+    dialog.form->addRow(choices);
+    for (const auto& entry : platforms) {
+        auto card = new QFrame(choices);
+        card->setObjectName("platformChoice");
+        auto row = new QHBoxLayout(card);
+        row->setContentsMargins(14, 8, 14, 8);
+        auto pick = new QRadioButton(card);
+        pick->setObjectName("platform_" + entry.first);
+        pick->setChecked(platform->currentText() == entry.first);
+        auto group = choices->findChild<QButtonGroup*>();
+        if (!group)
+            group = new QButtonGroup(choices);
+        group->addButton(pick);
+        row->addWidget(pick);
+        auto mark = new QLabel(card);
+        mark->setPixmap(platformMark(entry.first).pixmap(20, 20));
+        row->addWidget(mark);
+        row->addWidget(
+            new QLabel(entry.first == "Facebook" ? "Facebook Gaming" : entry.first, card), 1);
+        auto url = new QLabel(servers.value(entry.first), card);
+        url->setObjectName("muted");
+        row->addWidget(url);
+        column->addWidget(card);
+        connect(pick, &QRadioButton::clicked, &dialog, [platform, name = entry.first] {
+            platform->setCurrentIndex(platform->findText(name));
+        });
+    }
     dialog.text("channelName", t("channelName"));
-    auto ingest = dialog.text("streamUrl", t("streamUrl"));
-    auto key = dialog.text("streamKey", t("streamKey"), true);
-    auto reveal = new QCheckBox(t("showStreamKey"), &dialog);
-    dialog.form->addRow(reveal);
-    connect(reveal, &QCheckBox::toggled, &dialog, [key](bool visible) {
-        key->setEchoMode(visible ? QLineEdit::Normal : QLineEdit::Password);
-    });
-    auto folder = dialog.text("videoFolder", t("videoFolder"));
-    auto browse = new QPushButton(t("sceneMediaChoose"), &dialog);
-    dialog.form->addRow(browse);
-    connect(browse, &QPushButton::clicked, &dialog, [&, folder] {
-        auto path = QFileDialog::getExistingDirectory(&dialog, t("videoFolder"));
-        if (!path.isEmpty())
-            folder->setText(path);
-    });
-    dialog.text("description", t("description"));
-    dialog.check("isActive", t("active"), true);
-    dialog.check("ffmpegSender", t("ffmpegSender"));
-    dialog.check("autoCleanupEnabled", t("autoCleanupEnabled"));
-    dialog.number("autoCleanupOlderThanMonths", t("autoCleanupOlderThanMonths"), 3, 0, 120);
-    dialog.number("autoCleanupIntervalMonths", t("autoCleanupIntervalMonths"), 0, 0, 120);
-    auto selectPlatform = [this, platform, ingest, key] {
-        const auto name = platform->currentText();
-        const QMap<QString, QString> servers = {
-            {"Twitch", "rtmp://live.twitch.tv/app"},
-            {"YouTube", "rtmps://a.rtmps.youtube.com/live2"},
-            {"Kick", "rtmps://fa723fc1b171.global-contribute.live-video.net/app"},
-            {"Facebook", "rtmps://rtmp-api.facebook.com:443/rtmp"},
-            {"TikTok", "rtmp://push-rtmp-l11-va01.tiktokcdn.com/stage"}};
-        if (servers.contains(name))
+    auto ingest = dialog.text("streamUrl", t("url"));
+    auto key = dialog.text("streamKey", t("key"), true);
+    auto reveal = key->addAction(studioIcon("eye"), QLineEdit::TrailingPosition);
+    reveal->setText(t("showStreamKey"));
+    reveal->setCheckable(true);
+    connect(reveal, &QAction::toggled, &dialog,
+            [key](bool show) { key->setEchoMode(show ? QLineEdit::Normal : QLineEdit::Password); });
+    dialog.grid(
+        {{"channelName", t("channelName")}, {"streamUrl", t("url")}, {"streamKey", t("key")}}, 2);
+    auto fresh = new QLabel(t("keyEachLiveHint"), &dialog);
+    fresh->setObjectName("muted");
+    fresh->setWordWrap(true);
+    dialog.form->addRow(fresh);
+    dialog.multiline("description", t("description"));
+    auto active = dialog.check("isActive", t("active"), true);
+    active->hide();
+    auto sender = dialog.check("ffmpegSender", t("ffmpegSender"), true);
+    sender->setToolTip(t("ffmpegSenderHelp"));
+    auto senderHint = new QLabel(t("ffmpegSenderHelp"), &dialog);
+    senderHint->setObjectName("muted");
+    senderHint->setWordWrap(true);
+    dialog.form->addRow(senderHint);
+    auto facebook = new QLabel(t("facebookGoLiveHelp"), &dialog);
+    facebook->setObjectName("muted");
+    facebook->setWordWrap(true);
+    dialog.form->addRow(facebook);
+    auto select = [&, platform, ingest, key, fresh, sender, senderHint, facebook](bool fill) {
+        auto name = platform->currentText();
+        if (fill && servers.contains(name))
             ingest->setText(servers.value(name));
-        key->setEnabled(name != "TikTok");
-        key->setToolTip(name == "TikTok" ? t("keyEachLiveHint") : QString{});
+        const bool tiktok = name == "TikTok";
+        key->parentWidget()->setVisible(!tiktok);
+        fresh->setVisible(tiktok);
+        sender->setVisible(name == "YouTube");
+        senderHint->setVisible(name == "YouTube");
+        if (name == "YouTube") {
+            sender->setChecked(true);
+            sender->setEnabled(false);
+        }
+        facebook->setVisible(name == "Facebook");
     };
-    connect(platform, &QComboBox::currentIndexChanged, &dialog, selectPlatform);
-    if (!channel.has("id"))
-        selectPlatform();
-    else
-        key->setEnabled(platform->currentText() != "TikTok");
+    connect(platform, &QComboBox::currentIndexChanged, &dialog, [&] { select(true); });
+    select(!channel.has("id"));
+    if (channel.has("id")) {
+        auto remove = dialog.buttons->addButton(t("delete"), QDialogButtonBox::DestructiveRole);
+        remove->setIcon(studioIcon("delete"));
+        connect(remove, &QPushButton::clicked, &dialog, [&] {
+            run([&] {
+                if (confirm("deleteConfigurations")) {
+                    studio.store.remove("channels", channel.get("id").num());
+                    dialog.reject();
+                }
+            });
+        });
+    }
     connect(dialog.buttons, &QDialogButtonBox::accepted, &dialog, [&] {
         run([&] {
-            auto value = dialog.value();
-            auto name = platform->currentText().toLower().toStdString();
-            value.set("platformStreamName", name);
-            if (name == "tiktok")
-                value.set("streamKey", standInStreamKey(value.get("channelName").str()));
-            validate("channels", value);
-            studio.store.save("channels", value, channel.get("id").num());
+            auto result = dialog.value();
+            result.set("platformStreamName", platform->currentText().toLower().toStdString());
+            if (platform->currentText() == "TikTok")
+                result.set("streamKey", standInStreamKey(result.get("channelName").str()));
+            validate("channels", result);
+            studio.store.save("channels", result, channel.get("id").num());
             dialog.accept();
         });
     });
     dialog.exec();
+    sample();
 }
 
 // Le opzioni sono quelle del motore FFmpeg, con limiti coerenti con la validazione del backend.
-void NativeWindow::editProfile(Json profile) {
-    NativeForm dialog(this, t(profile.has("id") ? "editModalTitle" : "addNewAudioVideoConfiguration"), profile);
-    dialog.setObjectName("profileEditor"); dialog.resize(std::max(900,std::min(1320,width()-40)), std::min(900,screen()->availableGeometry().height()-40));
-    dialog.buttons->button(QDialogButtonBox::Save)->setText(t("save")); dialog.buttons->button(QDialogButtonBox::Cancel)->setText(t("cancel"));
-    auto active=dialog.check("isActive",t("active"),false); active->hide();
-    auto presets=new QWidget(&dialog); auto presetRow=new QHBoxLayout(presets); presetRow->setContentsMargins(0,0,0,0);
-    auto presetHint=new QLabel(t("clickButtonToLoadVideoSettings"),presets); presetHint->setWordWrap(true); presetHint->setObjectName("muted"); presetRow->addWidget(presetHint);
-    const auto templates=studio.store.list("profiles");
+void NativeWindow::editProfile(Json profile, std::function<void(Json)> apply) {
+    NativeForm dialog(this,
+                      t(apply               ? "connectVideoSetting"
+                        : profile.has("id") ? "editModalTitle"
+                                            : "addNewAudioVideoConfiguration"),
+                      profile);
+    dialog.setObjectName("profileEditor");
+    dialog.resize(std::max(900, std::min(1320, width() - 40)),
+                  std::min(900, screen()->availableGeometry().height() - 40));
+    dialog.buttons->button(QDialogButtonBox::Save)->setText(t("save"));
+    dialog.buttons->button(QDialogButtonBox::Cancel)->setText(t("cancel"));
+    auto active = dialog.check("isActive", t("active"), false);
+    active->hide();
+    auto presets = new QWidget(&dialog);
+    auto presetRow = new QHBoxLayout(presets);
+    presetRow->setContentsMargins(0, 0, 0, 0);
+    auto presetHint = new QLabel(t("clickButtonToLoadVideoSettings"), presets);
+    presetHint->setWordWrap(true);
+    presetHint->setObjectName("muted");
+    presetRow->addWidget(presetHint);
+    const auto templates = studio.store.list("profiles");
     dialog.form->addRow(presets);
-    dialog.text("title",t("videoSettingTitle"))->setPlaceholderText(t("titlePlaceholder"));
+    dialog.text("title", t("videoSettingTitle"))->setPlaceholderText(t("titlePlaceholder"));
     dialog.section(t("video"));
-    const auto catalog=Json::parse(readFile(resources/"codec-catalog.json"));
-    auto codec=[&](const char* key,const char* label,const char* group,const QStringList& supported,bool numeric) {
-        QList<QPair<QString,Json>> values; const auto rows=catalog.get(group);
-        for(size_t i=0;i<rows.size();++i) values.append({str(rows.at(i).get("label")),numeric ? rows.at(i).get("id") : rows.at(i).get("name")});
-        auto input=dialog.choice(key,t(label),values);
-        for(size_t i=0;i<rows.size();++i) if(!supported.contains(str(rows.at(i).get("name")))) {auto model=qobject_cast<QStandardItemModel*>(input->model()); model->item(i)->setEnabled(false); model->item(i)->setToolTip(t("invalidParameter"));}
-        if(!profile.has(key)) {for(size_t i=0;i<rows.size();++i) if(supported.contains(str(rows.at(i).get("name")))) {input->setCurrentIndex(i);break;}}
+    const auto catalog = Json::parse(readFile(resources / "codec-catalog.json"));
+    auto codec = [&](const char* key, const char* label, const char* group,
+                     const QStringList& supported, bool numeric) {
+        QList<QPair<QString, Json>> values;
+        const auto rows = catalog.get(group);
+        for (size_t i = 0; i < rows.size(); ++i)
+            values.append({str(rows.at(i).get("label")),
+                           numeric ? rows.at(i).get("id") : rows.at(i).get("name")});
+        auto input = dialog.choice(key, t(label), values);
+        for (size_t i = 0; i < rows.size(); ++i)
+            if (!supported.contains(str(rows.at(i).get("name")))) {
+                auto model = qobject_cast<QStandardItemModel*>(input->model());
+                model->item(i)->setEnabled(false);
+                model->item(i)->setToolTip(t("invalidParameter"));
+            }
+        if (!profile.has(key)) {
+            for (size_t i = 0; i < rows.size(); ++i)
+                if (supported.contains(str(rows.at(i).get("name")))) {
+                    input->setCurrentIndex(i);
+                    break;
+                }
+        }
         return input;
     };
-    codec("videoCodec","codec","VideoCodecs",{"libx264"},true);
-    codec("videoCodecName","videoCodecName","VideoCodecNames",{"libx264","h264_nvenc","h264_qsv"},false);
-    codec("pixelFormat","pixelFormat","PixelFormats",{"yuv420p"},false);
-    dialog.choice("videoFormat",t("videoFormat"),{{"FLV",Json::string("flv")}});
-    dialog.choice("encoderQuality",t("encoderQuality"),{{t("encoderQualityAuto"),Json::string("auto")},{t("encoderQualityLight"),Json::string("light")},{t("encoderQualityBalanced"),Json::string("balanced")},{t("encoderQualityHigh"),Json::string("high")}})->setToolTip(t("encoderQualityHelp"));
-    auto rate=dialog.number("videoBitrate",t("bitrate"),4500,100,100000,3); rate->setProperty("jsonScale",1000.); rate->setRange(.1,100); rate->setValue(profile.get("videoBitrate").num(4500)/1000); rate->setSuffix(" Mbit/s");
-    dialog.number("gopSize",t("gopSize"),2,1,10)->setSuffix(" s");
-    for(const auto& field:{"videoWidth","videoHeight","frameRate"}) {auto input=dialog.number(field,t(field==QString("videoWidth") ? "width" : field==QString("videoHeight") ? "height" : "frameRate"),0,0,field==QString("frameRate") ? 240 : 7680,field==QString("frameRate") ? 3 : 0); input->setProperty("nullable",true); input->setSpecialValueText(t("keepSource")); input->setSingleStep(field==QString("frameRate") ? 1 : 2);}
-    dialog.grid({{"videoCodec",t("codec")},{"videoCodecName",t("videoCodecName")},{"encoderQuality",t("encoderQuality")},{"pixelFormat",t("pixelFormat")},{"videoFormat",t("videoFormat")},{"videoBitrate",t("bitrate")},{"gopSize",t("gopSize")},{"videoWidth",t("width")},{"videoHeight",t("height")},{"frameRate",t("frameRate")}},4);
-    dialog.section(t("audio")+" · "+t("additionalVideoOptions"));
-    codec("audioCodec","audioCodec","AudioCodecs",{"aac"},true);
-    dialog.number("audioBitrate",t("audioBitrate"),128,32,512)->setSuffix(" kbit/s");
-    QList<QPair<QString,Json>> presetValues,tuneValues; for(const auto& name:{"ultrafast","superfast","veryfast","faster","fast","medium","slow","slower","veryslow"}) presetValues.append({name,Json::string(name)});
-    for(const auto& name:{"zerolatency","film","animation","grain","stillimage","fastdecode"}) tuneValues.append({name,Json::string(name)});
-    auto preset=dialog.choice("preset","preset",presetValues); if(!profile.has("preset")) preset->setCurrentIndex(2);
-    auto tune=dialog.choice("tune","tune",tuneValues);
-    dialog.grid({{"audioCodec",t("audioCodec")},{"audioBitrate",t("audioBitrate")},{"preset","preset"},{"tune","tune"}},4);
-    auto option=[&](const char* key,const char* help,bool fallback) {auto input=dialog.check(key,t(key),fallback); auto taken=dialog.form->takeRow(input); delete taken.fieldItem; auto card=new QFrame(&dialog); card->setObjectName("optionCard"); auto row=new QHBoxLayout(card); auto text=new QVBoxLayout; auto title=new QLabel(t(key),card); title->setObjectName("rowTitle"); text->addWidget(title); auto hint=new QLabel(t(help),card); hint->setObjectName("muted"); hint->setWordWrap(true); text->addWidget(hint); row->addLayout(text,1); input->setText({}); row->addWidget(input); dialog.form->addRow(card); return input;};
-    auto low=option("lowLatency","lowLatencyHelp",true); option("adaptiveBitrate","adaptiveBitrateHelp",true);
-    auto tuning=[preset,tune](bool on){preset->setEnabled(!on);tune->setEnabled(!on);}; connect(low,&QCheckBox::toggled,&dialog,tuning); tuning(low->isChecked());
-    for(const auto& platform:{"Twitch","YouTube","Kick","Facebook","TikTok"}) {auto button=new QPushButton(platform==QString("Facebook") ? "Facebook Gaming" : platform,presets); button->setIcon(platformMark(platform)); button->setObjectName(QString("preset_")+platform); button->setProperty("brand",QString(platform).toLower()); presetRow->addWidget(button); connect(button,&QPushButton::clicked,&dialog,[&,platform]{for(size_t i=0;i<templates.size();++i) {auto record=templates.at(i); if(record.get("isDefaultConfiguration").flag() && str(record.get("platform"))==platform) {for(const auto& key:{"videoWidth","videoHeight","frameRate","gopSize","audioBitrate"}) dialog.findChild<QDoubleSpinBox*>(key)->setValue(record.get(key).num()); rate->setValue(record.get("videoBitrate").num(4500)/1000); low->setChecked(record.get("lowLatency").flag(true)); break;}}});}
-    if(profile.has("id")) {auto remove=dialog.buttons->addButton(t("delete"),QDialogButtonBox::DestructiveRole); remove->setIcon(studioIcon("delete")); connect(remove,&QPushButton::clicked,&dialog,[&]{run([&]{if(confirm("deleteConfiguration")){studio.store.remove("profiles",profile.get("id").num());dialog.reject();}});});}
-    connect(dialog.buttons,&QDialogButtonBox::accepted,&dialog,[&]{run([&]{auto result=dialog.value(); result.set("isDefaultConfiguration",false); validate("profiles",result); studio.store.save("profiles",result,profile.get("id").num()); dialog.accept();});});
-    dialog.exec(); sample();
+    codec("videoCodec", "codec", "VideoCodecs", {"libx264"}, true);
+    codec("videoCodecName", "videoCodecName", "VideoCodecNames",
+          {"libx264", "h264_nvenc", "h264_qsv"}, false);
+    codec("pixelFormat", "pixelFormat", "PixelFormats", {"yuv420p"}, false);
+    dialog.choice("videoFormat", t("videoFormat"), {{"FLV", Json::string("flv")}});
+    dialog
+        .choice("encoderQuality", t("encoderQuality"),
+                {{t("encoderQualityAuto"), Json::string("auto")},
+                 {t("encoderQualityLight"), Json::string("light")},
+                 {t("encoderQualityBalanced"), Json::string("balanced")},
+                 {t("encoderQualityHigh"), Json::string("high")}})
+        ->setToolTip(t("encoderQualityHelp"));
+    auto rate = dialog.number("videoBitrate", t("bitrate"), 4500, 100, 100000, 3);
+    rate->setProperty("jsonScale", 1000.);
+    rate->setRange(.1, 100);
+    rate->setValue(profile.get("videoBitrate").num(4500) / 1000);
+    rate->setSuffix(" Mbit/s");
+    dialog.number("gopSize", t("gopSize"), 2, 1, 10)->setSuffix(" s");
+    for (const auto& field : {"videoWidth", "videoHeight", "frameRate"}) {
+        auto input = dialog.number(field,
+                                   t(field == QString("videoWidth")    ? "width"
+                                     : field == QString("videoHeight") ? "height"
+                                                                       : "frameRate"),
+                                   0, 0, field == QString("frameRate") ? 240 : 7680,
+                                   field == QString("frameRate") ? 3 : 0);
+        input->setProperty("nullable", true);
+        input->setSpecialValueText(t("keepSource"));
+        input->setSingleStep(field == QString("frameRate") ? 1 : 2);
+    }
+    dialog.grid({{"videoCodec", t("codec")},
+                 {"videoCodecName", t("videoCodecName")},
+                 {"encoderQuality", t("encoderQuality")},
+                 {"pixelFormat", t("pixelFormat")},
+                 {"videoFormat", t("videoFormat")},
+                 {"videoBitrate", t("bitrate")},
+                 {"gopSize", t("gopSize")},
+                 {"videoWidth", t("width")},
+                 {"videoHeight", t("height")},
+                 {"frameRate", t("frameRate")}},
+                4);
+    dialog.section(t("audio") + " · " + t("additionalVideoOptions"));
+    codec("audioCodec", "audioCodec", "AudioCodecs", {"aac"}, true);
+    dialog.number("audioBitrate", t("audioBitrate"), 128, 32, 512)->setSuffix(" kbit/s");
+    QList<QPair<QString, Json>> presetValues, tuneValues;
+    for (const auto& name : {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium",
+                             "slow", "slower", "veryslow"})
+        presetValues.append({name, Json::string(name)});
+    for (const auto& name :
+         {"zerolatency", "film", "animation", "grain", "stillimage", "fastdecode"})
+        tuneValues.append({name, Json::string(name)});
+    auto preset = dialog.choice("preset", "preset", presetValues);
+    if (!profile.has("preset"))
+        preset->setCurrentIndex(2);
+    auto tune = dialog.choice("tune", "tune", tuneValues);
+    dialog.grid({{"audioCodec", t("audioCodec")},
+                 {"audioBitrate", t("audioBitrate")},
+                 {"preset", "preset"},
+                 {"tune", "tune"}},
+                4);
+    auto option = [&](const char* key, const char* help, bool fallback) {
+        auto input = dialog.check(key, t(key), fallback, true);
+        auto taken = dialog.form->takeRow(input);
+        delete taken.fieldItem;
+        auto card = new QFrame(&dialog);
+        card->setObjectName("optionCard");
+        auto row = new QHBoxLayout(card);
+        auto text = new QVBoxLayout;
+        auto title = new QLabel(t(key), card);
+        title->setObjectName("rowTitle");
+        text->addWidget(title);
+        auto hint = new QLabel(t(help), card);
+        hint->setObjectName("muted");
+        hint->setWordWrap(true);
+        text->addWidget(hint);
+        row->addLayout(text, 1);
+        input->setText({});
+        row->addWidget(input);
+        dialog.form->addRow(card);
+        return input;
+    };
+    auto low = option("lowLatency", "lowLatencyHelp", true);
+    option("adaptiveBitrate", "adaptiveBitrateHelp", true);
+    auto tuning = [preset, tune](bool on) {
+        preset->setEnabled(!on);
+        tune->setEnabled(!on);
+    };
+    connect(low, &QCheckBox::toggled, &dialog, tuning);
+    tuning(low->isChecked());
+    for (const auto& platform : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}) {
+        auto button = new QPushButton(
+            platform == QString("Facebook") ? "Facebook Gaming" : platform, presets);
+        button->setIcon(platformMark(platform));
+        button->setObjectName(QString("preset_") + platform);
+        button->setProperty("brand", QString(platform).toLower());
+        presetRow->addWidget(button);
+        connect(button, &QPushButton::clicked, &dialog, [&, platform] {
+            for (size_t i = 0; i < templates.size(); ++i) {
+                auto record = templates.at(i);
+                if (record.get("isDefaultConfiguration").flag() &&
+                    str(record.get("platform")) == platform) {
+                    for (const auto& key :
+                         {"videoWidth", "videoHeight", "frameRate", "gopSize", "audioBitrate"})
+                        dialog.findChild<QDoubleSpinBox*>(key)->setValue(record.get(key).num());
+                    rate->setValue(record.get("videoBitrate").num(4500) / 1000);
+                    low->setChecked(record.get("lowLatency").flag(true));
+                    break;
+                }
+            }
+        });
+    }
+    if (profile.has("id") && !apply) {
+        auto remove = dialog.buttons->addButton(t("delete"), QDialogButtonBox::DestructiveRole);
+        remove->setIcon(studioIcon("delete"));
+        connect(remove, &QPushButton::clicked, &dialog, [&] {
+            run([&] {
+                if (confirm("deleteConfiguration")) {
+                    studio.store.remove("profiles", profile.get("id").num());
+                    dialog.reject();
+                }
+            });
+        });
+    }
+    connect(dialog.buttons, &QDialogButtonBox::accepted, &dialog, [&] {
+        run([&] {
+            auto result = dialog.value();
+            result.set("isDefaultConfiguration", false);
+            validate("profiles", result);
+            if (apply)
+                apply(result);
+            else
+                studio.store.save("profiles", result, profile.get("id").num());
+            dialog.accept();
+        });
+    });
+    if (apply)
+        presets->hide();
+    dialog.exec();
+    sample();
 }
 
 // La selezione impone due passaggi come Windows e non rende disponibili configurazioni disattivate.
@@ -724,7 +930,12 @@ void NativeWindow::replay(Json history, bool beginning, int index) {
             return;
         request.set("streamKey", dialog.value().get("streamKey"));
     }
-    runAsync([this, request] { return Json::number(studio.start(request)); },
+    runAsync([this, request, history] {
+                 if (auto previous = studio.session(history.get("id").num());
+                     previous && !previous->done())
+                     previous->stop();
+                 return Json::number(studio.start(request));
+             },
              [this](Json id) {
                  watched = id.num();
                  navigate("preview");
@@ -734,26 +945,21 @@ void NativeWindow::replay(Json history, bool beginning, int index) {
 // Aggiorna il profilo attivo e quello da riusare nei riavvii, senza alterare le altre richieste
 // storiche.
 void NativeWindow::linkProfile(Json history) {
-    NativeForm dialog(this, t("connectVideoSetting"));
-    dialog.choice("profileId", t("videoAndAudio"),
-                  choices(studio.store.list("profiles"), "title", true));
-    connect(dialog.buttons, &QDialogButtonBox::accepted, &dialog, [&] {
-        run([&] {
-            auto value = dialog.value();
-            auto profile = studio.store.get("profiles", value.get("profileId").num());
-            auto id = history.get("id").num();
-            if (auto session = studio.session(id); session && !session->done())
-                session->command("parameters", profile);
-            auto stored = studio.store.get("history", id);
-            auto request = stored.get("request").clone();
-            request.set("profileId", value.get("profileId"));
-            request.set("profile", profile);
-            stored.set("request", request);
-            studio.store.save("history", stored, id);
-            dialog.accept();
-        });
+    auto profile = history.get("request").get("profile");
+    if (!profile.has("title"))
+        profile = studio.store.get("profiles", history.get("request").get("profileId").num(1));
+    editProfile(profile, [this, history](Json profile) {
+        const long id = history.get("id").num();
+        const auto sessions = studio.live();
+        for (size_t i = 0; i < sessions.size(); ++i)
+            if (sessions.at(i).get("id").num() == id && !studio.session(id)->done())
+                studio.session(id)->command("parameters", profile);
+        auto stored = studio.store.get("history", id);
+        auto request = stored.get("request").clone();
+        request.set("profile", profile);
+        stored.set("request", request);
+        studio.store.save("history", stored, id);
     });
-    dialog.exec();
 }
 
 // Lo snapshot resta leggibile come dati di diagnostica in un controllo di testo nativo.
@@ -773,70 +979,209 @@ void NativeWindow::showSnapshot(const Json& object) {
 
 void NativeWindow::showLiveDetails(Json history) {
     QDialog dialog(this);
+    dialog.setObjectName("liveDetailsDialog");
     const bool scene = history.get("request").has("scene");
     dialog.setWindowTitle(t(scene ? "sceneDetails" : "playlistDetails"));
+    dialog.resize(std::max(800, std::min(1300, width() - 50)), 620);
     auto layout = new QVBoxLayout(&dialog);
-    if (!history.get("error").str().empty()) {
-        auto error = new QLabel(str(history.get("error")), &dialog);
-        error->setWordWrap(true);
-        error->setTextFormat(Qt::PlainText);
-        error->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        layout->addWidget(error);
-    }
-    auto list = new QListWidget(&dialog);
-    auto videos = history.get("request").get("files");
-    if (!videos.isArray())
-        videos = history.get("videos");
-    if (scene) {
-        const auto items = history.get("request").get("scene").get("items");
-        for (size_t i = 0; i < items.size(); ++i)
-            list->addItem(str(items.at(i).get("label")) + " · " +
-                          str(items.at(i).get("sourceKind")));
-    }
-    for (size_t i = 0; !scene && i < videos.size(); ++i)
-        list->addItem(videos.at(i).isObject() ? str(videos.at(i).get("path")) : str(videos.at(i)));
-    layout->addWidget(list);
-    auto play = new QPushButton(t("playlistStartFrom"), &dialog);
-    play->setVisible(!scene);
-    play->setEnabled(false);
-    connect(list, &QListWidget::currentRowChanged, &dialog,
-            [play](int row) { play->setEnabled(row >= 0); });
-    layout->addWidget(play);
-    connect(play, &QPushButton::clicked, &dialog, [&] {
-        if (list->currentRow() >= 0) {
-            auto index = list->currentRow();
-            dialog.accept();
-            if (auto session = studio.session(history.get("id").num());
-                session && !session->done()) {
-                if (confirm("playlistStartFromConfirm")) {
-                    Json command;
-                    command.set("index", double(index));
-                    liveCommand(history.get("id").num(), "jump", command);
-                }
-            } else
-                replay(history, true, index);
-        }
-    });
+    auto heading = new QLabel(&dialog);
+    heading->setObjectName("dialogTitle");
+    layout->addWidget(heading);
+    auto caption = new QLabel(&dialog);
+    caption->setObjectName("muted");
+    layout->addWidget(caption);
+    auto table = new QTableWidget(0, scene ? 3 : 5, &dialog);
+    table->setObjectName("playlistVideos");
+    table->setHorizontalHeaderLabels(
+        scene ? QStringList{"#", t("liveStatus"), t("title")}
+              : QStringList{"#", t("liveStatus"), t("title"), t("playlistStoppedAt"), ""});
+    table->verticalHeader()->hide();
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+    layout->addWidget(table, 1);
     auto logs = new QPlainTextEdit(&dialog);
     logs->setObjectName("liveLogs");
     logs->setReadOnly(true);
     logs->setLineWrapMode(QPlainTextEdit::NoWrap);
-    auto refreshLogs = [this, logs, history] {
-        const auto content =
-            QString::fromStdString(readStreamLogs(studio.store.root, history.get("id").num()));
-        if (logs->toPlainText() != content)
-            logs->setPlainText(content);
-    };
-    refreshLogs();
+    logs->hide();
+    auto toggle = new QPushButton("FFmpeg · logs", &dialog);
+    toggle->setCheckable(true);
+    layout->addWidget(toggle);
     layout->addWidget(logs, 1);
+    connect(toggle, &QPushButton::toggled, logs, &QWidget::setVisible);
+    auto refresh = [&, history] {
+        Json record;
+        try {
+            record = studio.store.get("history", history.get("id").num());
+        } catch (...) {
+            heading->setText(t("noDataPresent"));
+            return;
+        }
+        const auto sessions = studio.live();
+        bool active = false;
+        for (size_t i = 0; i < sessions.size(); ++i)
+            if (sessions.at(i).get("id").num() == history.get("id").num()) {
+                const auto snap = sessions.at(i);
+                record.set("position", snap.get("position"));
+                record.set("videoResults", snap.get("videoResults"));
+                record.set("status", snap.get("status"));
+                active = snap.get("status").str() == "LIVE" ||
+                         snap.get("status").str() == "STARTING" ||
+                         snap.get("status").str() == "RECONNECTING";
+            }
+        auto items = scene ? record.get("request").get("scene").get("items")
+                           : record.get("request").get("files");
+        heading->setText(
+            (scene ? str(record.get("request").get("scene").get("name")) : t("playlistDetails")) +
+            " · " +
+            t(scene ? "sceneSources" : "playlistVideoCount")
+                .replace("{0}", QString::number(items.size())));
+        caption->setText(str(record.get("platform")) + " · " + str(record.get("channelName")));
+        table->setRowCount(0);
+        for (size_t i = 0; i < items.size(); ++i) {
+            table->insertRow(i);
+            auto result = record.get("videoResults").at(scene ? 0 : i);
+            const auto status = result.get("status").str(record.get("status").str());
+            auto statusKey = status == "LIVE"           ? "liveStatusLive"
+                             : status == "ERROR"        ? "liveStatusError"
+                             : status == "ENDED"        ? "liveStatusEnded"
+                             : status == "STOPPED"      ? "liveStatusStopped"
+                             : status == "STARTING"     ? "liveStatusConnecting"
+                             : status == "RECONNECTING" ? "liveStatusReconnecting"
+                                                        : "liveStatusOffline";
+            const auto path = scene ? items.at(i).get("sourceTarget").str() : items.at(i).str();
+            table->setItem(i, 0, new QTableWidgetItem(QString::number(i + 1)));
+            auto badge = new QLabel(t(statusKey), table);
+            badge->setProperty("badge", status == "STARTING" || status == "RECONNECTING"
+                                            ? "connecting"
+                                            : QString::fromStdString(status).toLower());
+            table->setCellWidget(i, 1, badge);
+            auto title = new QTableWidgetItem(
+                QString::fromStdString(
+                    scene ? items.at(i).get("label").str(fs::path(path).filename().string())
+                          : fs::path(path).filename().string()) +
+                "\n" + QString::fromStdString(path));
+            title->setToolTip(QString::fromStdString(path));
+            table->setItem(i, 2, title);
+            table->setRowHeight(i, 54);
+            if (!scene) {
+                const int seconds = result.get("offsetSeconds").num();
+                table->setItem(
+                    i, 3,
+                    new QTableWidgetItem(seconds > 0 && status != "ENDED"
+                                             ? QString("%1:%2:%3")
+                                                   .arg(seconds / 3600, 2, 10, QChar('0'))
+                                                   .arg(seconds / 60 % 60, 2, 10, QChar('0'))
+                                                   .arg(seconds % 60, 2, 10, QChar('0'))
+                                             : "–"));
+                auto actions = new QWidget(table);
+                auto row = new QHBoxLayout(actions);
+                row->setContentsMargins(0, 0, 0, 0);
+                if (status == "ERROR") {
+                    auto report = new QToolButton(actions);
+                    report->setObjectName("reportError");
+                    report->setIcon(studioIcon("report"));
+                    report->setToolTip(t("reportError"));
+                    row->addWidget(report);
+                    connect(report, &QToolButton::clicked, &dialog, [this, record, result, i] {
+                        auto report = record.clone();
+                        report.set("error", result.get("error"));
+                        showErrorReport(report, i);
+                    });
+                }
+                auto action = [&](const char* name, const char* icon, QColor color,
+                                  bool enabled, std::function<void()> handler) {
+                    auto control = new QToolButton(actions);
+                    control->setObjectName(name);
+                    control->setProperty("rowAction", true);
+                    control->setIcon(studioIcon(icon, color));
+                    control->setToolTip(t(name));
+                    control->setAccessibleName(t(name));
+                    control->setEnabled(enabled);
+                    row->addWidget(control);
+                    connect(control, &QToolButton::clicked, &dialog, std::move(handler));
+                };
+                if (status == "LIVE") {
+                    action("preview", "preview", {}, true, [this, record, &dialog] {
+                        watched = record.get("id").num();
+                        dialog.accept();
+                        navigate("preview");
+                    });
+                }
+                action("playSpot", "spot", {}, status == "LIVE", [this, record] {
+                    playSpot(record.get("id").num());
+                });
+                action("stopLiveIconLabel", "stop", QColor("#ff453a"), active,
+                       [this, record] {
+                    if (confirm("stopLive"))
+                        runAsync([this, record] {
+                            if (auto session = studio.session(record.get("id").num()))
+                                session->stop();
+                            return Json{};
+                        });
+                });
+                auto start = new QToolButton(actions);
+                start->setObjectName("playlistStartFrom");
+                start->setIcon(studioIcon("play", QColor("#30d158")));
+                start->setToolTip(t("playlistStartFrom"));
+                start->setEnabled(!active);
+                row->addWidget(start);
+                connect(start, &QToolButton::clicked, &dialog, [this, record, i, &dialog] {
+                    dialog.accept();
+                    replay(record, true, i);
+                });
+                action("restartLiveIconLabel", "restart", QColor("#ffd60a"), true,
+                       [this, record, i, &dialog] {
+                    dialog.accept();
+                    replay(record, true, i);
+                });
+                action("deleteLiveRow", "delete", QColor("#ff453a"), !active,
+                       [this, record, i] {
+                    run([&] {
+                        if (!confirm("deleteLiveRowConfirm"))
+                            return;
+                        auto updated = studio.store.get("history", record.get("id").num());
+                        auto request = updated.get("request").clone();
+                        auto files = Json::array(), results = Json::array(), profiles = Json::array();
+                        for (size_t n = 0; n < request.get("files").size(); ++n)
+                            if (n != i) {
+                                files.push(request.get("files").at(n));
+                                results.push(updated.get("videoResults").at(n));
+                                profiles.push(request.get("videoProfiles").at(n));
+                            }
+                        if (!files.size()) {
+                            studio.store.removeHistoryIfInactive(updated.get("id").num(),
+                                                                 updated.get("startedAt").str());
+                            return;
+                        }
+                        request.set("files", files);
+                        request.set("videoProfiles", profiles);
+                        updated.set("request", request);
+                        updated.set("videoResults", results);
+                        updated.set("position", 0.);
+                        studio.store.save("history", updated, updated.get("id").num());
+                    });
+                });
+                table->setCellWidget(i, 4, actions);
+            }
+        }
+        if (logs->isVisible()) {
+            const auto content =
+                QString::fromStdString(readStreamLogs(studio.store.root, record.get("id").num()));
+            if (logs->toPlainText() != content)
+                logs->setPlainText(content);
+        }
+    };
+    refresh();
     auto timer = new QTimer(&dialog);
-    connect(timer, &QTimer::timeout, &dialog, refreshLogs);
+    connect(timer, &QTimer::timeout, &dialog, refresh);
     timer->start(1000);
-    auto close = new QPushButton(t("close"), &dialog);
-    close->setIcon(studioIcon("close"));
-    layout->addWidget(close);
+    auto close = new QPushButton(t("back"), &dialog);
+    close->setObjectName("closeLiveDetails");
+    layout->addWidget(close, 0, Qt::AlignRight);
     connect(close, &QPushButton::clicked, &dialog, &QDialog::accept);
-    dialog.resize(720, 500);
     dialog.exec();
 }
 
@@ -912,13 +1257,14 @@ void NativeWindow::showDeck(long id) {
         auto button = rows.at(i);
         auto card = new QWidget(deck);
         auto cardColumn = new QVBoxLayout(card);
-        auto push =
-            new QPushButton(str(button.get("label")) + "\n" + str(button.get("hotkey")), card);
-        push->setIcon(QIcon(QString::fromStdString(
-            (studio.store.root / "scene-media" / button.get("mediaName").str()).string())));
-        push->setIconSize(QSize(96, 64));
-        push->setMinimumHeight(84);
-        push->setCursor(Qt::PointingHandCursor);
+        auto push = new SceneTile(
+            str(button.get("label")),
+            QString::fromStdString(
+                (studio.store.root / "scene-media" / button.get("mediaName").str()).string()),
+            str(button.get("hotkey")),
+            t(button.get("displayMode").str() == "in_scene" ? "sceneModeInScene"
+                                                            : "sceneModeFullscreen"),
+            card);
         cardColumn->addWidget(push);
         auto actions = new QHBoxLayout;
         auto edit = new QPushButton(t("sceneEdit"), card);
@@ -1109,7 +1455,8 @@ void NativeWindow::editButton(Json button) {
             media->setText(file);
         }
     });
-    dialog.choice("displayMode", t("sceneDisplayMode"),
+    dialog.setObjectName("sceneButtonEditor");
+    auto mode = dialog.choice("displayMode", t("sceneDisplayMode"),
                   {{t("sceneModeFullscreen"), Json::string("fullscreen")},
                    {t("sceneModeInScene"), Json::string("in_scene")}});
     QList<QPair<QString, Json>> placements;
@@ -1123,8 +1470,12 @@ void NativeWindow::editButton(Json button) {
                                         : p == std::string("topLeft")    ? "top_left"
                                                                          : p)});
     }
-    dialog.choice("placement", t("scenePlacement"), placements);
-    dialog.number("durationSeconds", t("sceneDurationSeconds"), 0, 0, 86400);
+    auto placement = dialog.choice("placement", t("scenePlacement"), placements);
+    auto duration = dialog.number("durationSeconds", t("sceneDurationSeconds"), 0, 0, 86400);
+    auto indefinite = new QCheckBox(t("sceneDurationForever"), &dialog);
+    indefinite->setObjectName("sceneDurationForever");
+    indefinite->setChecked(duration->value() == 0);
+    dialog.form->addRow(indefinite);
     for (auto field : {"x", "y", "width", "height"})
         dialog.number(field,
                       field == std::string("width")    ? t("width")
@@ -1134,9 +1485,39 @@ void NativeWindow::editButton(Json button) {
                       : field == std::string("height") ? 180
                                                        : 0,
                       0, 7680);
+    dialog.grid({{"label", t("sceneButtonName")}, {"hotkey", t("sceneKey")},
+                 {"displayMode", t("sceneDisplayMode")}, {"placement", t("scenePlacement")},
+                 {"durationSeconds", t("sceneDuration")}}, 2);
+    auto coordinates = dialog.grid({{"x", "X"}, {"y", "Y"},
+                                     {"width", t("width")}, {"height", t("height")}}, 4);
+    auto sync = [mode, placement, duration, indefinite, coordinates] {
+        const bool overlay = Json::parse(mode->currentData().toString().toStdString()).str() == "in_scene";
+        placement->parentWidget()->setVisible(overlay);
+        duration->parentWidget()->setVisible(overlay);
+        indefinite->setVisible(overlay);
+        duration->setEnabled(!indefinite->isChecked());
+        coordinates->setVisible(overlay &&
+            Json::parse(placement->currentData().toString().toStdString()).str() == "custom");
+    };
+    connect(mode, &QComboBox::currentIndexChanged, &dialog, sync);
+    connect(placement, &QComboBox::currentIndexChanged, &dialog, sync);
+    connect(indefinite, &QCheckBox::toggled, &dialog, sync);
+    sync();
+    if (button.has("id")) {
+        auto remove = dialog.buttons->addButton(t("sceneDelete"), QDialogButtonBox::DestructiveRole);
+        remove->setIcon(studioIcon("delete"));
+        connect(remove, &QPushButton::clicked, &dialog, [&] {
+            if (confirm("sceneDeleteConfirm")) {
+                studio.store.remove("buttons", button.get("id").num());
+                dialog.accept();
+            }
+        });
+    }
     connect(dialog.buttons, &QDialogButtonBox::accepted, &dialog, [&] {
         run([&] {
             auto value = dialog.value();
+            if (indefinite->isChecked())
+                value.set("durationSeconds", 0.);
             validate("buttons", value);
             auto all = studio.store.list("buttons");
             for (size_t i = 0; i < all.size(); ++i)

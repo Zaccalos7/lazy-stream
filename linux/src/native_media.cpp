@@ -1,3 +1,4 @@
+#include "native_theme.hpp"
 #include "native_window.hpp"
 #include "scene_service.hpp"
 #include <QAudioOutput>
@@ -14,6 +15,7 @@
 #include <QSlider>
 #include <QSplitter>
 #include <QTableWidget>
+#include <QTextBrowser>
 #include <QTextDocument>
 #include <QTextEdit>
 #include <QTimer>
@@ -220,7 +222,7 @@ void NativeWindow::buildManual() {
     auto split = new QSplitter(body);
     auto toc = new QListWidget(split);
     toc->setObjectName("manualContents");
-    auto text = new QTextEdit(split);
+    auto text = new QTextBrowser(split);
     text->setObjectName("manualText");
     text->setReadOnly(true);
     split->addWidget(toc);
@@ -228,8 +230,20 @@ void NativeWindow::buildManual() {
     split->setStretchFactor(1, 3);
     split->setMinimumHeight(500);
     bodyLayout->addWidget(split, 1);
-    for (size_t i = 0; i < sections.size(); ++i)
-        toc->addItem(QString::fromStdString(sections.at(i).get("title").str()));
+    for (size_t i = 0; i < sections.size(); ++i) {
+        const auto id = sections.at(i).get("id").str();
+        const QString icon = id == "dashboard"     ? "home"
+                             : id == "history"     ? "history"
+                             : id == "taskManager" ? "activity"
+                             : id == "sceneDeck"   ? "deck"
+                             : id == "preview"     ? "screen"
+                             : id == "layouts"     ? "layouts"
+                             : id == "settings"    ? "settings"
+                                                   : "video";
+        toc->addItem(new QListWidgetItem(
+            studioIcon(icon), QString::number(i + 1) + "  " +
+                                  QString::fromStdString(sections.at(i).get("title").str())));
+    }
     auto content = [this, sections](int index) {
         if (index < 0)
             return QString{};
@@ -237,8 +251,9 @@ void NativeWindow::buildManual() {
         auto escape = [](Json value) {
             return QString::fromStdString(value.str()).toHtmlEscaped();
         };
-        QString html = "<h1>" + escape(section.get("title")) + "</h1><p>" +
-                       escape(section.get("body")) + "</p><ol>";
+        QString html = "<a name='section-" + QString::number(index) + "'></a><h1>" +
+                       QString::number(index + 1) + ". " + escape(section.get("title")) +
+                       "</h1><p>" + escape(section.get("body")) + "</p><ol>";
         auto steps = section.get("steps");
         for (size_t i = 0; i < steps.size(); ++i)
             html += "<li>" + escape(steps.at(i)) + "</li>";
@@ -252,36 +267,57 @@ void NativeWindow::buildManual() {
         html += "<p>" + escape(section.get("callout")) + "</p>";
         return html;
     };
+    QString guide;
+    for (size_t i = 0; i < sections.size(); ++i)
+        guide += content(i);
+    text->setHtml(guide);
+    text->setOpenExternalLinks(true);
     connect(toc, &QListWidget::currentRowChanged, this,
-            [text, content](int row) { text->setHtml(content(row)); });
+            [text](int row) { text->scrollToAnchor("section-" + QString::number(row)); });
     toc->setCurrentRow(0);
+    auto hero = body->findChild<QFrame*>("pageHeading");
+    auto row = qobject_cast<QHBoxLayout*>(hero->layout());
+    auto mark = new QLabel(hero);
+    mark->setPixmap(QPixmap(QString::fromStdString((resources / "app-icon.png").string()))
+                        .scaled(72, 72, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    row->insertWidget(0, mark);
+    body->findChild<QLabel*>("pageTitle")->setText(t("manualTitle"));
+    auto actions = new QWidget(hero);
+    new QHBoxLayout(actions);
+    row->addWidget(actions);
     // QTextDocument stampa il documento, non un sito: la stessa impaginazione produce anche un PDF.
-    addAction("manualDownloadPdf", [this, sections, content] {
-        auto path = QFileDialog::getSaveFileName(this, t("manualDownloadPdf"), "OrbisStream.pdf",
-                                                 "PDF (*.pdf)");
-        if (path.isEmpty())
-            return;
-        QPrinter printer(QPrinter::HighResolution);
-        printer.setOutputFormat(QPrinter::PdfFormat);
-        printer.setOutputFileName(path);
-        QTextDocument doc;
-        QString html;
-        for (size_t i = 0; i < sections.size(); ++i)
-            html += content(i);
-        doc.setHtml(html);
-        doc.print(&printer);
-    });
-    addAction("manualPrint", [this, sections, content] {
-        QPrinter printer(QPrinter::HighResolution);
-        QPrintDialog dialog(&printer, this);
-        if (dialog.exec() != QDialog::Accepted)
-            return;
-        QTextDocument doc;
-        QString html;
-        for (size_t i = 0; i < sections.size(); ++i)
-            html += content(i);
-        doc.setHtml(html);
-        doc.print(&printer);
-    });
+    addAction(
+        "manualDownloadPdf",
+        [this, sections, content] {
+            auto path = QFileDialog::getSaveFileName(this, t("manualDownloadPdf"),
+                                                     "OrbisStream.pdf", "PDF (*.pdf)");
+            if (path.isEmpty())
+                return;
+            QPrinter printer(QPrinter::HighResolution);
+            printer.setOutputFormat(QPrinter::PdfFormat);
+            printer.setOutputFileName(path);
+            QTextDocument doc;
+            QString html;
+            for (size_t i = 0; i < sections.size(); ++i)
+                html += content(i);
+            doc.setHtml(html);
+            doc.print(&printer);
+        },
+        actions, "download");
+    addAction(
+        "manualPrint",
+        [this, sections, content] {
+            QPrinter printer(QPrinter::HighResolution);
+            QPrintDialog dialog(&printer, this);
+            if (dialog.exec() != QDialog::Accepted)
+                return;
+            QTextDocument doc;
+            QString html;
+            for (size_t i = 0; i < sections.size(); ++i)
+                html += content(i);
+            doc.setHtml(html);
+            doc.print(&printer);
+        },
+        actions, "print");
 }
 } // namespace orbis

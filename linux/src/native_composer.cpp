@@ -259,11 +259,12 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     const bool isLayout = scene.get("isLayout").flag();
     NativeForm dialog(this, t(isLayout ? "saveLayout" : "composeTitle"), scene);
     dialog.setObjectName("sceneEditor");
-    dialog.resize(saved ? std::max(width(), dialog.screen()->availableGeometry().width()) - 28
-                        : 1160,
-                  saved ? dialog.screen()->availableGeometry().height() - 28
-                        : qMin(900, dialog.screen()->availableGeometry().height() - 60));
-    if (saved) {
+    dialog.resize(
+        (saved || isLayout) ? std::max(width(), dialog.screen()->availableGeometry().width()) - 28
+                            : 1160,
+        (saved || isLayout) ? dialog.screen()->availableGeometry().height() - 28
+                            : qMin(900, dialog.screen()->availableGeometry().height() - 60));
+    if (saved || isLayout) {
         dialog.setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
         auto title = dialog.findChild<QLabel*>("heroTitle");
         dialog.layout->removeWidget(title);
@@ -272,8 +273,11 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
         auto row = new QHBoxLayout(header);
         auto titles = new QVBoxLayout;
         title->setObjectName("dialogTitle");
+        if (isLayout)
+            title->setText(t("layouts"));
         titles->addWidget(title);
-        auto description = new QLabel(t("composeSubtitle"), header);
+        auto description =
+            new QLabel(t(isLayout ? "layoutsDescription" : "composeSubtitle"), header);
         description->setObjectName("muted");
         description->setWordWrap(true);
         titles->addWidget(description);
@@ -306,6 +310,7 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
                                                          : "save"),
                                             QDialogButtonBox::AcceptRole);
     commit->setObjectName("commitScene");
+    commit->setIcon(studioIcon(saved ? "play" : "save"));
     commit->setDefault(true);
     commit->setProperty("primary", true);
     commit->style()->unpolish(commit);
@@ -393,7 +398,7 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
     mainLayout->removeWidget(formScroll);
     formScroll->hide();
     mainLayout->insertWidget(0, bar);
-    if (saved) {
+    if (saved || isLayout) {
         dialog.buttons->removeButton(commit);
         barRow->addWidget(commit, 0, Qt::AlignBottom);
         dialog.buttons->hide();
@@ -574,6 +579,9 @@ bool NativeWindow::editScene(Json scene, std::function<void(Json)> saved) {
             auto button = new SourceButton(QString::fromStdString(picked.get("label").str()),
                                            picked, catalog);
             button->setObjectName("catalogSource");
+            button->setToolTip(QString::fromStdString(picked.get("label").str()));
+            button->setText(button->fontMetrics().elidedText(button->text(), Qt::ElideRight, 140));
+            button->setMinimumHeight(42);
             button->setIcon(
                 studioIcon(picked.get("kind").str() == "MICROPHONE" ? "volume" : "screen"));
             connect(button, &QPushButton::clicked, &dialog,

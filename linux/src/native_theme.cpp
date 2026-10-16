@@ -334,7 +334,26 @@ QIcon studioIcon(const QString& name, const QColor& color) {
         p.setRenderHint(QPainter::Antialiasing);
         p.setPen(QPen(ink, 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         const QColor inkFill = ink;
-        if (name == "save") {
+        if (name == "report") {
+            p.drawLine(5, 3, 5, 21);
+            QPainterPath flag;
+            flag.moveTo(5, 4);
+            flag.cubicTo(11, 0, 14, 8, 21, 4);
+            flag.lineTo(21, 14);
+            flag.cubicTo(14, 18, 11, 10, 5, 14);
+            p.drawPath(flag);
+        } else if (name == "copy" || name == "duplicate") {
+            p.drawRoundedRect(QRectF(8, 7, 12, 14), 1, 1);
+            p.drawLine(4, 17, 4, 3);
+            p.drawLine(4, 3, 16, 3);
+        } else if (name == "eye") {
+            QPainterPath eye;
+            eye.moveTo(2, 12);
+            eye.quadTo(12, 1, 22, 12);
+            eye.quadTo(12, 23, 2, 12);
+            p.drawPath(eye);
+            p.drawEllipse(QPointF(12, 12), 3, 3);
+        } else if (name == "save") {
             p.drawRect(QRectF(4, 3, 16, 18));
             p.drawRect(QRectF(8, 3, 8, 6));
             p.drawRect(QRectF(7, 13, 10, 8));
@@ -348,12 +367,30 @@ QIcon studioIcon(const QString& name, const QColor& color) {
             p.drawLine(4, 15, 4, 21);
             p.drawLine(4, 21, 20, 21);
             p.drawLine(20, 21, 20, 15);
-        } else if (name == "volume") {
+        } else if (name == "volume" || name == "mute") {
             QPolygonF speaker;
             speaker << QPointF(3, 9) << QPointF(7, 9) << QPointF(12, 5) << QPointF(12, 19)
                     << QPointF(7, 15) << QPointF(3, 15) << QPointF(3, 9);
             p.drawPolyline(speaker);
-            p.drawArc(QRectF(10, 5, 12, 14), -65 * 16, 130 * 16);
+            if (name == "mute") {
+                p.drawLine(16, 9, 22, 15);
+                p.drawLine(16, 15, 22, 9);
+            } else
+                p.drawArc(QRectF(10, 5, 12, 14), -65 * 16, 130 * 16);
+        } else if (name == "download") {
+            p.drawLine(12, 3, 12, 16);
+            p.drawLine(7, 11, 12, 16);
+            p.drawLine(17, 11, 12, 16);
+            p.drawPolyline(QPolygonF{QPointF(4, 17), QPointF(4, 21), QPointF(20, 21), QPointF(20, 17)});
+        } else if (name == "print") {
+            p.drawRect(QRectF(6, 2, 12, 6));
+            p.drawRoundedRect(QRectF(3, 8, 18, 10), 2, 2);
+            p.setBrush(qApp->palette().color(QPalette::Window));
+            p.drawRect(QRectF(6, 14, 12, 8));
+            p.drawPoint(17, 11);
+        } else if (name == "first") {
+            p.drawLine(5, 5, 5, 19);
+            p.drawPolyline(QPolygonF{QPointF(17, 5), QPointF(10, 12), QPointF(17, 19)});
         } else if (name == "menu") {
             for (int y : {6, 12, 18})
                 p.drawLine(3, y, 21, y);
@@ -769,6 +806,23 @@ void applyNativeTheme(const QString& theme) {
     )");
     // Colori del tema chiaro di tokens.css, sostituiti in un solo passaggio per non
     // trasformare nuovamente i colori già risolti (e mantenere i colori dei marchi).
+    stylesheet += QString::fromUtf8(R"(
+        QFrame#configurationRow, QFrame#configurationEmpty, QFrame#optionCard, QFrame#platformChoice, QFrame#meterCard, QFrame#systemInfo, QFrame#previewStage { background: #262628; border: 1px solid #414145; border-radius: 12px; }
+        QFrame#configurationRow QLabel, QFrame#optionCard QLabel, QFrame#platformChoice QLabel, QFrame#meterCard QLabel { border: none; background: transparent; }
+        QLabel#formSection { font-size: 13px; font-weight: 600; margin-top: 12px; }
+        QLabel#fieldLabel { font-size: 12px; }
+        QFrame#cleanupProgress { background: #262628; border: 1px solid #414145; border-left: 3px solid #0a84ff; border-radius: 12px; }
+        QPushButton, QToolButton { padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+        QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox { background: #323234; padding: 7px 9px; font-size: 12px; }
+        QLabel#heroTitle { font-size: 18px; }
+        QPushButton[brand="twitch"] { background: #bf5af2; color: white; }
+        QPushButton[brand="youtube"] { background: #ff453a; color: white; }
+        QPushButton[brand="kick"] { background: #53fc18; color: black; }
+        QPushButton[brand="facebook"] { background: #015eec; color: white; }
+        QPushButton[brand="tiktok"] { background: black; color: white; }
+        QWidget#livePageNumbers QPushButton:checked { background: #0a84ff; color: white; }
+        QPushButton[liveIndicator="true"], QLabel#previewLiveIndicator { background: #ff453a; color: white; border: none; border-radius: 6px; padding: 7px 12px; }
+    )");
     if (light) {
         const QMap<QString, QString> colors = {
             {"#1a1a1c", "#f4f4f7"},     {"#232325", "#eeeef1"},    {"#262628", "#ffffff"},

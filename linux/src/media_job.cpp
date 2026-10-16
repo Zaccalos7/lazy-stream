@@ -184,8 +184,8 @@ Json platformPlayer(const Json& channel) {
     if (!std::regex_match(name, std::regex("[@A-Za-z0-9_.-]{1,120}")))
         throw std::runtime_error("Nome pubblico non valido");
     if (platform == "Twitch") {
-        out.set("embed",
-                "https://player.twitch.tv/?channel=" + name + "&parent=127.0.0.1&parent=localhost");
+        out.set("embed", "https://player.twitch.tv/?channel=" + name +
+                             "&parent=localhost&muted=true&autoplay=true&playsinline=true");
         out.set("publicUrl", "https://www.twitch.tv/" + name);
         out.set("reason", "Il player pubblico verifica lo stato del canale");
     } else if (platform == "YouTube") {
@@ -200,7 +200,9 @@ Json platformPlayer(const Json& channel) {
             std::smatch m;
             if (html.find("\"isLiveNow\":true") != std::string::npos &&
                 std::regex_search(html, m, std::regex("\"videoId\":\"([A-Za-z0-9_-]{11})\""))) {
-                out.set("embed", "https://www.youtube.com/embed/" + m[1].str());
+                out.set("embed",
+                        "https://www.youtube.com/embed/" + m[1].str() +
+                            "?autoplay=1&mute=1&playsinline=1&origin=http%3A%2F%2Flocalhost");
                 out.set("air", "LIVE");
                 out.set("reason", "Diretta individuata nella pagina pubblica YouTube");
             } else {

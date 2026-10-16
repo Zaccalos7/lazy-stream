@@ -151,7 +151,7 @@ class Session {
     std::mutex stopMutex;
     std::thread worker;
     std::atomic<bool> stopped{false}, finished{false}, changed{false};
-    Json request, profile, original;
+    Json request, profile, original, outputProfile, videoResults;
     std::vector<Json> videoProfiles;
     std::vector<Json> playlist;
     int index = 0;

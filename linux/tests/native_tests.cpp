@@ -15,6 +15,7 @@
 #include <QMediaPlayer>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPlainTextEdit>
 #include <QScrollArea>
 #include <QSlider>
 #include <QTableWidget>
@@ -23,6 +24,7 @@
 #include <QTest>
 #include <QTimer>
 #include <QToolButton>
+#include <QTextBrowser>
 #include <QVideoFrame>
 #include <QVideoSink>
 #include <QVideoWidget>
@@ -288,6 +290,110 @@ class NativeTests : public QObject {
         QVERIFY(window.grab().save(ORBIS_TEST_SCREENSHOT));
         auto preferences = studio.store.get("preferences", 1);
         QCOMPARE(preferences.get("language").str(), std::string("it"));
+    }
+
+    void windowsConfigurationActionsAndManual() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        Json profile;
+        profile.set("title", "Custom broadcast");
+        profile.set("isActive", true);
+        profile.set("videoBitrate", 4500.);
+        profile.set("videoCodec", 27.);
+        profile.set("audioCodec", 86018.);
+        profile.set("videoCodecName", "libx264");
+        studio.store.save("profiles", profile);
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.show();
+        window.navigate("settings");
+        QCOMPARE(window.findChildren<QPushButton*>("videoAndAudio").size(), 1);
+        QCOMPARE(window.findChildren<QPushButton*>("configuration").size(), 1);
+        window.navigate("profiles");
+        auto original = studio.store.list("profiles").size();
+        auto duplicate = window.findChild<QToolButton*>("duplicateConfiguration");
+        QVERIFY(duplicate);
+        duplicate->click();
+        QCOMPARE(studio.store.list("profiles").size(), original + 1);
+        QApplication::processEvents();
+        QTimer::singleShot(0, &window, [&] {
+            auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            QTimer::singleShot(5000, dialog, &QDialog::reject);
+            QCOMPARE(dialog->objectName(), QString("profileEditor"));
+            auto rate = dialog->findChild<QDoubleSpinBox*>("videoBitrate");
+            QCOMPARE(rate->value(), 4.5);
+            QCOMPARE(rate->property("jsonScale").toDouble(), 1000.);
+            auto width = dialog->findChild<QDoubleSpinBox*>("videoWidth");
+            width->setValue(0);
+            QVERIFY(width->property("nullable").toBool());
+            QVERIFY(dialog->findChild<QPushButton*>("preset_Twitch"));
+            dialog->grab().save(QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-profile-editor"));
+            dialog->reject();
+        });
+        window.findChild<QToolButton*>("editConfiguration")->click();
+        window.navigate("manual");
+        auto text = window.findChild<QTextBrowser*>("manualText");
+        auto contents = window.findChild<QListWidget*>("manualContents");
+        QVERIFY(contents->count() > 5);
+        QVERIFY(text->toPlainText().contains(contents->item(0)->text().mid(3)));
+        contents->setCurrentRow(contents->count() - 1);
+        QVERIFY(text->toHtml().contains("section-" + QString::number(contents->count() - 1)));
+    }
+
+    void historyMessagesAndMultipartQr() {
+        QTemporaryDir directory;
+        Studio studio(directory.path().toStdString());
+        Json history, request, result;
+        auto files = Json::array(), results = Json::array();
+        files.push(Json::string("/tmp/broadcast.mp4"));
+        request.set("files", files);
+        request.set("streamKey", "secret-report-key");
+        const auto error = QString("FFmpeg: secret-report-key rtmp://localhost/live/secret-report-key\n") + QString(1300, QChar(0x00e8));
+        result.set("status", "ERROR");
+        result.set("error", error.toStdString());
+        results.push(result);
+        history.set("status", "ERROR");
+        history.set("request", request);
+        history.set("videoResults", results);
+        history.set("startedAt", "2026-10-16T10:00:00Z");
+        studio.store.save("history", history);
+        NativeWindow window(studio, ORBIS_TEST_RESOURCES);
+        window.setLanguage("en");
+        window.show();
+        window.navigate("history");
+        QTimer::singleShot(0, &window, [&] {
+            auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            QCOMPARE(dialog->objectName(), QString("outcomeDialog"));
+            QCOMPARE(dialog->findChild<QPlainTextEdit*>("outcomeMessage")->toPlainText(), error);
+            dialog->accept();
+        });
+        auto full = window.findChild<QPushButton*>("viewFullMessage");
+        QVERIFY(full);
+        full->click();
+        QTimer::singleShot(0, &window, [&] {
+            auto dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            QCOMPARE(dialog->objectName(), QString("errorReportDialog"));
+            auto text = dialog->findChild<QPlainTextEdit*>("reportText");
+            QVERIFY(text);
+            QVERIFY(!text->toPlainText().contains("secret-report-key"));
+            auto qr = dialog->findChild<QLabel*>("reportQr");
+            QVERIFY(!qr->pixmap().isNull());
+            const auto first = qr->pixmap().cacheKey();
+            for (auto button : dialog->findChildren<QPushButton*>())
+                if (button->text() == "Next") {
+                    QVERIFY(button->isEnabled());
+                    button->click();
+                }
+            QVERIFY(qr->pixmap().cacheKey() != first);
+            dialog->grab().save(QString(ORBIS_TEST_SCREENSHOT).replace("native-window", "native-error-report"));
+            dialog->accept();
+        });
+        auto report = window.findChild<QToolButton*>("reportError");
+        QVERIFY(report);
+        report->click();
     }
 
     // Le schede devono restare intere e i comandi senza sessione non devono inviare richieste.

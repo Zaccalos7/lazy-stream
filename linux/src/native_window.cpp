@@ -3,6 +3,7 @@
 #include "live_rows.hpp"
 #include "native_dashboard.hpp"
 #include "native_theme.hpp"
+#include "platform_preview.hpp"
 #include "scene_service.hpp"
 #include "version.hpp"
 #include <QApplication>
@@ -146,7 +147,7 @@ class GaugeWidget : public QWidget {
     }
 
   protected:
-    void paintEvent(QPaintEvent* event) override {
+    void paintEvent(QPaintEvent*) override {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
 
@@ -177,6 +178,7 @@ NativeWindow::NativeWindow(Studio& studio, fs::path resources)
     : studio(studio), resources(std::move(resources)),
       translations(QString::fromStdString((this->resources / "ui").string())),
       proxies(studio.store.root / "proxies") {
+    configureWebEngineRuntime();
     QSettings appearance(QString::fromStdString((studio.store.root / "appearance.ini").string()),
                          QSettings::IniFormat);
     applyNativeTheme(appearance.value("theme", "dark").toString());
@@ -531,7 +533,8 @@ void NativeWindow::rebuild() {
     bodyLayout->setContentsMargins(14, 2, 14, 36);
     bodyLayout->setSpacing(page == "dashboard" ? 0 : 12);
     body->setProperty("dashboard", page == "dashboard");
-    if (cleanupLabel) delete cleanupLabel->parentWidget();
+    if (cleanupLabel)
+        delete cleanupLabel->parentWidget();
     table = nullptr;
     configurationSignature.clear();
     search = nullptr;
@@ -852,6 +855,17 @@ void NativeWindow::addPager(int size) {
         next->setFixedWidth(32);
         pageLabel->hide();
     }
+    auto first = new QPushButton(row);
+    first->setObjectName("firstPage");
+    first->setIcon(studioIcon("first"));
+    first->setFixedWidth(32);
+    first->setToolTip(t("firstPage"));
+    first->hide();
+    layout->addWidget(first);
+    connect(first, &QPushButton::clicked, this, [this] {
+        currentPage = 0;
+        refreshRows();
+    });
     layout->addWidget(previous);
     layout->addWidget(pageLabel);
     if (page == "live" || page == "history") {
@@ -925,6 +939,47 @@ void NativeWindow::sample() {
 // cliccabile.
 void NativeWindow::addDestinationCards(const QList<QStringList>& entries) {
     addDashboardCards(entries);
+}
+
+// Stesse sezioni, destinazioni e ordine di Pages/MainMenu.cshtml.
+void NativeWindow::addDashboardCards(const QList<QStringList>& entries, const QString& section) {
+    auto grid = new DashboardGrid(body);
+    grid->setProperty("section", section);
+    for (const auto& entry : entries) {
+        auto card = new DashboardTile(grid);
+        card->setObjectName(entry[0]);
+        card->setProperty("dashboardTile", true);
+        card->setCursor(Qt::PointingHandCursor);
+        card->setAccessibleName(t(entry[0].toUtf8().constData()));
+        card->setAccessibleDescription(t(entry[2].toUtf8().constData()));
+        auto content = new QVBoxLayout(card);
+        content->setContentsMargins(20, 20, 20, 20);
+        content->setSpacing(0);
+        auto icon = new QLabel(card);
+        icon->setObjectName("dashboardTileIcon");
+        icon->setFixedSize(40, 40);
+        icon->setAlignment(Qt::AlignCenter);
+        icon->setPixmap(
+            studioIcon(entry.size() > 3 ? entry[3] : entry[1], Qt::white).pixmap(18, 18));
+        content->addWidget(icon);
+        content->addSpacing(12);
+        auto title = new QLabel(t(entry[0].toUtf8().constData()), card);
+        title->setObjectName("dashboardTileTitle");
+        title->setWordWrap(true);
+        content->addWidget(title);
+        content->addSpacing(3);
+        auto description = new QLabel(t(entry[2].toUtf8().constData()), card);
+        description->setObjectName("dashboardTileDescription");
+        description->setWordWrap(true);
+        content->addWidget(description);
+        content->addStretch();
+        for (auto label : {icon, title, description})
+            label->setAttribute(Qt::WA_TransparentForMouseEvents);
+        card->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        connect(card, &QPushButton::clicked, this, [this, target = entry[1]] { navigate(target); });
+        grid->addCard(card);
+    }
+    bodyLayout->addWidget(grid);
 }
 
 // Stesse sezioni, destinazioni e ordine di Pages/MainMenu.cshtml.
@@ -1192,7 +1247,7 @@ void NativeWindow::refreshRows() {
         const int total = std::max(1, int((selected.size() + pageSize - 1) / pageSize));
         currentPage = std::clamp(currentPage, 0, total - 1);
         updatePager(total);
-        pageLabel->parentWidget()->setVisible(!selected.empty());
+        pageLabel->parentWidget()->setVisible(total > 1);
         pageLabel->parentWidget()
             ->findChild<QPushButton*>("previousPage")
             ->setEnabled(currentPage > 0);
@@ -1643,152 +1698,60 @@ void NativeWindow::refreshLiveRow(int row, const Json& record) {
 
 // Uno spot è un file scelto al momento e accodato alla diretta, come il pulsante dell'anteprima.
 void NativeWindow::playSpot(long id) {
-    const auto file = QFileDialog::getOpenFileName(this, t("spotFile"));
-    if (file.isEmpty())
-        return;
-    Json parameters;
-    Json scene;
-    scene.set("name", t("playSpot").toStdString());
-    auto items = Json::array();
-    Json item;
-    item.set("sourceKind", "FILE");
-    item.set("sourceTarget", file.toStdString());
-    item.set("audioEnabled", true);
-    items.push(item);
-    scene.set("items", items);
-    parameters.set("scene", scene);
-    liveCommand(id, "spot", parameters);
+    QDialog dialog(this);
+    dialog.setObjectName("spotDialog");
+    dialog.setWindowTitle(t("playSpot"));
+    dialog.resize(640, 260);
+    auto col = new QVBoxLayout(&dialog);
+    auto title = new QLabel(t("playSpot"), &dialog);
+    title->setObjectName("dialogTitle");
+    col->addWidget(title);
+    auto hint = new QLabel(t("playSpotHint"), &dialog);
+    hint->setWordWrap(true);
+    hint->setObjectName("muted");
+    col->addWidget(hint);
+    col->addWidget(new QLabel(t("spotFile"), &dialog));
+    auto row = new QHBoxLayout;
+    auto path = new QLineEdit(&dialog);
+    path->setObjectName("spotPath");
+    path->setPlaceholderText("/home/user/Videos/spot.mp4");
+    row->addWidget(path, 1);
+    auto browse = new QPushButton(t("add"), &dialog);
+    row->addWidget(browse);
+    col->addLayout(row);
+    connect(browse, &QPushButton::clicked, &dialog, [&] {
+        auto file = QFileDialog::getOpenFileName(&dialog, t("spotFile"));
+        if (!file.isEmpty())
+            path->setText(file);
+    });
+    auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    buttons->button(QDialogButtonBox::Ok)->setText(t("playSpot"));
+    buttons->button(QDialogButtonBox::Cancel)->setText(t("cancel"));
+    col->addWidget(buttons);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, [&] {
+        run([&] {
+            probe(path->text().toStdString());
+            Json parameters, scene, item;
+            scene.set("name", t("playSpot").toStdString());
+            auto items = Json::array();
+            item.set("sourceKind", "FILE");
+            item.set("sourceTarget", path->text().toStdString());
+            item.set("audioEnabled", true);
+            items.push(item);
+            scene.set("items", items);
+            parameters.set("scene", scene);
+            liveCommand(id, "spot", parameters);
+            dialog.accept();
+        });
+    });
+    dialog.exec();
 }
 
 // I controlli di regia operano sulla sessione scelta, mentre il frame viene letto direttamente dal
 // disco.
 // Le metriche mantengono gli stessi contatori Linux già verificati e vengono mostrate in widget
 // nativi.
-void NativeWindow::buildMetrics() {
-    auto container = body->findChild<QWidget*>("metricsContainer");
-    QGridLayout* grid = nullptr;
-    if (!container) {
-        container = new QWidget(body);
-        container->setObjectName("metricsContainer");
-        grid = new QGridLayout(container);
-        grid->setContentsMargins(0, 0, 0, 0);
-        grid->setSpacing(12);
-        bodyLayout->addWidget(container);
-    } else {
-        grid = qobject_cast<QGridLayout*>(container->layout());
-    }
-
-    auto values = state.get("metrics"), process = state.get("process");
-
-    struct MetricItem {
-        QString id, title, value;
-        int percentage;
-    };
-
-    std::vector<MetricItem> items;
-
-    items.push_back({"cpu", t("cpu"), formatMetric(values.get("cpu").num(-1), "%"),
-                     int(values.get("cpu").num(-1))});
-    items.push_back({"ram", t("ramUsed"), formatMetric(values.get("ram").num(-1), "%"),
-                     int(values.get("ram").num(-1))});
-    items.push_back({"swap", "SWAP", formatMetric(values.get("swap").num(-1), "%"),
-                     int(values.get("swap").num(-1))});
-    items.push_back({"network", "Network",
-                     "↓ " + formatMetric(values.get("networkRx").num(-1) / 1024.0, " KiB/s") +
-                         "\n↑ " + formatMetric(values.get("networkTx").num(-1) / 1024.0, " KiB/s"),
-                     -1});
-    items.push_back({"disk", t("diskFree"),
-                     formatMetric(values.get("diskAvailable").num(-1) / 1073741824.0, " GiB"), -1});
-    items.push_back({"uptime", t("uptime"), formatMetric(values.get("uptime").num(-1), " s"), -1});
-    items.push_back({"appUsage", t("appUsage"),
-                     formatMetric(process.get("cpu").num(-1), "%") + "\n" +
-                         formatMetric(process.get("rssBytes").num(-1) / 1048576.0, " MiB"),
-                     int(process.get("cpu").num(-1))});
-
-    auto temperatures = values.get("temperatures");
-    for (size_t i = 0; i < temperatures.size(); ++i)
-        items.push_back({"temp_" + QString::number(i), s(temperatures.at(i).get("label")),
-                         formatMetric(temperatures.at(i).get("celsius").num(-1), " °C"), -1});
-
-    auto live = state.get("live");
-    for (size_t i = 0; i < live.size(); ++i)
-        for (auto key : {"producerMetrics", "publisherMetrics"}) {
-            auto metrics = live.at(i).get(key);
-            if (metrics.has("pid"))
-                items.push_back(
-                    {"ffmpeg_" + QString::number(metrics.get("pid").num()),
-                     "FFmpeg · PID " + QString::number(metrics.get("pid").num()),
-                     formatMetric(metrics.get("cpu").num(-1), "%") + "\n" +
-                         formatMetric(metrics.get("rssBytes").num(-1) / 1048576.0, " MiB"),
-                     int(metrics.get("cpu").num(-1))});
-        }
-
-    QSet<QString> activeIds;
-    int index = 0;
-    for (const auto& item : items) {
-        activeIds.insert(item.id);
-        auto card = container->findChild<QFrame*>(item.id);
-        if (!card) {
-            card = new QFrame(container);
-            card->setObjectName(item.id);
-            card->setProperty("class", "card");
-
-            auto layout = new QVBoxLayout(card);
-            layout->setContentsMargins(18, 18, 18, 18);
-            layout->setSpacing(12);
-
-            auto heading = new QLabel(item.title, card);
-            heading->setObjectName("muted");
-            heading->setWordWrap(true);
-            layout->addWidget(heading);
-
-            auto valueLabel = new QLabel(item.value, card);
-            valueLabel->setObjectName("metricValue");
-            layout->addWidget(valueLabel);
-
-            auto progress = new GaugeWidget(card);
-            progress->setObjectName("metricProgress");
-            layout->addWidget(progress);
-
-            layout->addStretch();
-
-            grid->addWidget(card, index / 3, index % 3);
-        } else {
-            // Se esiste, aggiorniamo i dati senza ricreare il widget
-            auto labels = card->findChildren<QLabel*>();
-            for (auto label : labels) {
-                if (label->objectName() == "muted")
-                    label->setText(item.title);
-                else if (label->objectName() == "metricValue")
-                    label->setText(item.value);
-            }
-            // Riposizioniamo nella griglia per evitare buchi se qualche widget viene rimosso
-            grid->addWidget(card, index / 3, index % 3);
-        }
-
-        auto progress = card->findChild<GaugeWidget*>("metricProgress");
-        if (progress) {
-            if (item.percentage >= 0) {
-                progress->setVisible(true);
-                progress->setPercentage(std::min(100, item.percentage));
-            } else {
-                progress->setVisible(false);
-            }
-        }
-        card->setVisible(true);
-        index++;
-    }
-
-    // Nascondi le card che non sono più attive per questa passata
-    auto cards =
-        container->findChildren<QFrame*>(QRegularExpression(".*"), Qt::FindDirectChildrenOnly);
-    for (auto card : cards) {
-        if (!activeIds.contains(card->objectName())) {
-            card->setVisible(false);
-        }
-    }
-}
-
 // Le impostazioni aprono sezioni e dialoghi interni, conservando un’unica finestra applicativa.
 void NativeWindow::buildSettings() {
     addDestinationCards({{"videoAndAudio", "profiles", "additionalVideoOptionsDescription"},
@@ -1824,6 +1787,7 @@ bool activateNativeApp(char** argv, const fs::path& root) {
 int runNativeApp(int /*argc*/, char** argv, Studio& studio, const fs::path& resources) {
     // Le opzioni del motore sono già state lette; Qt riceve solo il nome eseguibile.
     int qtArgc = 1;
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QApplication app(qtArgc, argv);
     app.setApplicationName("OrbisStream");
     app.setDesktopFileName("orbis-stream");

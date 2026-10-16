@@ -31,6 +31,9 @@ int main() {
         auto j = Json::parse("{\"items\":[{\"value\":2}]}");
         j.get("items").at(0).set("value", 3.0);
         expect(j.get("items").at(0).get("value").num() == 3, "JSON mutation");
+        expect(Json::parse("27").num() == 27, "numeric codec option roundtrip");
+        expect(Json::parse("true").flag(), "boolean scalar roundtrip");
+        expect(Json::parse("null").num(77) == 77, "nullable dimension roundtrip");
         bool bad = false;
         try {
             Json::parse("{} bad");

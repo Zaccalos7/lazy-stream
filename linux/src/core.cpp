@@ -27,7 +27,8 @@ Json::Json(json_object* value, bool retain)
 // Legge un solo documento JSON; rifiuta testo residuo per non accettare richieste ambigue.
 Json Json::parse(const std::string& text) {
     json_tokener* tok = json_tokener_new();
-    auto* obj = json_tokener_parse_ex(tok, text.c_str(), static_cast<int>(text.size()));
+    // The terminating NUL completes scalar values (numbers/null/booleans), as required by json-c.
+    auto* obj = json_tokener_parse_ex(tok, text.c_str(), static_cast<int>(text.size() + 1));
     bool ok = json_tokener_get_error(tok) == json_tokener_success;
     size_t consumed = json_tokener_get_parse_end(tok);
     json_tokener_free(tok);
@@ -462,7 +463,7 @@ void validate(const std::string& k, const Json& v) {
             if (n < 16 || n > 7680 || n % 2)
                 throw std::runtime_error("Risoluzioni pari tra 16 e 7680");
         }
-        if (v.get("frameRate").num(30) < 1 || v.get("frameRate").num(30) > 120 ||
+        if (v.get("frameRate").num(30) < 1 || v.get("frameRate").num(30) > 240 ||
             v.get("videoBitrate").num(4500) < 100 || v.get("videoBitrate").num(4500) > 100000)
             throw std::runtime_error("FPS o bitrate non validi");
     }

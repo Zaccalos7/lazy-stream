@@ -79,7 +79,7 @@ class NativeWindow : public QMainWindow {
     void buildManual();
     void buildSettings();
     void editChannel(Json channel = Json{});
-    void editProfile(Json profile = Json{});
+    void editProfile(Json profile = Json{}, std::function<void(Json)> apply = {});
     void editVideo(Json video = Json{});
     void editButton(Json button = Json{});
     void startWizard(bool playlist = false);
