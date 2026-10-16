@@ -1,5 +1,14 @@
 # Cronologia del port Linux
 
+## 0.0.12 — 2026-10-16
+
+- TikTok rimosso da motore C++, piattaforme, preset, marchi, wizard, player, headless, traduzioni e manuale. Otto preset per le quattro piattaforme rimanenti.
+- Migrazione SQLite 2: configurazioni della piattaforma rimossa archiviate privatamente, storico e profili verticali personalizzati conservati, ID archiviati non riutilizzati.
+- Corretta la parità dei canali: sender YouTube modificabile e conservato al salvataggio, ingest Facebook identico al riferimento Windows, istruzioni per gli ingest personali Kick/Facebook.
+- Localizzati i titoli dei preset leggeri, omesse dimensioni/FPS non specificati nel wizard, allineati i colori chiari dei marchi; dipendenza WebP Qt esplicita.
+- Corretta la chiusura del dialogo headless con campi obbligatori vuoti; la “×” annulla senza inviare il form.
+- Sincronizzazione risorse con filtro persistente e verifica automatica di cataloghi, ingest, marchi SVG e assenza della piattaforma esclusa; figure del wizard e playlist catturate dalla GUI Qt nelle 21 lingue.
+
 ## 0.0.11 — 2026-10-16
 
 - FFmpeg/FFprobe 9.0.2 compilati da sorgenti ufficiali con firma verificata e inclusi nel pacchetto; x264/x265, VP8/VP9, AV1, WebP e codec audio, NVENC/QSV/VAAPI secondo hardware e driver.

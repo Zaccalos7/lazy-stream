@@ -1,4 +1,4 @@
-# Interfaccia Linux nativa — 0.0.11
+# Interfaccia Linux nativa — 0.0.12
 
 ## Architettura
 

@@ -13,7 +13,7 @@ Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mapp
 Su Debian/Ubuntu:
 
 ```sh
-sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gnupg libxcb1-dev gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-translations-l10n fonts-noto-core fonts-noto-cjk
+sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gnupg libxcb1-dev gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-image-formats-plugins qt6-translations-l10n fonts-noto-core fonts-noto-cjk
 cd linux
 python3 scripts/prepare-ffmpeg.py  # la build lo esegue se manca il relativo SDK
 bash scripts/build-linux.sh
@@ -46,13 +46,13 @@ Per creare l'installer Debian, dalla cartella `linux/`:
 bash scripts/create-deb.sh
 ```
 
-Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.11_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
+Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.12_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
 
 Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle applicazioni; FFmpeg/FFprobe 9.0.2 e le relative librerie sono inclusi in percorsi privati. Le librerie esterne degli encoder e Qt sono dipendenze APT; il FFmpeg della distribuzione resta disponibile come fallback esplicito. Un pacchetto compilato su Ubuntu 24.04 richiede versioni compatibili di glibc e delle librerie. Ricompila sulla distribuzione di destinazione se necessario. Il codice non impone x86_64, ma ARM64 non è stato verificato.
 
 ## Utilizzo
 
-1. **Canali:** aggiungi nome, piattaforma, server RTMP/RTMPS e chiave; i server iniziali sono quelli previsti da Windows, ma puoi inserire l'ingest del tuo account. Il nome canale viene usato anche per il link pubblico; la cartella si sceglie avviando una playlist e le regole di pulizia sono nello Storico. TikTok richiede una nuova chiave ad ogni avvio.
+1. **Canali:** aggiungi nome, piattaforma, server RTMP/RTMPS e chiave; i server iniziali sono quelli previsti da Windows, ma puoi inserire l'ingest del tuo account. Il nome canale viene usato anche per il link pubblico; la cartella si sceglie avviando una playlist e le regole di pulizia sono nello Storico.
 2. **Profili video:** imposta H.264, risoluzione, fps, bitrate, GOP in secondi, audio AAC, preset e bassa latenza. “Qualità Auto” misura l’encoder alla risoluzione e al frame rate della live e conserva il risultato per la durata del processo. NVENC richiede hardware e driver adeguati.
 3. **Playlist:** il wizard trasmette una cartella locale in ordine naturale. La libreria consente di aggiungere percorsi, abilitare video e impostare ordine, profilo e posizione iniziale.
 4. **Scene e layout:** aggiungi file, desktop X11, camera V4L2, microfono PulseAudio, slot e overlay. Trascina/ridimensiona; usa frecce, Shift e Canc. Puoi trascinare file dal desktop nel canvas: gli overlay vengono copiati nella libreria locale; i video mantengono il percorso originale. “Usa layout” crea una scena distinta dagli slot salvati.
@@ -85,7 +85,7 @@ Il compositore ha un’anteprima JPEG a 2 fps generata dallo stesso grafo FFmpeg
 
 L’anteprima della diretta arriva fino a 30 fps, con lato maggiore limitato a 640 pixel e timer dell’immagine distinto dall’aggiornamento dei controlli. I file JPEG sono sostituiti atomicamente; la GUI conserva l’ultima immagine completa e decodifica solo le immagini nuove. Il primo video fissa il formato delle piattaforme che richiedono un’unica risoluzione: senza dimensioni nel profilo, un clip piccolo o verticale parte da 1080p, come nel riferimento Windows.
 
-Il primo avvio crea dieci preset attivi come Windows: standard e leggero per Twitch, YouTube, Kick, Facebook Gaming e TikTok. I preset modificati vengono conservati. Il controllo YouTube prosegue in background, con 90 secondi di tolleranza e riscontri ripetuti. La GUI riceve notifiche dal motore; in headless `GET /updates?watch=rows,stats,live` offre SSE autenticato e ripresa con `Last-Event-ID`.
+Il primo avvio crea otto preset attivi: standard e leggero per Twitch, YouTube, Kick e Facebook Gaming. I preset modificati vengono conservati. Il controllo YouTube prosegue in background, con 90 secondi di tolleranza e riscontri ripetuti. La GUI riceve notifiche dal motore; in headless `GET /updates?watch=rows,stats,live` offre SSE autenticato e ripresa con `Last-Event-ID`.
 
 I file `application-AAAA-MM-GG.log` raccolgono startup, versione effettiva di FFmpeg, errori UI/Qt e fasi di invio. La coda asincrona è limitata a 10.000 voci e 8 MiB, con conservazione di tre giorni; `composition-preview.log` conserva gli errori FFmpeg dell’anteprima del canvas.
 
@@ -127,3 +127,5 @@ python3 scripts/sync-windows.py --source ../../lazy-stream-windows
 ```
 
 Le risorse Windows sono incluse e redistribuite con la licenza originale in `web/resources/LICENSE-windows.txt`. L'app usa la [licenza MIT del repository](../LICENSE); le librerie di sistema e FFmpeg conservano le proprie licenze.
+
+TikTok è escluso dal port C++ dalla versione 0.0.12. L’aggiornamento archivia le configurazioni dedicate nella tabella privata `retired_records` di `stream.db`, senza cancellare lo storico. Gli ID archiviati non sono riutilizzati; i profili verticali personalizzati restano disponibili. Le risorse Windows sono filtrate durante la sincronizzazione per mantenere questa esclusione.

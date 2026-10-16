@@ -1,13 +1,13 @@
 # Contratto delle pagine Windows e implementazione Qt
 
-Riferimento: checkout locale `lazy-stream-windows`, pagine in `src/Orbis.Stream.Core/Pages`, confrontate il 16 ottobre 2026. Le schermate Linux sono controlli C++/Qt. Solo il player pubblico incorporato richiede Qt WebEngine. Il canvas dispone inoltre di un’anteprima FFmpeg locale, gestita da C++.
+Ambito: TikTok escluso su richiesta dalla 0.0.12. Riferimento: checkout locale `lazy-stream-windows`, pagine in `src/Orbis.Stream.Core/Pages`, confrontate il 16 ottobre 2026. Le schermate Linux sono controlli C++/Qt. Solo il player pubblico incorporato richiede Qt WebEngine. Il canvas dispone inoltre di un’anteprima FFmpeg locale, gestita da C++.
 
 | Pagina Windows | Percorso Linux | Aperture e controlli |
 |---|---|---|
 | MainMenu | Pannello | Schede nelle sezioni Streaming, Impostazioni e Sistema, sfondo, navigazione laterale, lingua, tema e informazioni |
 | MainLiveMenu | Live | Gestione live, Anteprima, Layout e Storico |
 | MainSetting | Impostazioni | Due schede: Video e audio, Configurazioni canale |
-| MainChannelSetting | Canali | Schede con marchio, descrizione, ingest, stato, modifica e interruttore; filtri piattaforma e attivazione; editor con piattaforme, chiave rivelabile, descrizione e istruzioni TikTok/Facebook |
+| MainChannelSetting | Canali | Schede con marchio, descrizione, ingest, stato, modifica e interruttore; filtri piattaforma e attivazione; editor con piattaforme, chiave rivelabile, descrizione e istruzioni ingest Kick/Facebook e sender YouTube selezionabile |
 | MainVideoSetting | Video e audio | Schede di profili personalizzati, modifica, duplicazione e attivazione; editor con preset piattaforma, catalogo codec, qualità, bitrate in Mbit/s, dimensioni/FPS opzionali, audio e opzioni di latenza/adattamento |
 | MainLive / _LiveRows | Gestione live | Filtri Stato/Canale/Piattaforma, tabella con pillole e azioni sempre visibili, pagine numerate; dettagli, profilo, deck, anteprima, spot, stop, ripresa, riavvio ed eliminazione secondo lo stato |
 | _StartWizardSetting / Configuration | Avvia Live | Profilo → canale → composizione; griglia di schede, radio, icone di piattaforma; Indietro conserva la scelta; Chiudi annulla |

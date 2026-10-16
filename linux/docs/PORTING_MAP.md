@@ -2,9 +2,9 @@
 
 Riferimento: `windows-inventory.json`, checkout Windows locale aggiornato il 16 ottobre 2026. Generare di nuovo con `python3 scripts/porting_map.py` dopo aver aggiornato l'inventario.
 
-`COPIATO` significa hash identico; `PARZIALE` significa solo che esiste codice Linux correlato, non che il comportamento sia equivalente; `MANCANTE` richiede implementazione; `RIFERIMENTO` indica documenti o file specifici di Windows. Nessun file di codice è segnato come verificato sulla sola base del nome.
+`COPIATO` significa hash identico; `PARZIALE` significa solo che esiste codice Linux correlato, non che il comportamento sia equivalente; `MANCANTE` richiede implementazione; `RIFERIMENTO` indica documenti o file specifici di Windows; `ESCLUSO` è fuori ambito su richiesta e `ADATTATO` mantiene le risorse salvo l'esclusione richiesta. Nessun file di codice è segnato come verificato sulla sola base del nome.
 
-Totale 272 file: COPIATO 43, MANCANTE 11, PARZIALE 195, RIFERIMENTO 23.
+Totale 272 file: ADATTATO 63, COPIATO 1, ESCLUSO 2, MANCANTE 11, PARZIALE 193, RIFERIMENTO 2.
 
 | File Windows | SHA-256 (12) | File Linux | Stato | Lavoro residuo |
 |---|---|---|---|---|
@@ -81,27 +81,27 @@ Totale 272 file: COPIATO 43, MANCANTE 11, PARZIALE 195, RIFERIMENTO 23.
 | `src/Orbis.Stream.Core/I18n/PropertiesBundle.cs` | `0957396c7870` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
 | `src/Orbis.Stream.Core/I18n/UiText.cs` | `89e5578cee3f` | src/native_i18n.cpp; src/native_i18n.hpp; web/resources/ui; tests/native_tests.cpp | PARZIALE | 21 cataloghi riusati nella GUI Qt; revisione linguistica non certificata |
 | `src/Orbis.Stream.Core/Logging/FileLoggerProvider.cs` | `6856ecbe669a` | src/async_logger.cpp; tests/streaming_tests.cpp | PARZIALE | Coda limitata, file giornaliero e conservazione 3 giorni; integrazione logging Qt da verificare |
-| `src/Orbis.Stream.Core/Messages/messages_ar.properties` | `616d6796a11d` | web/resources/messages/messages_ar.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_da.properties` | `98df690ee0cd` | web/resources/messages/messages_da.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_de.properties` | `84931f19fd16` | web/resources/messages/messages_de.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_el.properties` | `27ddd1119533` | web/resources/messages/messages_el.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_en.properties` | `dfad2f5658bc` | web/resources/messages/messages_en.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_es.properties` | `cd534692e38f` | web/resources/messages/messages_es.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_fil.properties` | `cb898ea867f8` | web/resources/messages/messages_fil.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_fr.properties` | `c879860d5783` | web/resources/messages/messages_fr.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_hi.properties` | `65300943c47e` | web/resources/messages/messages_hi.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_hod.properties` | `018e00334d3f` | web/resources/messages/messages_hod.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_it.properties` | `a1be8c67ba4a` | web/resources/messages/messages_it.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_ja.properties` | `17cc6dd36e01` | web/resources/messages/messages_ja.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_ko.properties` | `3dfad663fb68` | web/resources/messages/messages_ko.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_la.properties` | `800b18fb1b63` | web/resources/messages/messages_la.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_nl.properties` | `798c3343fe72` | web/resources/messages/messages_nl.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_pt.properties` | `45a6dea270fc` | web/resources/messages/messages_pt.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_ro.properties` | `9e8ce18fe985` | web/resources/messages/messages_ro.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_ru.properties` | `972c44419d9f` | web/resources/messages/messages_ru.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_tlh.properties` | `0ba0c49c5b4f` | web/resources/messages/messages_tlh.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_tr.properties` | `8199f7b5a97e` | web/resources/messages/messages_tr.properties | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Messages/messages_zh.properties` | `3bbf0249be6f` | web/resources/messages/messages_zh.properties | COPIATO | Byte identici all'inventario |
+| `src/Orbis.Stream.Core/Messages/messages_ar.properties` | `616d6796a11d` | web/resources/messages/messages_ar.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_da.properties` | `98df690ee0cd` | web/resources/messages/messages_da.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_de.properties` | `84931f19fd16` | web/resources/messages/messages_de.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_el.properties` | `27ddd1119533` | web/resources/messages/messages_el.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_en.properties` | `dfad2f5658bc` | web/resources/messages/messages_en.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_es.properties` | `cd534692e38f` | web/resources/messages/messages_es.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_fil.properties` | `cb898ea867f8` | web/resources/messages/messages_fil.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_fr.properties` | `c879860d5783` | web/resources/messages/messages_fr.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_hi.properties` | `65300943c47e` | web/resources/messages/messages_hi.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_hod.properties` | `018e00334d3f` | web/resources/messages/messages_hod.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_it.properties` | `a1be8c67ba4a` | web/resources/messages/messages_it.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_ja.properties` | `17cc6dd36e01` | web/resources/messages/messages_ja.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_ko.properties` | `3dfad663fb68` | web/resources/messages/messages_ko.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_la.properties` | `800b18fb1b63` | web/resources/messages/messages_la.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_nl.properties` | `798c3343fe72` | web/resources/messages/messages_nl.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_pt.properties` | `45a6dea270fc` | web/resources/messages/messages_pt.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_ro.properties` | `9e8ce18fe985` | web/resources/messages/messages_ro.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_ru.properties` | `972c44419d9f` | web/resources/messages/messages_ru.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_tlh.properties` | `0ba0c49c5b4f` | web/resources/messages/messages_tlh.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_tr.properties` | `8199f7b5a97e` | web/resources/messages/messages_tr.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Messages/messages_zh.properties` | `3bbf0249be6f` | web/resources/messages/messages_zh.properties | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
 | `src/Orbis.Stream.Core/Orbis.Stream.Core.csproj` | `c0c1daa9b68b` | CMakeLists.txt; VERSION | PARZIALE | Build e versione Linux indipendenti |
 | `src/Orbis.Stream.Core/Pages/Countdown.cshtml` | `c9e582af3286` | web/app.js | PARZIALE | Pagina Razor da riprodurre nel client Linux |
 | `src/Orbis.Stream.Core/Pages/MainChannelSetting.cshtml` | `a1f126e04049` | src/native_window.cpp; src/native_live_pages.cpp; src/native_dialogs.cpp; src/native_composer.cpp; src/native_media.cpp; web/pages/MainChannelSetting.html; web/app.js | PARZIALE | Flusso trasferito in widget Qt; HTML conservato come riferimento |
@@ -184,7 +184,7 @@ Totale 272 file: COPIATO 43, MANCANTE 11, PARZIALE 195, RIFERIMENTO 23.
 | `src/Orbis.Stream.Core/Streaming/LiveOutput.cs` | `fe8328cf3947` | src/stream.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
 | `src/Orbis.Stream.Core/Streaming/LivePlatformEmbeds.cs` | `fb2f6fae89d6` | src/platform_lookup.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
 | `src/Orbis.Stream.Core/Streaming/LivePreviewFrames.cs` | `69f20244e11e` | src/stream.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
-| `src/Orbis.Stream.Core/Streaming/LiveStreamKeys.cs` | `7a1b1c73e39f` | src/live_stream_keys.cpp; src/stream.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
+| `src/Orbis.Stream.Core/Streaming/LiveStreamKeys.cs` | `7a1b1c73e39f` | — | ESCLUSO | Piattaforma rimossa dal port C++ su richiesta; chiavi temporanee e test dedicati non applicabili |
 | `src/Orbis.Stream.Core/Streaming/MonitorTarget.cs` | `424061f06190` | src/stream.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
 | `src/Orbis.Stream.Core/Streaming/NvencOptions.cs` | `1db4ee9be433` | src/encoder_options.cpp; tests/streaming_tests.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
 | `src/Orbis.Stream.Core/Streaming/OverlayMedia.cs` | `6f43024675d5` | src/overlay_media.cpp; src/stream.cpp | PARZIALE | Semantica streaming da verificare metodo per metodo |
@@ -194,48 +194,48 @@ Totale 272 file: COPIATO 43, MANCANTE 11, PARZIALE 195, RIFERIMENTO 23.
 | `src/Orbis.Stream.Core/Streaming/WebpOverlayInputs.cs` | `6a6474308c92` | src/overlay_media.cpp; tests/streaming_tests.cpp | PARZIALE | Copie private, loop ANIM FFmpeg 9; animazione, alpha e ricorrenza provate da delivery.py |
 | `src/Orbis.Stream.Core/SystemInfo/AppInfo.cs` | `25db9d2ee8f3` | src/metrics.cpp; src/core.cpp | PARZIALE | Metriche con contatori specifici di Linux |
 | `src/Orbis.Stream.Core/SystemInfo/SystemInfoProviders.cs` | `0c4e8ab6c32d` | src/metrics.cpp; src/core.cpp | PARZIALE | Metriche con contatori specifici di Linux |
-| `src/Orbis.Stream.Core/Ui/manual.ar.json` | `5d7ca8f057e0` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.da.json` | `ea3b90448aaa` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.de.json` | `b092b1e9c9e9` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.el.json` | `5a8df4f23d0b` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.en.json` | `928d18add074` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.es.json` | `8e0a1bf4ef4c` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.fil.json` | `2efeee8d5b9d` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.fr.json` | `f327270b404f` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.hi.json` | `7586a040cd72` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.hod.json` | `c781cc9e1840` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.it.json` | `1fc5e8576e4b` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.ja.json` | `0ae529d9057f` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.ko.json` | `7696137ef0e5` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.la.json` | `14b8b3d1802f` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.nl.json` | `cd83973bd7a4` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.pt.json` | `db25d894db91` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.ro.json` | `76e37c08bd52` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.ru.json` | `6cc400828b1d` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.tlh.json` | `d8906802baa5` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.tr.json` | `3d5a71bc98d1` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/manual.zh.json` | `d98cd5498437` | — | RIFERIMENTO | File Windows senza traduzione di codice diretta |
-| `src/Orbis.Stream.Core/Ui/ui.ar.json` | `848b3be5216f` | web/resources/ui/ui.ar.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.da.json` | `7228ecc25869` | web/resources/ui/ui.da.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.de.json` | `dda04cba3cee` | web/resources/ui/ui.de.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.el.json` | `7e804d778caa` | web/resources/ui/ui.el.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.en.json` | `c11eedaeaf00` | web/resources/ui/ui.en.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.es.json` | `6294018f1646` | web/resources/ui/ui.es.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.fil.json` | `af148299b1a4` | web/resources/ui/ui.fil.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.fr.json` | `3cda01d23502` | web/resources/ui/ui.fr.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.hi.json` | `9dedf4ab7e03` | web/resources/ui/ui.hi.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.hod.json` | `07b3c3036d9b` | web/resources/ui/ui.hod.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.it.json` | `f72273b642b4` | web/resources/ui/ui.it.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ja.json` | `1907e33ba924` | web/resources/ui/ui.ja.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ko.json` | `6e47983814d8` | web/resources/ui/ui.ko.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.la.json` | `fce05409d0b9` | web/resources/ui/ui.la.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.nl.json` | `a71a19fa40b9` | web/resources/ui/ui.nl.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.pt.json` | `6c2eec42f641` | web/resources/ui/ui.pt.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ro.json` | `70417c6fc3f4` | web/resources/ui/ui.ro.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.ru.json` | `e0287f885cd3` | web/resources/ui/ui.ru.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.tlh.json` | `acf80379122c` | web/resources/ui/ui.tlh.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.tr.json` | `9c4ba8f5a1cb` | web/resources/ui/ui.tr.json | COPIATO | Byte identici all'inventario |
-| `src/Orbis.Stream.Core/Ui/ui.zh.json` | `2fe8d533d8c4` | web/resources/ui/ui.zh.json | COPIATO | Byte identici all'inventario |
+| `src/Orbis.Stream.Core/Ui/manual.ar.json` | `5d7ca8f057e0` | web/resources/ui/manual.ar.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.da.json` | `ea3b90448aaa` | web/resources/ui/manual.da.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.de.json` | `b092b1e9c9e9` | web/resources/ui/manual.de.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.el.json` | `5a8df4f23d0b` | web/resources/ui/manual.el.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.en.json` | `928d18add074` | web/resources/ui/manual.en.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.es.json` | `8e0a1bf4ef4c` | web/resources/ui/manual.es.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.fil.json` | `2efeee8d5b9d` | web/resources/ui/manual.fil.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.fr.json` | `f327270b404f` | web/resources/ui/manual.fr.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.hi.json` | `7586a040cd72` | web/resources/ui/manual.hi.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.hod.json` | `c781cc9e1840` | web/resources/ui/manual.hod.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.it.json` | `1fc5e8576e4b` | web/resources/ui/manual.it.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.ja.json` | `0ae529d9057f` | web/resources/ui/manual.ja.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.ko.json` | `7696137ef0e5` | web/resources/ui/manual.ko.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.la.json` | `14b8b3d1802f` | web/resources/ui/manual.la.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.nl.json` | `cd83973bd7a4` | web/resources/ui/manual.nl.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.pt.json` | `db25d894db91` | web/resources/ui/manual.pt.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.ro.json` | `76e37c08bd52` | web/resources/ui/manual.ro.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.ru.json` | `6cc400828b1d` | web/resources/ui/manual.ru.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.tlh.json` | `d8906802baa5` | web/resources/ui/manual.tlh.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.tr.json` | `3d5a71bc98d1` | web/resources/ui/manual.tr.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/manual.zh.json` | `d98cd5498437` | web/resources/ui/manual.zh.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.ar.json` | `848b3be5216f` | web/resources/ui/ui.ar.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.da.json` | `7228ecc25869` | web/resources/ui/ui.da.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.de.json` | `dda04cba3cee` | web/resources/ui/ui.de.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.el.json` | `7e804d778caa` | web/resources/ui/ui.el.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.en.json` | `c11eedaeaf00` | web/resources/ui/ui.en.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.es.json` | `6294018f1646` | web/resources/ui/ui.es.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.fil.json` | `af148299b1a4` | web/resources/ui/ui.fil.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.fr.json` | `3cda01d23502` | web/resources/ui/ui.fr.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.hi.json` | `9dedf4ab7e03` | web/resources/ui/ui.hi.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.hod.json` | `07b3c3036d9b` | web/resources/ui/ui.hod.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.it.json` | `f72273b642b4` | web/resources/ui/ui.it.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.ja.json` | `1907e33ba924` | web/resources/ui/ui.ja.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.ko.json` | `6e47983814d8` | web/resources/ui/ui.ko.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.la.json` | `fce05409d0b9` | web/resources/ui/ui.la.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.nl.json` | `a71a19fa40b9` | web/resources/ui/ui.nl.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.pt.json` | `6c2eec42f641` | web/resources/ui/ui.pt.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.ro.json` | `70417c6fc3f4` | web/resources/ui/ui.ro.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.ru.json` | `e0287f885cd3` | web/resources/ui/ui.ru.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.tlh.json` | `acf80379122c` | web/resources/ui/ui.tlh.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.tr.json` | `9c4ba8f5a1cb` | web/resources/ui/ui.tr.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
+| `src/Orbis.Stream.Core/Ui/ui.zh.json` | `2fe8d533d8c4` | web/resources/ui/ui.zh.json | ADATTATO | Risorse Windows con esclusione della piattaforma rimossa; confronto automatico in parity-scope |
 | `src/Orbis.Stream.Tests/AdaptiveBitrateSwitchTests.cs` | `9c394fce1a0a` | tests/streaming_tests.cpp | PARZIALE | Casi Windows da trasferire |
 | `src/Orbis.Stream.Tests/AnimatedWebpTests.cs` | `56432b4ce11b` | tests/delivery.py | PARZIALE | Casi Windows da trasferire |
 | `src/Orbis.Stream.Tests/BitrateLadderTests.cs` | `394d5c7ff3d4` | tests/streaming_tests.cpp | PARZIALE | Casi Windows da trasferire |
@@ -274,7 +274,7 @@ Totale 272 file: COPIATO 43, MANCANTE 11, PARZIALE 195, RIFERIMENTO 23.
 | `src/Orbis.Stream.Tests/StreamingPlatformPageTests.cs` | `7bd551f04658` | tests/native_tests.cpp | PARZIALE | Casi Windows da trasferire |
 | `src/Orbis.Stream.Tests/StyleSheetTests.cs` | `52541b8ed7f4` | tests/browser.mjs | PARZIALE | Casi Windows da trasferire |
 | `src/Orbis.Stream.Tests/TestPictures.cs` | `778545808506` | — | MANCANTE | Test equivalente non presente |
-| `src/Orbis.Stream.Tests/TikTokTests.cs` | `0ff2bc64666d` | tests/core_tests.cpp; tests/integration.py; tests/native_tests.cpp | PARZIALE | Casi Windows da trasferire |
+| `src/Orbis.Stream.Tests/TikTokTests.cs` | `0ff2bc64666d` | — | ESCLUSO | Piattaforma rimossa dal port C++ su richiesta; chiavi temporanee e test dedicati non applicabili |
 | `src/Orbis.Stream.Tests/UiTextTests.cs` | `0aa7ebc96b80` | — | MANCANTE | Test equivalente non presente |
 | `src/Orbis.Stream.Tests/WebpOverlayInputsTests.cs` | `943d47c9b9f8` | tests/streaming_tests.cpp | PARZIALE | Casi Windows da trasferire |
 | `src/Orbis.Stream.Tests/YouTubeAirWatchTests.cs` | `06ab0e3ae7d3` | tests/streaming_tests.cpp | PARZIALE | Casi Windows da trasferire |

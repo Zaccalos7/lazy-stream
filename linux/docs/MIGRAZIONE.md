@@ -1,12 +1,14 @@
 # Migrazione Windows → Linux: elenco punto per punto
 
-**Interfaccia corrente (0.0.11):** C++/Qt Widgets nativa. Le righe V storiche possono riferirsi ai test del motore o al precedente client di riferimento; non attestano automaticamente parità del nuovo front end. La verifica Qt e le differenze sono in [INTERFACCIA_NATIVA.md](INTERFACCIA_NATIVA.md). Tutti i 21 cataloghi Windows sono disponibili nella GUI.
+**Interfaccia corrente (0.0.12):** C++/Qt Widgets nativa. Le righe V storiche possono riferirsi ai test del motore o al precedente client di riferimento; non attestano automaticamente parità del nuovo front end. La verifica Qt e le differenze sono in [INTERFACCIA_NATIVA.md](INTERFACCIA_NATIVA.md). Tutti i 21 cataloghi Windows sono disponibili nella GUI.
 
 Riferimento: checkout locale `lazy-stream-windows`, 16 ottobre 2026. Destinazione: `lazy-stream-mac/linux`, C++20 + Qt 6 Widgets + FFmpeg + SQLite. Questo elenco parte dal progetto Windows, non dalle aggiunte specifiche di macOS.
 
 L'[inventario completo](INVENTARIO_WINDOWS.md) riporta 272 file, 62 route API, tipi, proprietà, metodi pubblici e hash SHA-256. È riproducibile con `scripts/sync-windows.py`; [windows-inventory.json](windows-inventory.json) contiene i dati per strumenti automatici.
 
 ## Significato degli stati
+
+- **E**: escluso dal port su richiesta esplicita.
 
 - **V:** verificato dai test Linux con Qt, server, FFmpeg o client di riferimento reali.
 - **P:** codice presente; la singola funzione non ha una prova dedicata oppure richiede hardware/servizi esterni.
@@ -33,8 +35,8 @@ Originali: `Domain/Entities.cs`, `Services/SettingService.cs`, `Streaming/Stream
 | W012 | YouTube | ingest RTMP, ricerca live e player | P, serve account reale |
 | W013 | Kick | ingest configurabile e pagina pubblica | P, serve account reale |
 | W014 | Facebook | ingest configurabile e pagina pubblica | P, serve account reale |
-| W015 | TikTok | `live_stream_keys.cpp` riconosce nome pubblico o domini ingest regionali, salva un segnaposto e richiede una chiave nuova ad ogni diretta | V per riconoscimento, persistenza e rifiuto chiave mancante; P per piattaforma reale |
-| W016 | TikTok verticale | orientamento del profilo e fitting con bande | P |
+| W015 | TikTok | Piattaforma, preset, marchio, link, wizard e chiavi temporanee rimossi; vecchi record archiviati privatamente | E escluso su richiesta dalla 0.0.12 |
+| W016 | Orientamento automatico TikTok | Regola dedicata rimossa; profili verticali personalizzati conservati | E escluso su richiesta dalla 0.0.12 |
 | W017 | RTMP personalizzato | nessun vincolo sul provider | V con ingest locale |
 | W018 | Regole di pulizia per canale | mesi, intervallo e ultimo controllo persistito | P |
 | W019 | Scelta nativo RTMP / FFmpeg sender | API libavformat in C++ senza secondo processo, sender per le piattaforme con buffering e selezione YouTube | V trasporti locali e decodifica completa; P RTMPS reale |
@@ -78,7 +80,7 @@ Originali: `Services/StreamingService.cs`, `Services/FfmpegVideoPlaylistStreamer
 
 | ID | Funzione Windows | Linux | Stato |
 |---|---|---|---|
-| W046 | Procedura di avvio | `_StartWizardSetting.html` → `_StartWizardConfiguration.html` → compositore; avvio playlist distinto con cartella, solo profili e canali attivi | V Chrome con scena e playlist su ingest RTMP locale, Indietro e chiave TikTok |
+| W046 | Procedura di avvio | `_StartWizardSetting.html` → `_StartWizardConfiguration.html` → compositore; avvio playlist distinto con cartella, solo profili e canali attivi | V Chrome con scena e playlist su ingest RTMP locale, Indietro e scelte persistenti |
 | W047 | Countdown annullabile | conto alla rovescia nella playlist, generazione del dialogo controllata per impedire un avvio dopo l'annullamento | V Chrome |
 | W048 | Avvio da cartella | elenco video riconosciuti | V |
 | W049 | Aggiunta singolo file | percorso assoluto con FFprobe | P |
@@ -164,7 +166,7 @@ Originali: `Services/LivePreviewService.cs`, `Streaming/LivePreviewFrames.cs`, `
 | W108 | Monitoraggio automatico YouTube con cache | Worker 30 s, tolleranza 90 s, cache 45/10 s, assenze/errori distinti, stop solo dopo due prove positive di fine | V stato e richieste cancellabili; P account pubblico |
 | W109 | Chiudi avviso per live | Stato condiviso per ID; chiusura mantenuta fino al successivo riscontro della live pubblica | V stato C++ |
 | W110 | Storico e snapshot | `MainLiveHistory.html`: filtri Canale/Stato/Titolo, pagine da 20 righe e URL persistente; nome/piattaforma conservati nello snapshot | V API/FFmpeg e browser |
-| W111 | Riavvio storico | richiesta salvata, indice video e offset; replay/riparti/ricomincia nella Gestione Live, chiave corrente del canale o fresca TikTok | V motore FFmpeg; P singoli controlli replay |
+| W111 | Riavvio storico | richiesta salvata, indice video e offset; replay/riparti/ricomincia nella Gestione Live, chiave corrente del canale | V motore FFmpeg; P singoli controlli replay |
 | W112 | Eliminazione storico con protezione live | sessione e stato persistito LIVE/STARTING ricontrollati prima della cancellazione | V API e C++ |
 | W113 | Pulizia manuale/per canale/automatica | soglie -1=tutto, 0=ieri, mesi di calendario; toggle/periodi salvati sulla prima configurazione attiva, scheduler per canale | V C++/API/browser e scheduler al riavvio |
 | W114 | Pulizia progressiva dello storico | `history_cleanup_service.cpp`: worker, progresso video/dirette e barra; rimozione atomica dello snapshot per diretta, senza eliminare scene di libreria | V C++/API/browser; D modello record e scene temporanee Windows |
@@ -204,7 +206,7 @@ Originali: `I18n/*`, `Ui/*`, `Messages/*`, `Pages/*`, `Logging/FileLoggerProvide
 | W141 | Controllo chiusura durante live | Conferma Qt, cancellazione richieste e stop di processi/worker; nessuna API Windows di blocco sospensione nel riferimento censito | V chiusura con entrambi i trasporti e finestre secondarie |
 | W142 | Compilazione Release | CMake C++20 | V su Linux x86_64 |
 | W143 | Installer NSIS/MSI | pacchetti DEB/TGZ e desktop entry | D |
-| W144 | FFmpeg incluso offline nell’installer | FFmpeg/FFprobe e librerie 9.0.2 privati, sorgenti firmati e build riproducibile, dipendenze encoder tramite APT | V Debian 0.0.11 estratto: versione, GUI, API e decodifica completa con entrambi i trasporti |
+| W144 | FFmpeg incluso offline nell’installer | FFmpeg/FFprobe e librerie 9.0.2 privati, sorgenti firmati e build riproducibile, dipendenze encoder tramite APT | V Debian 0.0.12 estratto: versione, GUI, API e decodifica completa con entrambi i trasporti |
 | W145 | Test automatici | Core + FFmpeg/server/RTMP + Chrome headless | V |
 
 ## Validazione eseguita
@@ -219,4 +221,4 @@ Originali: `I18n/*`, `Ui/*`, `Messages/*`, `Pages/*`, `Logging/FileLoggerProvide
 
 Le voci **M** sono una lista di lavoro concreta. La presenza del port Linux funzionante e dei test superati non equivale alla conclusione della richiesta “tutte le funzionalità”. Prima di dichiarare parità completa servono queste implementazioni, prove hardware/rete, traduzioni dei nuovi controlli e confronto operativo con il progetto Windows.
 
-Il riesame del 16 ottobre è in [VERIFICA_2026-10-16.md](VERIFICA_2026-10-16.md). Le voci storiche riferite al browser non vanno interpretate come prova di identità di ogni widget Qt. Import di un database Windows, portale Wayland e screenshot Linux localizzati sono estensioni del port e non funzioni mancanti del programma Windows. La compatibilità binaria delle 62 API originali resta distinta dai flussi della GUI nativa.
+Il riesame corrente è in [PARITA_0.0.12.md](PARITA_0.0.12.md); [VERIFICA_2026-10-16.md](VERIFICA_2026-10-16.md) conserva le prove della 0.0.11. Le voci storiche riferite al browser non vanno interpretate come prova di identità di ogni widget Qt. Import di un database Windows, portale Wayland e screenshot Linux localizzati sono estensioni del port e non funzioni mancanti del programma Windows. La compatibilità binaria delle 62 API originali resta distinta dai flussi della GUI nativa.
