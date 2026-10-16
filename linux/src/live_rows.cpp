@@ -62,7 +62,7 @@ Json liveRows(Store& store, const Json& sessions) {
             if (sessions.at(j).get("id").num() == row.get("id").num()) {
                 current = sessions.at(j);
                 for (const auto key :
-                     {"status", "position", "offsetSeconds", "outputKbps", "error", "videoResults"})
+                     {"status", "position", "offsetSeconds", "outputKbps", "error", "videoResults", "air"})
                     row.set(key, current.get(key));
                 break;
             }

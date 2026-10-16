@@ -1,4 +1,5 @@
 #pragma once
+#include "change_notifier.hpp"
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -62,6 +63,8 @@ void writeFile(const fs::path& path, const std::string& data);
 std::string now();
 bool naturalLess(const std::string& a, const std::string& b);
 
+class AsyncLogger;
+
 class Store {
     sqlite3* db = nullptr;
     // Import/export richiamano metodi già protetti: il mutex ricorsivo mantiene un'unica sezione
@@ -70,6 +73,8 @@ class Store {
 
   public:
     fs::path root;
+    ChangeNotifier changes;
+    std::unique_ptr<AsyncLogger> logger;
     explicit Store(fs::path root);
     ~Store();
     Json list(const std::string& kind);
@@ -108,7 +113,7 @@ class Process {
     void stop();
 };
 
-std::string capture(const std::vector<std::string>& args, int timeoutSeconds = 15);
+std::string capture(const std::vector<std::string>& args, int timeoutSeconds = 15, std::stop_token stop = {});
 std::string ffmpeg();
 std::string ffprobe();
 Json probe(const std::string& file);
@@ -124,6 +129,7 @@ void validate(const std::string& kind, const Json& value);
 struct Build {
     std::vector<std::string> args;
     double duration = 0;
+    std::vector<std::shared_ptr<void>> resources;
 };
 
 Build buildProducer(const Json& scene, const Json& profile, double offset, const fs::path& preview);
@@ -138,7 +144,8 @@ struct FlvChunk {
 class FlvRelay {
     std::vector<unsigned char> pending;
     size_t cursor = 0;
-    bool header = false, sentHeader = false;
+    bool header = false, sentHeader = false, metadataSent = false;
+    std::vector<unsigned char> audioConfiguration;
     uint64_t base = 0, last = 0;
     uint64_t first = 0, lastRaw = 0, wrap = 0, lastVideo = 0, frameStep = 33;
     bool firstTag = true;
@@ -168,7 +175,7 @@ class Session {
     double offset = 0;
     Json takeover;
     std::vector<Json> spots;
-    std::string state = "STARTING", error;
+    std::string state = "STARTING", error, stopReason;
     int producerPid = -1, publisherPid = -1;
     int reconnectAttempts = 0;
     double outputKbps = 0;
@@ -180,7 +187,7 @@ class Session {
     Session(Store& store, Json request, long id);
     ~Session();
     void start();
-    void stop();
+    void stop(const std::string& reason = "");
 
     bool done() const {
         return finished;
@@ -191,20 +198,24 @@ class Session {
 };
 
 class LiveHistoryCleanupService;
+class YouTubeAirState;
 
 class Studio {
     std::mutex mutex;
     std::map<long, std::shared_ptr<Session>> sessions;
-    std::jthread housekeeping;
+    std::jthread housekeeping, airWatcher;
+    void checkYouTube(std::stop_token stop);
 
   public:
     Store store;
     std::unique_ptr<LiveHistoryCleanupService> historyCleanup;
+    std::unique_ptr<YouTubeAirState> youtubeAir;
     explicit Studio(const fs::path& root);
     ~Studio();
     long start(Json request);
     std::shared_ptr<Session> session(long id);
     Json live();
+    void dismissAir(long id);
     void stopAll();
 };
 

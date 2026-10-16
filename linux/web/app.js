@@ -3255,6 +3255,17 @@ theme();
       window.history.replaceState({ page: 'live' }, '', routes.live);
       startWizard();
     }
+    const changes = new EventSource('/api/updates?watch=rows');
+    let queuedRefresh = false;
+    changes.addEventListener('rows', () => {
+      if (queuedRefresh) return;
+      queuedRefresh = true;
+      setTimeout(() => {
+        queuedRefresh = false;
+        refresh().catch((e) => notify(e.message));
+      }, 50);
+    });
+    window.addEventListener('pagehide', () => changes.close(), { once: true });
     setInterval(() => {
       if (modalOpen) updatePreviews();
       else refresh().catch((e) => notify(e.message));

@@ -1,3 +1,4 @@
+#include "async_logger.hpp"
 #include "core.hpp"
 #include "native_window.hpp"
 #include "version.hpp"
@@ -126,6 +127,8 @@ int main(int argc, char** argv) {
             int value;
             sigwait(&set, &value);
             studio.stopAll();
+            studio.store.logger->write("shutdown", "Sessions stopped");
+            studio.store.logger->flush();
             std::_Exit(0);
         });
         shutdownThread.detach();

@@ -1,4 +1,7 @@
 #include "core.hpp"
+#include "async_logger.hpp"
+#include "screen_capture.hpp"
+#include "version.hpp"
 #include "database_schema.hpp"
 #include "history_cleanup_service.hpp"
 #include <algorithm>
@@ -259,24 +262,77 @@ Store::Store(fs::path path) : root(std::move(path)) {
         db = nullptr;
         throw;
     }
-    if (list("profiles").size() == 0) {
-        for (auto platform : {"Custom", "YouTube", "Twitch", "Kick", "Facebook", "TikTok"}) {
+    // Windows seeds the five platform defaults and their low CPU alternatives. Existing
+    // user rows are found by platform/flag or title, so upgrades never overwrite edits.
+    auto profiles = list("profiles");
+    for (const std::string platform : {"Twitch", "YouTube", "Kick", "Facebook", "TikTok"}) {
+        for (bool high : {true, false}) {
+            const auto display = platform == "YouTube" ? "Youtube" :
+                                 platform == "Facebook" ? "Facebook Gaming" : platform;
+            const auto title = std::string(high ? "Default " : "Default Low ") + display;
+            bool exists = false;
+            long legacyId = 0;
+            for (size_t i = 0; i < profiles.size(); ++i) {
+                const auto p = profiles.at(i);
+                if (p.get("platform").str(p.get("defaultPlatformConfiguration").str()) == platform &&
+                    (high ? p.get("isDefaultConfiguration").flag() : p.get("title").str() == title))
+                {
+                    const bool legacy = high && p.get("title").str() == "Default " + platform &&
+                        p.get("videoBitrate").num() == 4500 && p.get("audioBitrate").num() == 128 &&
+                        p.get("videoWidth").num() == (platform == "TikTok" ? 720 : 1280) &&
+                        p.get("videoHeight").num() == (platform == "TikTok" ? 1280 : 720) &&
+                        p.get("frameRate").num() == 30 && p.get("preset").str() == "veryfast" &&
+                        !p.get("videoSettingsOptions").size();
+                    if (legacy) legacyId = p.get("id").num();
+                    else exists = true;
+                }
+            }
+            if (exists)
+                continue;
             Json p;
-            p.set("title", std::string("Default ") + platform);
+            p.set("title", title);
             p.set("platform", platform);
-            p.set("isDefaultConfiguration", true);
-            p.set("isActive", false);
+            p.set("defaultPlatformConfiguration", platform);
+            p.set("isDefaultConfiguration", high);
+            p.set("isActive", true);
             p.set("videoCodecName", "libx264");
-            p.set("videoBitrate", 4500.0);
-            p.set("videoWidth", platform == std::string("TikTok") ? 720.0 : 1280.0);
-            p.set("videoHeight", platform == std::string("TikTok") ? 1280.0 : 720.0);
-            p.set("frameRate", 30.0);
+            p.set("videoFormat", "flv");
+            p.set("pixelFormat", "yuv420p");
+            p.set("audioCodecName", "aac");
+            p.set("videoBitrate", high ? (platform == "Facebook" || platform == "TikTok" ? 4500.0 : 6000.0)
+                                      : (platform == "TikTok" ? 2500.0 : 3000.0));
+            p.set("videoWidth", high && platform == "Twitch" ? Json::parse("null") :
+                  Json::number(platform == "TikTok" ? (high ? 1080 : 720) : (high ? 1920 : 1280)));
+            p.set("videoHeight", high && platform == "Twitch" ? Json::parse("null") :
+                  Json::number(platform == "TikTok" ? (high ? 1920 : 1280) : (high ? 1080 : 720)));
+            p.set("frameRate", high && platform == "Twitch" ? Json::parse("null") : Json::number(30));
             p.set("gopSize", 2.0);
-            p.set("preset", "veryfast");
-            p.set("audioBitrate", 128.0);
+            p.set("preset", high ? "veryfast" : platform == "Twitch" ? "ultrafast" : "superfast");
+            p.set("audioBitrate", platform == "Twitch" ? (high ? 160.0 : 96.0) :
+                                  platform == "Kick" && high ? 160.0 : 128.0);
             p.set("lowLatency", true);
-            save("profiles", p);
+            auto options = Json::array();
+            Json profileOption;
+            profileOption.set("key", "profile:v");
+            profileOption.set("value", high && platform != "Facebook" ? "high" : "main");
+            options.push(profileOption);
+            if (!high || platform == "Twitch") {
+                Json lookahead;
+                lookahead.set("key", "x264-params");
+                lookahead.set("value", high ? "rc_lookahead=20" : "scenecut=0:rc_lookahead=0");
+                options.push(lookahead);
+            }
+            p.set("videoSettingsOptions", options);
+            save("profiles", p, legacyId);
         }
+    }
+    logger = std::make_unique<AsyncLogger>(root / "logs");
+    logger->write("startup", "OrbisStream " ORBIS_VERSION "; ffmpeg=" + ffmpeg());
+    try {
+        const auto version = capture({ffmpeg(), "-version"}, 5);
+        logger->write("ffmpeg-version", version.substr(0, version.find('\n')));
+    } catch (const std::exception& error) {
+        logger->write("ffmpeg-version", error.what());
     }
     auto history = list("history");
     for (size_t i = 0; i < history.size(); ++i) {
@@ -298,6 +354,7 @@ Store::Store(fs::path path) : root(std::move(path)) {
 
 // Chiude la connessione quando lo store esce di vita, liberando le risorse SQLite.
 Store::~Store() {
+    logger.reset();
     sqlite3_close(db);
 }
 
@@ -347,6 +404,7 @@ long Store::save(const std::string& k, Json v, long id) {
     q.integer(2, id);
     q.text(3, v.dump());
     q.step();
+    changes.raise();
     return id;
 }
 
@@ -358,6 +416,7 @@ void Store::remove(const std::string& k, long id) {
     q.text(1, k);
     q.integer(2, id);
     q.step();
+    changes.raise();
 }
 
 // Esporta una vista coerente delle impostazioni ed esclude le chiavi per rendere condivisibile il
@@ -668,17 +727,26 @@ void Process::stop() {
 
 // Raccoglie stdout con timeout e limite di dimensione, così un comando esterno non blocca o satura
 // il server.
-std::string capture(const std::vector<std::string>& args, int timeout) {
+std::string capture(const std::vector<std::string>& args, int timeout, std::stop_token stop) {
+    if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
     Process p;
     p.start(args);
     std::string out;
     auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout);
     char buf[8192];
     while (std::chrono::steady_clock::now() < deadline) {
+        if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
         pollfd fd{p.fd(), POLLIN, 0};
         if (poll(&fd, 1, 100) > 0) {
             auto n = read(p.fd(), buf, sizeof(buf));
-            if (n <= 0) {
+            if (n < 0 && errno == EINTR) continue;
+            if (n < 0) throw std::runtime_error("Lettura comando fallita");
+            if (n == 0) {
+                while (p.running()) {
+                    if (stop.stop_requested()) throw std::runtime_error("Operazione annullata");
+                    if (std::chrono::steady_clock::now() >= deadline) throw std::runtime_error("Tempo scaduto: " + args[0]);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                }
                 if (p.wait() != 0)
                     throw std::runtime_error("Comando fallito: " + args[0]);
                 return out;
@@ -695,14 +763,24 @@ std::string capture(const std::vector<std::string>& args, int timeout) {
 // distribuzione.
 std::string ffmpeg() {
     auto p = std::getenv("FFMPEG_PATH");
-    return p ? p : "ffmpeg";
+    if (p && *p)
+        return p;
+    const auto executable = fs::read_symlink("/proc/self/exe").parent_path();
+    for (const auto& candidate : {executable / "../libexec/orbis-stream/ffmpeg/ffmpeg",
+                                  executable / "ffmpeg-9.0.2/bin/ffmpeg"})
+        if (fs::exists(candidate))
+            return fs::weakly_canonical(candidate).string();
+    return "ffmpeg";
 }
 
 // Consente un FFprobe configurato via ambiente per usare la stessa installazione scelta
 // dall’utente.
 std::string ffprobe() {
     auto p = std::getenv("FFPROBE_PATH");
-    return p ? p : "ffprobe";
+    if (p && *p)
+        return p;
+    const auto sibling = fs::path(ffmpeg()).parent_path() / "ffprobe";
+    return sibling.has_parent_path() && fs::exists(sibling) ? sibling.string() : "ffprobe";
 }
 
 // Interroga FFprobe in JSON per ottenere proprietà reali del media anziché dedurle dall’estensione.
@@ -727,14 +805,7 @@ std::vector<std::string> scanVideos(const fs::path& dir) {
 // Elenca sorgenti X11, V4L2 e PulseAudio disponibili: il browser può scegliere dispositivi del
 // computer host.
 Json sources() {
-    auto out = Json::array();
-    if (const auto* display = std::getenv("DISPLAY")) {
-        Json v;
-        v.set("kind", "SCREEN");
-        v.set("target", display);
-        v.set("label", "Desktop X11");
-        out.push(v);
-    }
+    auto out = screenSources();
     for (auto& e : fs::directory_iterator("/dev")) {
         if (e.path().filename().string().starts_with("video")) {
             Json v;
