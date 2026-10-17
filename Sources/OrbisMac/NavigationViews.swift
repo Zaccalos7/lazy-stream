@@ -86,7 +86,7 @@ struct StartRequest: Identifiable {
                 }
                 Picker("Canale", selection: $channelID) {
                     Text("Tutti i canali").tag(nil as UUID?)
-                    ForEach(model.workspace.channels) { Text($0.name).tag(Optional($0.id)) }
+                    ForEach(model.knownChannels) { Text($0.name).tag(Optional($0.id)) }
                 }
                 Picker("Piattaforma", selection: $platform) {
                     Text("Tutte le piattaforme").tag(nil as Platform?)
@@ -141,6 +141,9 @@ struct StartRequest: Identifiable {
             }
             Spacer()
             Button(action: details) { Image(systemName: "info.circle") }.help("Dettagli")
+            if let url = PlatformLinks.publicURL(history.channel, onAirVideo: session?.onAirVideo) {
+                Link(destination: url) { Image(systemName: "arrow.up.right.square") }.help("Apri pagina piattaforma")
+            }
             if let session {
                 Button { model.showPreview(session) } label: { Image(systemName: "play.rectangle") }.help("Live / Anteprima")
                 Button { model.selectedSession = session.id; deckSession = session } label: { Image(systemName: "square.grid.3x3") }.help("Pulsanti scena")
@@ -178,7 +181,7 @@ struct StartRequest: Identifiable {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], spacing: 14) {
                     ForEach(model.workspace.deck) { button in
-                        Button { session.play(button) } label: {
+                        Button { model.playDeck(button, session: session) } label: {
                             VStack(spacing: 10) {
                                 Image(systemName: button.inScene ? "square.3.layers.3d" : "play.rectangle").font(.title2)
                                 Text(button.label); Text(button.hotkey).font(.caption).foregroundStyle(.secondary)
@@ -200,6 +203,7 @@ struct StartRequest: Identifiable {
     @Environment(\.dismiss) private var dismiss
     let historyID: UUID
     @State private var preview: MediaSelection?
+    @State private var archivedLog = ""
     private var history: LiveHistory? { model.workspace.history.first { $0.id == historyID } }
     private var session: LiveSession? { model.sessions.first { $0.historyID == historyID && $0.isRunning } }
     private var currentVideoID: UUID? {
@@ -261,9 +265,12 @@ struct StartRequest: Identifiable {
                             }
                         }
                         if let error = history.error { Text(error).foregroundStyle(.red).textSelection(.enabled) }
-                        if let session = model.sessions.first(where: { $0.historyID == historyID }) {
+                        if !logText.isEmpty {
                             DisclosureGroup("Registro FFmpeg") {
-                                Text(session.logs.joined(separator: "\n")).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                                Text(logText).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                                Button("Esporta registro…") {
+                                    if let url = FilePicker.save(name: "OrbisStream-Registro.txt") { model.perform { try logText.write(to: url, atomically: true, encoding: .utf8) } }
+                                }
                             }
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
@@ -271,7 +278,9 @@ struct StartRequest: Identifiable {
             }
         }.padding(28).frame(width: 920, height: 650)
         .sheet(item: $preview) { MediaPreviewPanel(path: $0.path).environmentObject(model) }
+        .task(id: historyID) { archivedLog = (try? SessionLog.read(directory: model.store.directory.appendingPathComponent("Logs"), sessionID: historyID)) ?? "" }
     }
+    private var logText: String { model.sessions.first(where: { $0.historyID == historyID })?.logs.joined(separator: "\n") ?? archivedLog }
 }
 
 extension AppModel {

@@ -58,7 +58,7 @@ public final class WorkspaceStore: @unchecked Sendable {
     public var document: URL { directory.appendingPathComponent("workspace.json") }
     public init(directory: URL? = nil) throws {
         self.directory = try directory ?? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("OrbisStream", isDirectory: true)
-        try FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
     }
     public func load() throws -> Workspace {
         guard FileManager.default.fileExists(atPath: document.path) else { return Workspace() }
@@ -75,10 +75,34 @@ public final class WorkspaceStore: @unchecked Sendable {
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: document.path)
     }
     public func importMedia(_ source: URL, collection: String) throws -> String {
+        guard !collection.isEmpty, collection.allSatisfy({ $0.isLetter || $0.isNumber || "_-".contains($0) }) else { throw OrbisError.invalid("Libreria non valida.") }
+        let attributes = try source.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+        guard attributes.isRegularFile == true else { throw OrbisError.invalid("Seleziona un file.") }
+        let ext = source.pathExtension.lowercased()
+        if collection == "Overlays" {
+            guard MediaFiles.overlays.contains(ext), (attributes.fileSize ?? 0) <= 100 * 1024 * 1024 else { throw OrbisError.invalid("Overlay non valido o superiore a 100 MiB.") }
+        } else if collection == "Deck" {
+            guard MediaFiles.videos.contains(ext) || MediaFiles.isPicture(source.path), (attributes.fileSize ?? 0) <= 2 * 1024 * 1024 * 1024 else { throw OrbisError.invalid("Media non valido o superiore a 2 GiB.") }
+        }
         let folder = directory.appendingPathComponent(collection, isDirectory: true)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        for file in try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.isRegularFileKey]) where file.pathExtension.lowercased() == ext {
+            if FileManager.default.contentsEqual(atPath: source.path, andPath: file.path) { return file.path }
+        }
         let destination = folder.appendingPathComponent(UUID().uuidString + "-" + source.lastPathComponent)
         try FileManager.default.copyItem(at: source, to: destination)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
         return destination.path
+    }
+    public func sweepMedia(collection: String, keeping: Set<String>, olderThan: Date) throws {
+        guard ["Overlays", "Deck"].contains(collection) else { return }
+        let folder = directory.appendingPathComponent(collection, isDirectory: true)
+        guard FileManager.default.fileExists(atPath: folder.path) else { return }
+        for file in try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.creationDateKey, .contentModificationDateKey, .isRegularFileKey]) {
+            guard !keeping.contains(file.path), UUID(uuidString: String(file.lastPathComponent.prefix(36))) != nil else { continue }
+            let values = try file.resourceValues(forKeys: [.creationDateKey, .contentModificationDateKey, .isRegularFileKey])
+            let date = values.creationDate ?? values.contentModificationDate ?? Date()
+            if values.isRegularFile == true && date < olderThan { try FileManager.default.removeItem(at: file) }
+        }
     }
 }

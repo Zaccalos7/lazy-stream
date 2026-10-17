@@ -21,6 +21,14 @@ enum NativeLocalization {
         guard let url, let data = try? Data(contentsOf: url), let manual = try? JSONDecoder().decode(Manual.self, from: data) else { return [] }
         return manual.sections
     }
+    static func text(_ key: String) -> String {
+        let selected = UserDefaults.standard.string(forKey: "language") ?? ""
+        let code = selected.isEmpty ? (Locale.current.language.languageCode?.identifier ?? "it") : selected
+        if let path = resources.path(forResource: code, ofType: "lproj"), let bundle = Bundle(path: path) {
+            return bundle.localizedString(forKey: key, value: key, table: nil)
+        }
+        return resources.localizedString(forKey: key, value: key, table: nil)
+    }
 }
 @MainActor struct FeatureManualView: View {
     @AppStorage("language") private var language = ""

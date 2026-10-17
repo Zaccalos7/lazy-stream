@@ -128,6 +128,9 @@ enum Page: String, CaseIterable, Identifiable {
                         Circle().fill(model.sessions.contains(where: { $0.isRunning }) ? Color.red : Color.secondary.opacity(0.4)).frame(width: 7, height: 7)
                         Text("\(model.sessions.filter { $0.isRunning }.count) dirette attive").font(.caption)
                         Spacer()
+                        if let release = model.availableUpdate {
+                            Link(destination: release.url) { Image(systemName: "bell.badge.fill").foregroundStyle(Color.accentColor) }.help("Aggiornamento disponibile")
+                        }
                         Button { NSApp.orderFrontStandardAboutPanel(nil) } label: { Image(systemName: "info.circle") }.buttonStyle(.plain).help("Informazioni su OrbisStream")
                     }
                 }.padding(18).background(.bar)
@@ -310,6 +313,7 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("homeBackground") private var background = ""
     @AppStorage("language") private var language = ""
+    @AppStorage("confirmSceneButtons") private var confirmSceneButtons = true
     @EnvironmentObject var model: AppModel
     var body: some View {
         Form {
@@ -319,6 +323,7 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                 Text("Ricerca automatica nel bundle, in /opt/homebrew/bin. Usa binari macOS della stessa distribuzione.").font(.caption)
                 Toggle("Ripeti la playlist", isOn: $model.workspace.loopPlaylist)
             }
+            Section("Regia") { Toggle("Conferma i pulsanti scena", isOn: $confirmSceneButtons) }
             Section("Aspetto e lingua") {
                 Picker("Tema", selection: $appearance) {
                     Text("Sistema").tag("system"); Text("Chiaro").tag("light"); Text("Scuro").tag("dark")

@@ -270,6 +270,7 @@ import OrbisCore
     @State private var channelFilter: UUID?
     @State private var statusFilter = ""
     @State private var newestFirst = true
+    @State private var page = 0
     private func state(_ entry: LiveHistory) -> String {
         model.state(entry)
     }
@@ -279,6 +280,7 @@ import OrbisCore
             (model.search.isEmpty || entry.channel.name.localizedCaseInsensitiveContains(model.search) || entry.playlist.contains(where: { $0.name.localizedCaseInsensitiveContains(model.search) }) || entry.scene?.name.localizedCaseInsensitiveContains(model.search) == true)
         }.sorted { newestFirst ? $0.start > $1.start : $0.start < $1.start }
     }
+    private var currentPage: Int { min(page, max(0, (entries.count - 1) / 10)) }
     @EnvironmentObject var model: AppModel
     @State private var months = 6
     var body: some View {
@@ -297,7 +299,7 @@ import OrbisCore
             HStack {
                 Picker("Canale", selection: $channelFilter) {
                     Text("Tutti i canali").tag(nil as UUID?)
-                    ForEach(model.workspace.channels) { Text($0.name).tag(Optional($0.id)) }
+                    ForEach(model.knownChannels) { Text($0.name).tag(Optional($0.id)) }
                 }
                 Picker("Stato", selection: $statusFilter) {
                     Text("Tutti gli stati").tag(""); Text("In corso").tag("live"); Text("Terminata").tag("ended"); Text("Errore").tag("error"); Text("Interrotta").tag("interrupted")
@@ -308,8 +310,9 @@ import OrbisCore
                 ProgressView(value: Double(model.cleanupProgress.deletedVideos), total: Double(max(1, model.cleanupProgress.totalVideos)))
                 Text("\(model.cleanupProgress.deletedLives) dirette eliminate · \(model.cleanupProgress.currentVideo)").font(.caption)
             }
+            DisclosureGroup("Pulizia automatica per canale") { HistoryCleanupSettings(channelID: channelFilter) }.padding(.horizontal)
             List {
-                ForEach(entries) { history in
+                ForEach(Array(entries.dropFirst(currentPage * 10).prefix(10))) { history in
                     HStack {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(history.channel.name).font(.headline)
@@ -338,12 +341,12 @@ import OrbisCore
                     }.padding(.vertical, 8)
                 }
             }
-        }
+            PageControls(total: entries.count, page: $page)
+        }.onChange(of: channelFilter) { page = 0 }.onChange(of: statusFilter) { page = 0 }
+        .onChange(of: newestFirst) { page = 0 }.onChange(of: model.search) { page = 0 }
     }
     private func replay(_ history: LiveHistory, item: PlaylistItem, resume: Bool) {
-        var value = item; value.enabled = true; if !resume { value.resumeSeconds = 0 }
-        var channel = history.channel; channel.sceneID = nil
-        model.start(channel: channel, profile: history.profile, playlist: [value])
+        model.replayFrom(history, videoID: item.id, resume: resume)
     }
 }
 

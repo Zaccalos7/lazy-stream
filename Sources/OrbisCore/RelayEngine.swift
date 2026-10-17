@@ -1,9 +1,12 @@
 import Foundation
+#if canImport(Darwin)
 import Darwin
-import OrbisCore
+#else
+import Glibc
+#endif
 
 /// Blocking reads and paced writes live on a worker queue, never on the UI thread.
-final class RelayEngine: @unchecked Sendable {
+public final class RelayEngine: @unchecked Sendable {
     private let lock = NSLock()
     private var producer: Process?
     private var sender: Process?
@@ -19,14 +22,14 @@ final class RelayEngine: @unchecked Sendable {
     private var positionSegment: UInt64 = 0
     private var segmentFirstTimestamp: UInt32?
     private var segmentPosition = 0.0
-    var currentSegmentPosition: Double { lock.lock(); defer { lock.unlock() }; return segmentPosition }
-    var processDetails: [StreamingProcess] {
+    public var currentSegmentPosition: Double { lock.lock(); defer { lock.unlock() }; return segmentPosition }
+    public var processDetails: [StreamingProcess] {
         lock.lock(); defer { lock.unlock() }
         return [("Encoder", producer), ("Publisher", sender)].compactMap { role, process in
             guard let process, process.isRunning else { return nil }; return StreamingProcess(role: role, pid: process.processIdentifier)
         }
     }
-    func deliverySample(media: Double, bytes: Int64) -> DeliverySample {
+    public func deliverySample(media: Double, bytes: Int64) -> DeliverySample {
         lock.lock(); let latest = latestReadTimestamp; lock.unlock()
         return DeliverySample(time: ProcessInfo.processInfo.systemUptime, media: media, bytes: bytes, lead: max(0, Double(latest) / 1000 - media))
     }
@@ -34,11 +37,11 @@ final class RelayEngine: @unchecked Sendable {
     private let destination: String
     private let progress: @Sendable (StreamProgress) -> Void
     private let log: @Sendable (String) -> Void
-    init(executable: URL, destination: String, platform: Platform, progress: @escaping @Sendable (StreamProgress) -> Void, log: @escaping @Sendable (String) -> Void) {
+    public init(executable: URL, destination: String, platform: Platform, progress: @escaping @Sendable (StreamProgress) -> Void, log: @escaping @Sendable (String) -> Void) {
         policy = StreamingPolicy(platform: platform); buffer = DeliveryBuffer(maxLead: policy.maxLead)
         self.executable = executable; self.destination = destination; self.progress = progress; self.log = log
     }
-    func start() throws {
+    public func start() throws {
         let process = Process(); let stdin = Pipe(); let stdout = Pipe(); let stderr = Pipe()
         process.executableURL = executable; process.arguments = FFmpegCommand.sender(destination: destination, policy: policy)
         process.standardInput = stdin; process.standardOutput = stdout; process.standardError = stderr
@@ -49,7 +52,7 @@ final class RelayEngine: @unchecked Sendable {
             var state = StreamProgress()
             for line in lines { if state.consume(line) { progress(state) } }
         }
-        drainErrors(stderr.fileHandleForReading)
+        drainErrors(stderr.fileHandleForReading, context: "Publisher PID \(process.processIdentifier)")
         DispatchQueue.global(qos: .userInitiated).async { [self] in deliver() }
     }
     private func deliver() {
@@ -91,7 +94,7 @@ final class RelayEngine: @unchecked Sendable {
             log(error.localizedDescription); stop()
         }
     }
-    func encode(arguments: [String], frameRate: Double = 30) async throws -> Int32 {
+    public func encode(arguments: [String], frameRate: Double = 30) async throws -> Int32 {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async { [self] in
                 let process = Process(); let stdout = Pipe(); let stderr = Pipe()
@@ -104,7 +107,7 @@ final class RelayEngine: @unchecked Sendable {
                     producer = process; lock.unlock()
                     log(redact("Encoder PID \(process.processIdentifier): \(arguments.joined(separator: " "))"))
                     let errorDone = DispatchGroup(); errorDone.enter()
-                    drainErrors(stderr.fileHandleForReading, completion: errorDone)
+                    drainErrors(stderr.fileHandleForReading, context: "Encoder PID \(process.processIdentifier)", completion: errorDone)
                     buffer.waitForWriter()
                     let token = buffer.beginSegment()
                     lock.lock(); positionSegment = token; segmentFirstTimestamp = nil; segmentPosition = 0; lock.unlock()
@@ -135,12 +138,12 @@ final class RelayEngine: @unchecked Sendable {
             }
         }
     }
-    func interruptProducer() {
+    public func interruptProducer() {
         buffer.interrupt()
         lock.lock(); let process = producer; producer = nil; lock.unlock()
         if let process { terminate(process) }
     }
-    func finish(checkExit: Bool = true) async throws {
+    public func finish(checkExit: Bool = true) async throws {
         buffer.stop()
         let (publisher, handle) = detachPublisher()
         try? handle?.close()
@@ -168,7 +171,7 @@ final class RelayEngine: @unchecked Sendable {
         cancelled = true; sender = nil; input = nil; lock.unlock()
         return (publisher, handle)
     }
-    func stop() {
+    public func stop() {
         buffer.stop()
         lock.lock(); cancelled = true; let encoder = producer; let publisher = sender; let handle = input
         producer = nil; sender = nil; input = nil; lock.unlock()
@@ -196,7 +199,7 @@ final class RelayEngine: @unchecked Sendable {
         }
         return safe.replacingOccurrences(of: #"rtmps?://[^\s'\"]+"#, with: "[server protetto]", options: .regularExpression)
     }
-    private func drainErrors(_ handle: FileHandle, completion: DispatchGroup? = nil) {
+    private func drainErrors(_ handle: FileHandle, context: String, completion: DispatchGroup? = nil) {
         DispatchQueue.global().async { [self] in
             defer { completion?.leave() }
             var buffer = Data()
@@ -205,12 +208,12 @@ final class RelayEngine: @unchecked Sendable {
                 if bytes.isEmpty { break }
                 buffer.append(bytes)
                 while let newline = buffer.firstIndex(of: 10) {
-                    log(redact(String(decoding: buffer.prefix(upTo: newline), as: UTF8.self)))
+                    log("[\(context)] " + redact(String(decoding: buffer.prefix(upTo: newline), as: UTF8.self)))
                     buffer.removeSubrange(...newline)
                 }
-                if buffer.count > 16000 { log(redact(String(decoding: buffer.suffix(16000), as: UTF8.self))); buffer.removeAll() }
+                if buffer.count > 16000 { log("[\(context)] " + redact(String(decoding: buffer.suffix(16000), as: UTF8.self))); buffer.removeAll() }
             }
-            if !buffer.isEmpty { log(redact(String(decoding: buffer, as: UTF8.self))) }
+            if !buffer.isEmpty { log("[\(context)] " + redact(String(decoding: buffer, as: UTF8.self))) }
         }
     }
     private func drainLines(_ handle: FileHandle, body: @escaping @Sendable ([String]) -> Void) {

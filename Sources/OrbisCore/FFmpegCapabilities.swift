@@ -3,7 +3,10 @@ import Foundation
 public struct FFmpegCapabilities: Sendable {
     public var encoders: Set<String>
     public var decoders: Set<String>
-    public init(encoders: Set<String> = [], decoders: Set<String> = []) { self.encoders = encoders; self.decoders = decoders }
+    public var animatedWebP: Bool
+    public init(encoders: Set<String> = [], decoders: Set<String> = [], animatedWebP: Bool = false) {
+        self.encoders = encoders; self.decoders = decoders; self.animatedWebP = animatedWebP
+    }
     public static func codecNames(_ text: String) -> Set<String> {
         Set(text.components(separatedBy: .newlines).compactMap { line in
             let fields = line.split(whereSeparator: \.isWhitespace)
@@ -14,8 +17,9 @@ public struct FFmpegCapabilities: Sendable {
     public static func inspect(_ executable: URL) async throws -> Self {
         async let encoders = ProcessRunner.run(executable, arguments: ["-hide_banner", "-encoders"])
         async let decoders = ProcessRunner.run(executable, arguments: ["-hide_banner", "-decoders"])
-        let result = try await (encoders, decoders)
+        async let demuxers = ProcessRunner.run(executable, arguments: ["-hide_banner", "-demuxers"])
+        let result = try await (encoders, decoders, demuxers)
         guard result.0.status == 0, result.1.status == 0 else { throw OrbisError.process("FFmpeg non espone i codec disponibili.") }
-        return Self(encoders: codecNames(String(decoding: result.0.output, as: UTF8.self)), decoders: codecNames(String(decoding: result.1.output, as: UTF8.self)))
+        return Self(encoders: codecNames(String(decoding: result.0.output, as: UTF8.self)), decoders: codecNames(String(decoding: result.1.output, as: UTF8.self)), animatedWebP: String(decoding: result.2.output, as: UTF8.self).contains("webp_anim"))
     }
 }

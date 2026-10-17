@@ -19,7 +19,7 @@ macos_major="$(sw_vers -productVersion)"
 macos_major="${macos_major%%.*}"
 [[ "$macos_major" -ge 14 ]] || { echo "Richiesto macOS 14 o successivo." >&2; exit 1; }
 xcrun --find swift >/dev/null
-xcrun swift test --arch arm64
+ORBIS_FFMPEG_DIR="$ffmpeg_dir" xcrun swift test --arch arm64
 xcrun swift build -c release --arch arm64
 binary_dir="$(xcrun swift build -c release --arch arm64 --show-bin-path)"
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' macOS/Info.plist)"
@@ -54,6 +54,10 @@ fi
 codesign "${sign_args[@]}" "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 "$app_dir/Contents/Helpers/ffprobe" -version >/dev/null
+"$app_dir/Contents/Helpers/ffmpeg" -hide_banner -demuxers > "$staging/ffmpeg-demuxers.txt" 2>&1
+if ! /usr/bin/grep -q webp_anim "$staging/ffmpeg-demuxers.txt"; then
+    echo "Richiesto FFmpeg 9 o successivo con demuxer webp_anim per gli overlay WebP animati." >&2; exit 1
+fi
 "$app_dir/Contents/Helpers/ffmpeg" -hide_banner -decoders > "$staging/ffmpeg-decoders.txt" 2>&1
 for decoder in libvpx libvpx-vp9; do
     if ! /usr/bin/grep -q "$decoder" "$staging/ffmpeg-decoders.txt"; then

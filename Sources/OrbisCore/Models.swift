@@ -131,13 +131,17 @@ public struct Scene: Identifiable, Codable, Equatable, Sendable {
     public var items: [SceneItem] = []
     public init() {}
     public func validate(requireSources: Bool = true) throws {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw OrbisError.invalid("Inserisci il nome della scena.") }
         guard width >= 2, height >= 2, width % 2 == 0, height % 2 == 0, width <= 7680, height <= 7680 else { throw OrbisError.invalid("Dimensioni della scena non valide.") }
         guard !requireSources || items.contains(where: { $0.kind != .microphone && $0.kind != .overlay && !$0.target.isEmpty }) else { throw OrbisError.invalid("Aggiungi una sorgente video alla scena.") }
-        let devices = items.filter { [.screen, .camera, .microphone].contains($0.kind) && !$0.target.isEmpty }.map { ($0.kind == .microphone ? "audio:" : "video:") + $0.target }
+        let devices = items.filter { [.screen, .camera, .microphone].contains($0.kind) && !$0.target.isEmpty }.map { ($0.kind == .microphone ? "audio:" : "video:") + (Int($0.target).map(String.init) ?? $0.target) }
         guard Set(devices).count == devices.count else { throw OrbisError.invalid("Un dispositivo può essere aperto una sola volta nella stessa scena.") }
         if isLayout && items.isEmpty { throw OrbisError.invalid("Aggiungi almeno un riquadro al layout.") }
         for item in items {
-            let validRectangle = item.kind == .microphone || (item.x >= 0 && item.y >= 0 && item.width >= 2 && item.height >= 2 && item.width % 2 == 0 && item.height % 2 == 0 && item.x + item.width <= width && item.y + item.height <= height)
+            if [.screen, .camera, .microphone].contains(item.kind), !item.target.isEmpty {
+                guard let index = Int(item.target), index >= 0 else { throw OrbisError.invalid("Seleziona un indice AVFoundation valido per \(item.label).") }
+            }
+            let validRectangle = item.kind == .microphone || (item.x >= 0 && item.y >= 0 && item.width >= 2 && item.height >= 2 && item.width <= width && item.height <= height && item.width % 2 == 0 && item.height % 2 == 0 && item.x <= width - item.width && item.y <= height - item.height)
             guard validRectangle, (0...200).contains(item.volume), !requireSources || !item.target.isEmpty else { throw OrbisError.invalid("Controlla sorgente, posizione, dimensioni e volume di \(item.label).") }
         }
     }

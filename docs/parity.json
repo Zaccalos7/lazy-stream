@@ -1456,7 +1456,7 @@
     "function": "Elenco delle sessioni e selezione della diretta",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1473,7 +1473,7 @@
     "function": "Filtri canale, piattaforma, ricerca e dirette attive",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1490,7 +1490,7 @@
     "function": "Anteprima JPEG della composizione codificata",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1507,7 +1507,7 @@
     "function": "Dimensioni dell’anteprima corrispondenti al segnale reale",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1524,7 +1524,7 @@
     "function": "Pagina pubblica della piattaforma in WebKit e browser esterno",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1541,7 +1541,7 @@
     "function": "Mixer per sorgente, mute e volume",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1558,7 +1558,7 @@
     "function": "Cambio scena durante la diretta",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1575,7 +1575,7 @@
     "function": "FPS, bitrate, velocità, byte e posizione",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1592,7 +1592,7 @@
     "function": "Parser FLV incrementale con validazione dei tag",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1609,7 +1609,7 @@
     "function": "Un solo header FLV e sequence header preservati",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1626,7 +1626,7 @@
     "function": "Timeline continua tra produttori",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1643,7 +1643,7 @@
     "function": "Tagli ribasati sull’ultimo tag scritto, esclusi i frame scartati",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1660,7 +1660,7 @@
     "function": "Intervallo tra segmenti derivato dal frame rate",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1677,7 +1677,7 @@
     "function": "Publisher FFmpeg persistente",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1694,7 +1694,7 @@
     "function": "Buffer limitato per durata e memoria",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1711,7 +1711,7 @@
     "function": "Backpressure e risveglio su interruzione o cancellazione",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1728,7 +1728,7 @@
     "function": "Cuscino iniziale del relay",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1745,7 +1745,7 @@
     "function": "Recupero del ritardo a 2× senza burst incontrollati",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1762,7 +1762,7 @@
     "function": "Pacing nel sender e preroll per YouTube/Facebook/TikTok",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1779,7 +1779,7 @@
     "function": "Margini, sample rate, CBR e timeout specifici per piattaforma",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1796,7 +1796,7 @@
     "function": "Formato uniforme dove richiesto",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1813,7 +1813,7 @@
     "function": "Orientamento verticale TikTok",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1830,7 +1830,7 @@
     "function": "Bitrate adattivo basato su drift, backlog e throughput",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1847,7 +1847,7 @@
     "function": "Distinzione tra rete lenta, encoder lento e rete ferma",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1864,7 +1864,7 @@
     "function": "Riduzione con margine, gradini di recupero e attesa raddoppiata",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1881,7 +1881,7 @@
     "function": "Qualità automatica alleggerita dopo 10 secondi senza margine",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1898,7 +1898,7 @@
     "function": "Benchmark qualità con cache e soglia 2×",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1915,7 +1915,7 @@
     "function": "Watchdog e riconnessioni con limite consecutivo",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1932,7 +1932,7 @@
     "function": "Chiusura naturale del publisher con flush",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1949,7 +1949,7 @@
     "function": "Stop forzato dei processi bloccati",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1966,7 +1966,7 @@
     "function": "Cancellazione delle operazioni asincrone FFmpeg",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -1983,7 +1983,7 @@
     "function": "Controllo YouTube con tolleranza iniziale e conferme consecutive",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -2000,7 +2000,7 @@
     "function": "Stato YouTube non verificato per consenso/errori/pagine sconosciute",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",
@@ -2017,7 +2017,7 @@
     "function": "Avviso YouTube chiudibile",
     "swift": [
       "Sources/OrbisMac/LiveViews.swift",
-      "Sources/OrbisMac/RelayEngine.swift",
+      "Sources/OrbisCore/RelayEngine.swift",
       "Sources/OrbisMac/LiveSession.swift",
       "Sources/OrbisCore/DeliveryBuffer.swift",
       "Sources/OrbisCore/FLVRelay.swift",

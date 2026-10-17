@@ -88,7 +88,7 @@ import OrbisCore
                             }
                             Divider()
                             ForEach(model.workspace.overlays, id: \.self) { path in
-                                Button(URL(fileURLWithPath: path).lastPathComponent) { addOverlay(path) }
+                                Button(MediaFiles.displayName(path)) { addOverlay(path) }
                             }
                             Button("Importa overlay…") { model.importOverlay() }
                         }
@@ -112,7 +112,7 @@ import OrbisCore
                 Spacer(); Button("Annulla") { dismiss() }
                 Button(LocalizedStringKey(commitTitle)) { save() }.buttonStyle(.borderedProminent).disabled(saving)
             }.padding()
-        }.frame(width: 1120, height: 780).interactiveDismissDisabled(scene != original || saving)
+        }.frame(width: 1120, height: 780).disabled(saving).interactiveDismissDisabled(scene != original || saving)
         .onAppear { if model.devices.isEmpty { model.refreshDevices() } }
     }
     private func save() {
@@ -146,7 +146,7 @@ import OrbisCore
     }
     private func addOverlay(_ path: String) {
         add(.overlay)
-        if let index = scene.items.firstIndex(where: { $0.id == selected }) { scene.items[index].target = path; scene.items[index].label = URL(fileURLWithPath: path).lastPathComponent }
+        if let index = scene.items.firstIndex(where: { $0.id == selected }) { scene.items[index].target = path; scene.items[index].label = MediaFiles.displayName(path) }
     }
     private func sourceResolution() {
         guard let source = scene.items.first(where: { $0.id == selected && $0.kind == .file }) ?? scene.items.first(where: { $0.kind == .file && !$0.target.isEmpty }) else { return }
@@ -235,7 +235,7 @@ import OrbisCore
                         guard picture || MediaFiles.videos.contains(url.pathExtension.lowercased()) else { throw OrbisError.invalid("Trascina un video o un’immagine supportata.") }
                         var item = SceneItem(); item.kind = picture ? .overlay : .file; item.label = url.lastPathComponent; item.audioEnabled = !picture
                         if picture { item.target = try model.store.importMedia(url, collection: "Overlays") } else { item.target = url.path }
-                        if picture { model.workspace.overlays.append(item.target); model.persist() }
+                        if picture && !model.workspace.overlays.contains(item.target) { model.workspace.overlays.append(item.target); model.persist() }
                         item.width = min(640, scene.width); item.height = min(360, scene.height)
                         let x = Int(location.x / max(0.001, scale)) + offset * 20
                         let y = Int(location.y / max(0.001, scale)) + offset * 20
@@ -275,7 +275,7 @@ import OrbisCore
                     if item.kind == .overlay {
                         Picker("Dalla libreria", selection: $item.target) {
                             Text("Seleziona…").tag("")
-                            ForEach(model.workspace.overlays, id: \.self) { Text(URL(fileURLWithPath: $0).lastPathComponent).tag($0) }
+                            ForEach(model.workspace.overlays, id: \.self) { Text(MediaFiles.displayName($0)).tag($0) }
                         }
                     }
                     if let player { VideoPlayer(player: player).frame(height: 150) }
@@ -343,11 +343,11 @@ import OrbisCore
     var body: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 230))], spacing: 20) {
-                ForEach(model.workspace.overlays.filter { model.search.isEmpty || URL(fileURLWithPath: $0).lastPathComponent.localizedCaseInsensitiveContains(model.search) }, id: \.self) { path in
+                ForEach(model.workspace.overlays.filter { model.search.isEmpty || MediaFiles.displayName($0).localizedCaseInsensitiveContains(model.search) }, id: \.self) { path in
                     GroupBox {
                         VStack {
                             CanvasMediaPreview(path: path).frame(height: 150)
-                            Text(URL(fileURLWithPath: path).lastPathComponent).lineLimit(2)
+                            Text(MediaFiles.displayName(path)).lineLimit(2)
                             Button("Anteprima") { preview = MediaSelection(path: path) }
                             Button("Rimuovi dalla libreria", role: .destructive) { model.removeOverlay(path) }
                         }.padding(8)
@@ -384,16 +384,24 @@ import OrbisCore
     @Environment(\.dismiss) var dismiss
     @State var button: DeckButton
     @State private var localError: String?
+    @State private var busy = false
     var body: some View {
         VStack {
             Text("Pulsante scena").font(.title2.bold()).padding(.top)
             Form {
                 TextField("Nome", text: $button.label)
                 HStack { TextField("Media", text: $button.mediaPath); Button("Importa…") {
-                    do { if let url = FilePicker.files().first { button.mediaPath = try model.store.importMedia(url, collection: "Deck") } } catch { localError = error.localizedDescription }
+                    guard let url = FilePicker.files().first else { return }
+                    busy = true
+                    let store = model.store
+                    Task {
+                        defer { busy = false }
+                        do { button.mediaPath = try await Task.detached { try store.importMedia(url, collection: "Deck") }.value }
+                        catch { localError = error.localizedDescription }
+                    }
                 } }
                 if !button.mediaPath.isEmpty { CanvasMediaPreview(path: button.mediaPath).frame(height: 130) }
-                TextField("Scorciatoia", text: $button.hotkey, prompt: Text("Option+1, Cmd+Shift+B"))
+                HotkeyRecorder(value: $button.hotkey, buttonID: button.id)
                 Text("Le scorciatoie funzionano con la regia selezionata e senza un campo di testo attivo. Cmd+Q/W/N/R/F/P e le scorciatoie di regia sono riservate.").font(.caption)
                 Toggle("Sovrapponi alla scena", isOn: $button.inScene)
                 Picker("Posizione", selection: $button.placement) {
@@ -404,7 +412,10 @@ import OrbisCore
                 HStack { TextField("Larghezza", value: $button.width, format: .number); TextField("Altezza", value: $button.height, format: .number) }
                 if let localError { Text(localError).foregroundStyle(.red) }
             }.formStyle(.grouped)
-            HStack { Button("Annulla") { dismiss() }; Spacer(); Button("Salva") {
+            HStack { Button("Annulla") { dismiss() }; Spacer(); if busy { ProgressView().controlSize(.small) }; Button("Salva") {
+                busy = true
+                Task {
+                defer { busy = false }
                 do {
                     guard !button.label.isEmpty, FileManager.default.fileExists(atPath: button.mediaPath), button.durationSeconds >= 0,
                           button.width >= 2, button.height >= 2, button.width % 2 == 0, button.height % 2 == 0, button.x >= 0, button.y >= 0 else { throw OrbisError.invalid("Controlla nome, media e dimensioni del pulsante.") }
@@ -414,11 +425,13 @@ import OrbisCore
                     }
                     let extensionName = URL(fileURLWithPath: button.mediaPath).pathExtension.lowercased()
                     guard MediaFiles.videos.contains(extensionName) || MediaFiles.isPicture(button.mediaPath) else { throw OrbisError.invalid("Formato del media non supportato.") }
+                    _ = try await Probe.media(button.mediaPath, executable: Executables.resolve("ffprobe", configured: model.workspace.ffprobePath))
                     var next = model.workspace
                     if let index = next.deck.firstIndex(where: { $0.id == button.id }) { next.deck[index] = button } else { next.deck.append(button) }
                     try model.store.save(next); model.workspace = next; dismiss()
                 } catch { localError = error.localizedDescription }
-            }.buttonStyle(.borderedProminent) }.padding()
-        }.frame(width: 660, height: 640)
+                }
+            }.buttonStyle(.borderedProminent).disabled(busy) }.padding()
+        }.frame(width: 660, height: 780).interactiveDismissDisabled(busy)
     }
 }

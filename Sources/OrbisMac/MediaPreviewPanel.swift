@@ -19,7 +19,7 @@ struct MediaSelection: Identifiable {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text(URL(fileURLWithPath: path).lastPathComponent).font(.title2.bold()).lineLimit(1)
+                Text(MediaFiles.displayName(path)).font(.title2.bold()).lineLimit(1)
                 Spacer(); Button("Chiudi") { dismiss() }
             }
             ZStack {

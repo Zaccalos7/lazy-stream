@@ -1,0 +1,1264 @@
+{
+  "reference": "lazy-stream-windows/src/Orbis.Stream.Core",
+  "scope": "User operations represented by native Swift services and SwiftUI views; the Windows HTTP server is not reproduced.",
+  "validation": "Inventory and symbol checks only. Core/FFmpeg runtime tests are separate from native macOS validation.",
+  "endpoint_source_sha256": "9d9d43c245fc0509f148a99912e7cfa325e4405c8f59feeb4156a2eef33e9eef",
+  "endpoints": [
+    {
+      "method": "GET",
+      "route": "/scene/layouts",
+      "windows_line": 62,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "ScenesView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/scene/{pkid:long}",
+      "windows_line": 63,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "SceneEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/scene/save",
+      "windows_line": 64,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "private func save()"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/scene/{pkid:long}",
+      "windows_line": 79,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeScene("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/preview/sources",
+      "windows_line": 83,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func refreshDevices("
+        },
+        {
+          "file": "Sources/OrbisMac/AppleServices.swift",
+          "symbol": "static func devices("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/preview/sources/snapshot",
+      "windows_line": 87,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/MediaPreviewService.swift",
+          "symbol": "func snapshot("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/preview/sources/prepare",
+      "windows_line": 110,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/MediaOptimization.swift",
+          "symbol": "func prepare("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/preview/sources/probe",
+      "windows_line": 124,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "private func sourceResolution("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/scene/overlays",
+      "windows_line": 157,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "OverlaysView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/scene/overlays",
+      "windows_line": 159,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func importOverlay("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/scene/overlays/{name}",
+      "windows_line": 188,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/CanvasMediaPreview.swift",
+          "symbol": "CanvasMediaPreview"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/scene/overlays/{name}/still",
+      "windows_line": 199,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/MediaPreviewService.swift",
+          "symbol": "func snapshot("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/scene/overlays/{name}",
+      "windows_line": 208,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeOverlay("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/live/start-scene-live",
+      "windows_line": 215,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/StartWizard.swift",
+          "symbol": "private func transmit("
+        },
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func start("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/live/start-live",
+      "windows_line": 224,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/StartWizard.swift",
+          "symbol": "private func chooseFolder("
+        },
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func start("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/live/start-video-live",
+      "windows_line": 233,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func replayFrom("
+        },
+        {
+          "file": "Sources/OrbisCore/PlatformPresets.swift",
+          "symbol": "static func starting("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/live/stop-live",
+      "windows_line": 242,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func stop()"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/live/{pkid:int}/scene",
+      "windows_line": 255,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "var takeover:"
+        },
+        {
+          "file": "Sources/OrbisMac/NavigationViews.swift",
+          "symbol": "LiveDeckPanel"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/live/{pkid:int}/scene/resume",
+      "windows_line": 257,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func resume()"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/live/{pkid:int}/scene/{button:long}",
+      "windows_line": 259,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func playDeck("
+        },
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func play("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/scene-buttons",
+      "windows_line": 272,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "DeckView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/scene-buttons",
+      "windows_line": 274,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "DeckEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/scene-buttons/{pkid:long}",
+      "windows_line": 277,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "DeckEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/scene-buttons/{pkid:long}",
+      "windows_line": 280,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeDeckButton("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/scene-buttons/media",
+      "windows_line": 284,
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/FLVRelay.swift",
+          "symbol": "func importMedia("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/scene-buttons/media/{name}/still",
+      "windows_line": 300,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/CanvasMediaPreview.swift",
+          "symbol": "CanvasMediaPreview"
+        },
+        {
+          "file": "Sources/OrbisMac/MediaPreviewService.swift",
+          "symbol": "func snapshot("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/video/{pkid:int}/error-report",
+      "windows_line": 320,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ErrorReportView.swift",
+          "symbol": "private func buildReport()"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/video/getPage",
+      "windows_line": 332,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/NavigationViews.swift",
+          "symbol": "LiveManagementView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/video/getAllVideo",
+      "windows_line": 335,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "PlaylistView"
+        },
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "HistoryView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/video/getAllChannelWithVideoLive",
+      "windows_line": 343,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveViews.swift",
+          "symbol": "LiveView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/video/unlockVideo",
+      "windows_line": 345,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func unlock("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/video/live-history/{pkid:long}",
+      "windows_line": 348,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeHistory("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/video/live-history/older-than/{months:int}",
+      "windows_line": 349,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func cleanup("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/video/live-history/cleanup",
+      "windows_line": 353,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func cleanup("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/video/live-history/cleanup",
+      "windows_line": 356,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "model.cleanupProgress"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/settings/save",
+      "windows_line": 363,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ChannelEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/settings/change",
+      "windows_line": 369,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ChannelEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/settings/retrive",
+      "windows_line": 375,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ChannelsView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/settings/retrive-channels",
+      "windows_line": 378,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "PlaylistView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/settings/retrive-directories-path",
+      "windows_line": 381,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppleServices.swift",
+          "symbol": "static func files("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/settings/delete",
+      "windows_line": 384,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeChannel("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/video-setting/getVideoSettings",
+      "windows_line": 391,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ProfilesView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/video-setting/save",
+      "windows_line": 394,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ProfileEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/video-setting/link",
+      "windows_line": 397,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func assignProfile("
+        },
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func linkVideoProfile("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/video-setting/edit",
+      "windows_line": 400,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ProfileEditor"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "DELETE",
+      "route": "/video-setting/delete",
+      "windows_line": 403,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeProfile("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/image/upload",
+      "windows_line": 410,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/OrbisApp.swift",
+          "symbol": "homeBackground"
+        },
+        {
+          "file": "Sources/OrbisCore/FLVRelay.swift",
+          "symbol": "func importMedia("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/image/loadimage",
+      "windows_line": 428,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/OrbisApp.swift",
+          "symbol": "DashboardView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/taskManager/statistics/allInfo",
+      "windows_line": 439,
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "func sample("
+        },
+        {
+          "file": "Sources/OrbisMac/OrbisApp.swift",
+          "symbol": "TasksView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/taskManager/statistics/cpu",
+      "windows_line": 440,
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "cpuPercent"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/taskManager/statistics/ram",
+      "windows_line": 441,
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "memoryUsed"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/taskManager/statistics/swap",
+      "windows_line": 442,
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "swapUsed"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/taskManager/statistics/cpu/temperature",
+      "windows_line": 443,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/OrbisApp.swift",
+          "symbol": "Temperatura CPU/GPU e carico GPU"
+        },
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "thermalState"
+        }
+      ],
+      "status": "platform-difference",
+      "macOS_execution": "pending",
+      "difference": "No numerical temperature is claimed. macOS exposes thermal state; the UI marks numerical CPU/GPU temperatures unavailable."
+    },
+    {
+      "method": "GET",
+      "route": "/taskManager/statistics/gpu/temperature",
+      "windows_line": 444,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/OrbisApp.swift",
+          "symbol": "Temperatura CPU/GPU e carico GPU"
+        },
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "thermalState"
+        }
+      ],
+      "status": "platform-difference",
+      "macOS_execution": "pending",
+      "difference": "No numerical temperature is claimed. macOS exposes thermal state; the UI marks numerical CPU/GPU temperatures unavailable."
+    },
+    {
+      "method": "GET",
+      "route": "/preview/live",
+      "windows_line": 455,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveViews.swift",
+          "symbol": "LiveView"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/preview/live/embed",
+      "windows_line": 465,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveViews.swift",
+          "symbol": "PlatformPlayer"
+        },
+        {
+          "file": "Sources/OrbisCore/PlatformLinks.swift",
+          "symbol": "static func publicURL("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "POST",
+      "route": "/preview/live/{pkid:int}/air/dismiss",
+      "windows_line": 483,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveViews.swift",
+          "symbol": "airWarningDismissed"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/preview/live/{pkid:int}/video",
+      "windows_line": 494,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveViews.swift",
+          "symbol": "LiveControlView"
+        },
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "private func updatePreview()"
+        }
+      ],
+      "status": "platform-difference",
+      "macOS_execution": "pending",
+      "difference": "The native composition preview uses JPEG frames, with a separate WebKit platform player; it does not expose the Windows HTTP media endpoint."
+    },
+    {
+      "method": "GET",
+      "route": "/preview/live/{pkid:int}/frame",
+      "windows_line": 514,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "private func updatePreview()"
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/preview/live/{pkid:int}/parameters",
+      "windows_line": 548,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func apply("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "PUT",
+      "route": "/preview/live/{pkid:int}/volume",
+      "windows_line": 559,
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func setVolume("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    },
+    {
+      "method": "GET",
+      "route": "/updates",
+      "windows_line": 633,
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/MacUpdates.swift",
+          "symbol": "static func check("
+        }
+      ],
+      "status": "native-implementation",
+      "macOS_execution": "pending"
+    }
+  ],
+  "page_handlers": [
+    {
+      "windows_file": "Pages/MainChannelSetting.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ChannelsView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainChannelSetting.cshtml.cs",
+      "handler": "OnPostSave",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ChannelEditor"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainChannelSetting.cshtml.cs",
+      "handler": "OnPostToggle",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func setChannelEnabled("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainChannelSetting.cshtml.cs",
+      "handler": "OnPostDelete",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeChannel("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLayout.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "SceneEditor"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLayoutList.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/SceneViews.swift",
+          "symbol": "ScenesView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLayoutList.cshtml.cs",
+      "handler": "OnPostDelete",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeScene("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/NavigationViews.swift",
+          "symbol": "LiveManagementView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnGetRows",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/NavigationViews.swift",
+          "symbol": "LiveManagementRow"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnGetDetailsRows",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/NavigationViews.swift",
+          "symbol": "LiveDetailsView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostDeletePlaylist",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeHistory("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostStop",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func stop()"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostSpot",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func enqueueSpot("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostReplay",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func replay("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostRestart",
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/PlatformPresets.swift",
+          "symbol": "static func playlist("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostDelete",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func deleteHistoryVideo("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostReplayFrom",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func replayFrom("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostUnlock",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func unlock("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostLink",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func assignProfile("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostStartScene",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/StartWizard.swift",
+          "symbol": "private func transmit("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLive.cshtml.cs",
+      "handler": "OnPostPlaylist",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/StartWizard.swift",
+          "symbol": "private func chooseFolder("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLiveHistory.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "HistoryView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLiveHistory.cshtml.cs",
+      "handler": "OnPostSaveAutoCleanup",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/HistoryCleanupSettings.swift",
+          "symbol": "HistoryCleanupSettings"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLiveHistory.cshtml.cs",
+      "handler": "OnPostDelete",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeHistory("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainLiveMenu.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/NavigationViews.swift",
+          "symbol": "LiveHubView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainPreview.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveViews.swift",
+          "symbol": "LiveView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainPreview.cshtml.cs",
+      "handler": "OnPostStop",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func stop()"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainPreview.cshtml.cs",
+      "handler": "OnPostSpot",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/LiveSession.swift",
+          "symbol": "func enqueueSpot("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainTaskManager.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/OrbisApp.swift",
+          "symbol": "TasksView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainTaskManager.cshtml.cs",
+      "handler": "OnGetFacts",
+      "swift": [
+        {
+          "file": "Sources/OrbisCore/SystemMetrics.swift",
+          "symbol": "func sample("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainVideoSetting.cshtml.cs",
+      "handler": "OnGet",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ProfilesView"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainVideoSetting.cshtml.cs",
+      "handler": "OnPostSave",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "ProfileEditor"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainVideoSetting.cshtml.cs",
+      "handler": "OnPostToggle",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func setProfileActive("
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainVideoSetting.cshtml.cs",
+      "handler": "OnPostDuplicate",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/ConfigurationViews.swift",
+          "symbol": "copy.id = UUID()"
+        }
+      ],
+      "macOS_execution": "pending"
+    },
+    {
+      "windows_file": "Pages/MainVideoSetting.cshtml.cs",
+      "handler": "OnPostDelete",
+      "swift": [
+        {
+          "file": "Sources/OrbisMac/AppModel.swift",
+          "symbol": "func removeProfile("
+        }
+      ],
+      "macOS_execution": "pending"
+    }
+  ]
+}

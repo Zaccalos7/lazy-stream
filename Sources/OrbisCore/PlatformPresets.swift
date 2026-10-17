@@ -31,6 +31,8 @@ public enum PlatformPresets {
         profile.defaultPlatform = platform
         profile.isDefault = !light
         profile.quality = light ? .light : .balanced
+        profile.lowLatency = platform == .twitch
+        profile.options = [EncoderOption(key: "profile:v", value: light || platform == .facebook ? "main" : "high")]
         profile.width = light ? 1280 : 1920; profile.height = light ? 720 : 1080
         profile.frameRate = 30
         profile.videoBitrate = light ? 3_000_000 : 6_000_000

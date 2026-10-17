@@ -13,11 +13,15 @@ import OrbisCore
     @Published var error: String?
     @Published var selectedSession: UUID?
     @Published var search = ""
+    @Published var recordingHotkey = false
     @Published var page: Page = .dashboard
     @Published var startRequest: StartRequest?
     @Published var report: LiveHistory?
     @Published private(set) var navigation: [Page] = []
     @Published var cleanupProgress = CleanupProgress()
+    @Published var checkingUpdates = false
+    @Published var updateMessage = ""
+    @Published var availableUpdate: MacRelease?
     private var checkpointTick = 0
     private var startingChannels: Set<UUID> = []
     let store: WorkspaceStore
@@ -40,22 +44,28 @@ import OrbisCore
             }
         }
         Task { await MediaOptimization.shared.removeUnused() }
-        refreshCapabilities()
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, !(NSApp.keyWindow?.firstResponder is NSTextView), let session = self.watched, session.isRunning else { return event }
-            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            let prefix = (flags.contains(.command) ? "Cmd+" : "") + (flags.contains(.option) ? "Option+" : "") + (flags.contains(.shift) ? "Shift+" : "") + (flags.contains(.control) ? "Ctrl+" : "")
-            var character = (event.charactersIgnoringModifiers ?? "").uppercased()
-            if let scalar = character.unicodeScalars.first {
-                if (0xf704...0xf71b).contains(scalar.value) { character = "F\(scalar.value - 0xf704 + 1)" }
-                else if let named = [UInt32(0xf700): "ARROWUP", 0xf701: "ARROWDOWN", 0xf702: "ARROWLEFT", 0xf703: "ARROWRIGHT", 0xf72c: "PAGEUP", 0xf72d: "PAGEDOWN", 0xf729: "HOME", 0xf72b: "END"][scalar.value] { character = named }
+        if error == nil {
+            let snapshot = workspace, storage = store
+            Task.detached(priority: .utility) {
+                let sceneMedia = (snapshot.scenes + snapshot.history.compactMap(\.scene)).flatMap { $0.items.map(\.target) }
+                let kept = Set(snapshot.overlays + snapshot.deck.map(\.mediaPath) + sceneMedia)
+                for collection in ["Overlays", "Deck"] { try? storage.sweepMedia(collection: collection, keeping: kept, olderThan: Date().addingTimeInterval(-86_400)) }
             }
-            let key = DeckHotkey(prefix + character)
+        }
+        refreshCapabilities()
+        if UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true { Task { await checkUpdates() } }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, !self.recordingHotkey, !(NSApp.keyWindow?.firstResponder is NSTextView), let session = self.watched, session.isRunning else { return event }
+            let key = DeckHotkey(MacHotkeys.value(event))
             guard let button = self.workspace.deck.first(where: { !$0.hotkey.isEmpty && DeckHotkey($0.hotkey) == key && key != nil }) else { return event }
-            session.play(button); return nil
+            self.playDeck(button, session: session); return nil
         }
     }
     var watched: LiveSession? { sessions.first { $0.id == selectedSession } ?? sessions.first(where: { $0.isRunning }) ?? sessions.last }
+    var knownChannels: [Channel] {
+        var seen = Set<UUID>()
+        return (workspace.channels + workspace.history.map(\.channel) + sessions.map(\.channel)).filter { seen.insert($0.id).inserted }
+    }
     func open(_ destination: Page) {
         guard destination != page else { return }
         navigation.append(page); page = destination; search = ""
@@ -85,6 +95,7 @@ import OrbisCore
             var next = workspace
             next.history.removeAll { $0.id == id }; next.interruptedRuns.removeAll { $0.historyID == id }
             try store.save(next); workspace = next
+            removeSessionLog(id)
         }
     }
     func replayFrom(_ history: LiveHistory, videoID: UUID, resume: Bool) {
@@ -111,6 +122,17 @@ import OrbisCore
                 workspace.history[index].profile = profile; try save()
             }
         }
+    }
+    func playDeck(_ button: DeckButton, session: LiveSession) {
+        guard session.isRunning else { return }
+        if UserDefaults.standard.object(forKey: "confirmSceneButtons") as? Bool ?? true {
+            let alert = NSAlert()
+            alert.messageText = button.label
+            alert.informativeText = button.inScene && session.takeover?.id == button.id ? "Rimuovere la sovrapposizione e riprendere il programma?" : "Mettere in onda questo media per \(session.channel.name)?"
+            alert.addButton(withTitle: NativeLocalization.text("confirm")); alert.addButton(withTitle: NativeLocalization.text("cancel"))
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+        session.play(button)
     }
     func perform(_ action: () throws -> Void) { do { try action() } catch { self.error = error.localizedDescription } }
     func save() throws { try store.save(workspace) }
@@ -172,7 +194,7 @@ import OrbisCore
                 guard profile.active else { throw OrbisError.invalid("Il profilo selezionato è disattivato.") }
                 let scene = overrideScene ?? (overridePlaylist == nil ? workspace.scenes.first(where: { $0.id == channel.sceneID }) : nil)
                 var playlist = overridePlaylist ?? workspace.playlists[channel.id.uuidString] ?? []
-                if scene == nil && playlist.isEmpty { playlist = try MediaFiles.playlist(folder: channel.videoFolder) }
+                if scene == nil && playlist.isEmpty && overridePlaylist == nil && !channel.videoFolder.isEmpty { playlist = try MediaFiles.playlist(folder: channel.videoFolder) }
                 playlist = playlist.filter { $0.enabled }
                 if let scene { try scene.validate(); try await AppleCapture.authorize(scene.items) }
                 else if playlist.isEmpty { throw OrbisError.invalid("Aggiungi video alla playlist o seleziona una scena.") }
@@ -215,6 +237,15 @@ import OrbisCore
             catch { capabilities = FFmpegCapabilities() }
         }
     }
+    func checkUpdates() async {
+        guard !checkingUpdates else { return }
+        checkingUpdates = true; updateMessage = ""; defer { checkingUpdates = false }
+        do {
+            let installed = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "3.0.0"
+            availableUpdate = try await MacUpdates.check(feed: UserDefaults.standard.string(forKey: "updateFeedURL") ?? "", installed: installed)
+            updateMessage = availableUpdate.map { "Versione disponibile: \($0.version)" } ?? "Nessun aggiornamento disponibile."
+        } catch { updateMessage = error.localizedDescription }
+    }
     func refreshDevices() {
         Task { do { devices = try await AppleCapture.devices(ffmpeg: Executables.resolve("ffmpeg", configured: workspace.ffmpegPath)) }
                catch { self.error = error.localizedDescription } }
@@ -253,7 +284,7 @@ import OrbisCore
         perform {
             guard !workspace.scenes.contains(where: { $0.items.contains(where: { $0.target == path }) }),
                   !workspace.history.contains(where: { $0.scene?.items.contains(where: { $0.target == path }) == true }),
-                  !sessions.contains(where: { $0.isRunning && ($0.scene?.items.contains(where: { $0.target == path }) == true || $0.takeover?.mediaPath == path) }) else {
+                  !sessions.contains(where: { $0.isRunning && ($0.scene?.items.contains(where: { $0.target == path }) == true || $0.takeover?.mediaPath == path || $0.queuedSpots.contains(where: { $0.mediaPath == path })) }) else {
                 throw OrbisError.invalid("L’overlay è usato da una scena o da una diretta.")
             }
             workspace.overlays.removeAll { $0 == path }; try save()
@@ -263,6 +294,7 @@ import OrbisCore
     func removeProfile(_ id: UUID) {
         perform {
             guard !workspace.channels.contains(where: { $0.profileID == id }), !workspace.playlists.values.contains(where: { $0.contains(where: { $0.profileID == id }) }),
+                  !workspace.history.contains(where: { $0.playlist.contains(where: { $0.profileID == id }) }),
                   !sessions.contains(where: { $0.isRunning && $0.profile.id == id }) else { throw OrbisError.invalid("Il profilo è associato a un canale, a un video o a una diretta.") }
             var next = workspace; next.profiles.removeAll { $0.id == id }; try store.save(next); workspace = next
         }
@@ -280,13 +312,22 @@ import OrbisCore
         }
     }
     func importOverlay() {
-        perform {
-            for url in FilePicker.files(multiple: true) {
-                let ext = url.pathExtension.lowercased()
-                guard MediaFiles.stills.contains(ext) || ["gif", "apng", "webm", "mov"].contains(ext) else { throw OrbisError.invalid("Formato overlay non supportato.") }
-                workspace.overlays.append(try store.importMedia(url, collection: "Overlays"))
-            }
-            try save()
+        let urls = FilePicker.files(multiple: true)
+        guard !urls.isEmpty else { return }
+        Task {
+            do {
+                let ffprobe = try Executables.resolve("ffprobe", configured: workspace.ffprobePath)
+                for url in urls {
+                    guard MediaFiles.overlays.contains(url.pathExtension.lowercased()) else { throw OrbisError.invalid("Formato overlay non supportato.") }
+                    _ = try await Probe.media(url.path, executable: ffprobe)
+                }
+                var next = workspace
+                for url in urls {
+                    let path = try store.importMedia(url, collection: "Overlays")
+                    if !next.overlays.contains(path) { next.overlays.append(path) }
+                }
+                try store.save(next); workspace = next
+            } catch { error = error.localizedDescription }
         }
     }
     func checkpoint() {
@@ -342,21 +383,36 @@ import OrbisCore
                     cleanupProgress.deletedLives += 1
                 }
                 try save()
+                for entry in eligible { removeSessionLog(entry.id) }
             } catch { cleanupProgress.error = error.localizedDescription; self.error = error.localizedDescription }
         }
     }
+    private func removeSessionLog(_ id: UUID) {
+        try? FileManager.default.removeItem(at: store.directory.appendingPathComponent("Logs/live-\(id.uuidString).log"))
+    }
     private func cleanupIfNeeded() {
+        guard !cleanupProgress.running else { return }
+        var next = workspace
+        var removed = Set<UUID>()
         var changed = false
-        for index in workspace.channels.indices {
-            let channel = workspace.channels[index]
+        let active = Set(sessions.filter { $0.isRunning }.map(\.historyID))
+        for index in next.channels.indices {
+            let channel = next.channels[index]
             guard channel.cleanupEnabled, channel.cleanupIntervalMonths > 0, channel.cleanupOlderThanMonths > 0 else { continue }
             let due = Calendar.current.date(byAdding: .month, value: channel.cleanupIntervalMonths, to: channel.lastCleanup ?? .distantPast) ?? .distantPast
             if due <= Date(), let cutoff = Calendar.current.date(byAdding: .month, value: -channel.cleanupOlderThanMonths, to: Date()) {
-                workspace.history.removeAll { $0.channel.id == channel.id && $0.end != nil && $0.start < cutoff }
-                workspace.channels[index].lastCleanup = Date(); changed = true
+                next.history.removeAll { entry in
+                    let eligible = entry.channel.id == channel.id && entry.end != nil && entry.start < cutoff && !active.contains(entry.id)
+                    if eligible { removed.insert(entry.id) }
+                    return eligible
+                }
+                next.channels[index].lastCleanup = Date(); changed = true
             }
         }
-        if changed { persist() }
+        if changed {
+            next.interruptedRuns.removeAll { removed.contains($0.historyID) }
+            perform { try store.save(next); workspace = next; for id in removed { removeSessionLog(id) } }
+        }
     }
     func exportWorkspace() {
         perform {

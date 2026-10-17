@@ -24,6 +24,8 @@ public final class ProcessSampler {
             guard proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, size) == size else { continue }
             let ticks = info.pti_total_user &+ info.pti_total_system
             var cpu: Double?
+            // XNU fill_taskprocinfo exports recount_times_mach here, so these are Mach ticks.
+            // https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/kern/bsd_kern.c
             if let old = previous[pid], now > old.time, ticks >= old.ticks, timebase.denom > 0 {
                 let seconds = Double(ticks - old.ticks) * Double(timebase.numer) / Double(timebase.denom) / 1e9
                 cpu = seconds / (now - old.time) * 100

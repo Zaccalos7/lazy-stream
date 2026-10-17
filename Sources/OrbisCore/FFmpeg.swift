@@ -6,8 +6,14 @@ import Glibc
 #endif
 
 public enum MediaFiles {
-    public static let videos: Set<String> = ["mp4", "mov", "mkv", "avi", "webm", "m4v", "ts", "flv"]
+    public static let videos: Set<String> = ["mp4", "mov", "mkv", "avi", "webm", "m4v", "ts", "mts", "m2ts", "flv", "wmv", "mpg", "mpeg", "ogv", "3gp"]
     public static let stills: Set<String> = ["png", "jpg", "jpeg", "webp", "bmp"]
+    public static let overlays: Set<String> = stills.union(["gif", "apng", "webm", "mov", "mp4"])
+    public static func displayName(_ path: String) -> String {
+        let name = URL(fileURLWithPath: path).lastPathComponent
+        if name.count > 37, UUID(uuidString: String(name.prefix(36))) != nil { return String(name.dropFirst(37)) }
+        return name
+    }
     public static func isStill(_ path: String) -> Bool { stills.contains(URL(fileURLWithPath: path).pathExtension.lowercased()) && !WebPAnimation.isAnimated(path) }
     public static func isPicture(_ path: String) -> Bool { stills.contains(URL(fileURLWithPath: path).pathExtension.lowercased()) || ["gif", "apng"].contains(URL(fileURLWithPath: path).pathExtension.lowercased()) }
     public static func playlist(folder: String) throws -> [PlaylistItem] {
@@ -25,7 +31,8 @@ public enum Executables {
             return URL(fileURLWithPath: configured)
         }
         let bundled = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/\(name)").path
-        let paths = [bundled, "/opt/homebrew/bin/\(name)"] + (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map { "\($0)/\(name)" }
+        let explicitDirectory = ProcessInfo.processInfo.environment["ORBIS_FFMPEG_DIR"].map { URL(fileURLWithPath: $0).appendingPathComponent(name).path }
+        let paths = [explicitDirectory, bundled, "/opt/homebrew/bin/\(name)"].compactMap { $0 } + (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map { "\($0)/\(name)" }
         guard let path = paths.first(where: { fm.isExecutableFile(atPath: $0) }) else { throw OrbisError.invalid("\(name) non trovato. Installa FFmpeg o seleziona il binario nelle impostazioni.") }
         return URL(fileURLWithPath: path)
     }
@@ -119,7 +126,8 @@ public enum FFmpegCommand {
                 guard let duration = media[item.id]?.duration, duration > 0 else { return nil }
                 return max(0.04, duration - resume)
             }
-        let duration = finiteDurations.max()
+        let hasCapture = scene.items.contains { [.screen, .camera, .microphone].contains($0.kind) }
+        let duration = hasCapture ? nil : finiteDurations.max()
         var args = ["-hide_banner", "-nostdin", "-loglevel", "warning", "-y", "-threads", "2", "-filter_complex_threads", "2"]
         var filters: [String] = []; var audio: [String] = []
         // A synthetic canvas fixes the output timebase across playlist items and scene changes.
@@ -147,8 +155,7 @@ public enum FFmpegCommand {
                 let tile = "tile\(index)"; let next = "canvas\(index)"
                 let alpha = item.kind == .overlay
                 filters.append("[\(index):v]setpts=PTS-STARTPTS,format=\(alpha ? "rgba" : "yuv420p"),scale=\(item.width):\(item.height):force_original_aspect_ratio=decrease,pad=\(item.width):\(item.height):(ow-iw)/2:(oh-ih)/2:color=\(alpha ? "black@0" : "black"),setsar=1[\(tile)]")
-                let finite = false // Hold the last frame until the longest source ends.
-                filters.append("[\(base)][\(tile)]overlay=x=\(item.x):y=\(item.y):shortest=\(finite ? 1 : 0):eof_action=\(finite ? "endall" : "repeat")[\(next)]")
+                filters.append("[\(base)][\(tile)]overlay=x=\(item.x):y=\(item.y):shortest=0:eof_action=repeat[\(next)]")
                 base = next
             }
             let hasAudio = item.kind == .microphone || (item.kind == .file && media[item.id]?.hasAudio == true)
@@ -176,7 +183,7 @@ public enum FFmpegCommand {
         if profile.codec.hasSuffix("_videotoolbox") {
             args += ["-allow_sw", "0", "-realtime", profile.lowLatency ? "1" : "0", "-prio_speed", profile.quality == .light ? "1" : "0"]
             if platform.constantRate { args += ["-constant_bit_rate", "1"] }
-            if profile.codec == "h264_videotoolbox" { args += ["-profile:v", "high"] }
+            if profile.codec == "h264_videotoolbox" && !profile.options.contains(where: { $0.key == "profile" || $0.key == "profile:v" }) { args += ["-profile:v", "high"] }
         } else if profile.codec == "libx264" || profile.codec == "libx265" {
             let preset = profile.preset.isEmpty ? (profile.quality == .light ? "superfast" : profile.quality == .high ? "faster" : "veryfast") : profile.preset
             args += ["-preset", preset]

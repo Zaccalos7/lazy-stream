@@ -33,6 +33,7 @@ final class WorkflowParityTests: XCTestCase {
             XCTAssertEqual(profile.width, width); XCTAssertEqual(profile.height, height); XCTAssertEqual(profile.frameRate, fps)
             XCTAssertEqual(profile.codec, "h264_videotoolbox"); XCTAssertEqual(profile.format, "flv")
             XCTAssertEqual(profile.defaultPlatform, platform); XCTAssertEqual(profile.isDefault, !light)
+            XCTAssertEqual(profile.options.first(where: { $0.key == "profile:v" })?.value, light || platform == .facebook ? "main" : "high")
             XCTAssertEqual(Platform.detect(platform.ingest), platform)
         }
         let defaults = Workspace().profiles

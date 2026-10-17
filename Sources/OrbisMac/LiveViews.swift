@@ -102,13 +102,13 @@ import OrbisCore
                         VStack(alignment: .leading) {
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 130))]) {
                                 ForEach(model.workspace.deck) { button in
-                                    Button { session.play(button) } label: {
+                                    Button { model.playDeck(button, session: session) } label: {
                                         VStack(spacing: 8) { Image(systemName: button.inScene ? "square.3.layers.3d" : "play.rectangle"); Text(button.label); Text(button.hotkey).font(.caption).foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(10)
                                     }.disabled(!session.isRunning)
                                 }
                             }
                             HStack {
-                                Button("Intermezzo…") { if let url = FilePicker.files().first { var button = DeckButton(); button.label = url.lastPathComponent; button.mediaPath = url.path; session.play(button) } }
+                                Button("Intermezzo…") { if let url = FilePicker.files().first { var button = DeckButton(); button.label = url.lastPathComponent; button.mediaPath = url.path; model.playDeck(button, session: session) } }
                                 if let button = session.takeover { Text("In scena: \(button.label)"); Button("Riprendi programma") { session.resume() }.buttonStyle(.borderedProminent) }
                             }.disabled(!session.isRunning)
                         }.padding(8)
@@ -190,19 +190,7 @@ import OrbisCore
             }.environmentObject(model)
         }
     }
-    private func publicPage(_ channel: Channel) -> URL? {
-        if let video = session.onAirVideo, channel.platform == .youtube { return URL(string: "https://www.youtube.com/watch?v=\(video)") }
-        guard !channel.streamName.isEmpty else { return nil }
-        let escaped = channel.streamName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
-        switch channel.platform {
-        case .twitch: return URL(string: "https://www.twitch.tv/\(escaped)")
-        case .youtube: return URL(string: "https://www.youtube.com/\(escaped.hasPrefix("UC") ? "channel/\(escaped)/live" : escaped.count == 11 && !escaped.hasPrefix("@") ? "watch?v=\(escaped)" : "\(escaped.hasPrefix("@") ? escaped : "@" + escaped)/live")")
-        case .kick: return URL(string: "https://kick.com/\(escaped)")
-        case .facebook: return URL(string: "https://www.facebook.com/\(escaped)/live")
-        case .tiktok: return URL(string: "https://www.tiktok.com/@\(escaped)/live")
-        case .custom: return nil
-        }
-    }
+    private func publicPage(_ channel: Channel) -> URL? { PlatformLinks.publicURL(channel, onAirVideo: session.onAirVideo) }
 }
 @MainActor struct MixerRow: View {
     let source: SceneItem
@@ -244,7 +232,7 @@ import OrbisCore
                     Button("Stampa / Salva PDF") { ManualPrint.run(language: language) }
                 }
                 GroupBox("1 · Configura") { Text("In Canali inserisci server RTMP/RTMPS, chiave, nome pubblico e sorgente. La chiave viene salvata nel Portachiavi. In Video e audio scegli Apple H.264 per sfruttare VideoToolbox, oppure libx264 per codifica software. Per RTMP usa FLV con H.264 e AAC.").padding().frame(maxWidth: .infinity, alignment: .leading) }
-                GroupBox("2 · Prepara") { Text("Aggiungi e ordina i video in Playlist. Per una composizione usa Scene e layout: disponi video, schermo, camera e microfoni, poi aggiungi overlay trasparenti o animati. Un layout conserva slot riutilizzabili: Crea scena ne produce una copia da riempire. Il primo riquadro è sotto gli altri. Il primo video che termina conclude la composizione; le sorgenti di cattura continuano fino allo stop.").padding().frame(maxWidth: .infinity, alignment: .leading) }
+                GroupBox("2 · Prepara") { Text("Aggiungi e ordina i video in Playlist. Per una composizione usa Scene e layout: disponi video, schermo, camera e microfoni, poi aggiungi overlay trasparenti o animati. Un layout conserva slot riutilizzabili: Crea scena ne produce una copia da riempire. Il primo riquadro è sotto gli altri. La composizione di soli file termina dopo il video più lungo; le sorgenti di cattura continuano fino allo stop.").padding().frame(maxWidth: .infinity, alignment: .leading) }
                 GroupBox("3 · Trasmetti") { Text("In Live scegli Avvia Live o Avvia playlist: seleziona prima il profilo video e audio, poi il canale e infine la scena o la cartella video. Il conto alla rovescia è annullabile. Gestione Live offre filtri, dettagli, cambio profilo, pulsanti scena, spot, ripresa e riavvio. In Live / Anteprima scegli la sessione per controllare segnale, mixer, scene e playlist. Impostazioni apre Video e audio, Canali e Preferenze.").padding().frame(maxWidth: .infinity, alignment: .leading) }
                 GroupBox("4 · Intermezzi") { Text("Configura i Pulsanti scena con un’immagine o un video. A schermo intero un video viene riprodotto una volta; un’immagine resta finché riprendi il programma. In sovrapposizione il media si ripete, con posizione e durata configurabili. La scorciatoia usa Cmd, Option, Shift e Ctrl (esempio Option+1). Il mixer modifica il volume tra 0 e 200%; 0 equivale a mute.").padding().frame(maxWidth: .infinity, alignment: .leading) }
                 GroupBox("macOS e statistiche") { Text("Autorizza camera, microfono e registrazione schermo nelle impostazioni Privacy e sicurezza. L’elenco dispositivi usa gli indici di AVFoundation rilevati da FFmpeg. Per audio di sistema seleziona un dispositivo audio virtuale come microfono. Panoramica campiona CPU e memoria tramite Mach, swap tramite sysctl, rete tramite getifaddrs e spazio tramite Foundation. Stato termico e risparmio energetico provengono da ProcessInfo. CPU dell’app: 100% corrisponde a un core; non include FFmpeg. Le temperature e il carico GPU non sono inventati.").padding().frame(maxWidth: .infinity, alignment: .leading) }

@@ -29,8 +29,9 @@ actor MediaPreviewService {
     private func cacheURL(_ source: String, suffix: String) throws -> URL {
         let folder = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("OrbisStream/Previews")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let modified = (try? URL(fileURLWithPath: source).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate?.timeIntervalSince1970) ?? 0
-        let hash = SHA256.hash(data: Data("\(source)|\(modified)|\(suffix)".utf8)).map { String(format: "%02x", $0) }.joined()
+        let metadata = try? URL(fileURLWithPath: source).resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+        let modified = metadata?.contentModificationDate?.timeIntervalSince1970 ?? 0
+        let hash = SHA256.hash(data: Data("\(source)|\(modified)|\(metadata?.fileSize ?? 0)|\(suffix)".utf8)).map { String(format: "%02x", $0) }.joined()
         return folder.appendingPathComponent(hash + suffix)
     }
     func snapshot(_ item: SceneItem, ffmpeg: URL, ffprobe: URL) async throws -> Data {

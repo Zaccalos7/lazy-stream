@@ -52,7 +52,8 @@ import OrbisCore
     }
     private func buildReport() {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "3.0.0"
-        let logs = model.sessions.first(where: { $0.historyID == history.id })?.logs.suffix(80).joined(separator: "\n") ?? ""
+        let logs = model.sessions.first(where: { $0.historyID == history.id })?.logs.suffix(80).joined(separator: "\n") ??
+            (try? SessionLog.read(directory: model.store.directory.appendingPathComponent("Logs"), sessionID: history.id, maxBytes: 12_000)) ?? ""
         let keys: [String]
         do { keys = try model.workspace.channels.map { try KeychainStore.read($0.id) } + [try KeychainStore.read(history.channel.id)] }
         catch { localError = error.localizedDescription; return }

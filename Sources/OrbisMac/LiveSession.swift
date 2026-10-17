@@ -45,7 +45,9 @@ import OrbisCore
     func returnToPlaylist() {
         guard !playlist.isEmpty else { return }
         scene = nil; takeover = nil; takeoverTimer?.cancel(); queuedSpots.removeAll()
-        resumePosition = 0; currentPosition = 0; restart(preservePosition: false)
+        if let saved = playlistBeforeScene, playlist.indices.contains(saved.index) { index = saved.index; resumePosition = saved.position }
+        else { resumePosition = 0 }
+        playlistBeforeScene = nil; currentPosition = resumePosition; restart(preservePosition: false)
     }
     private let ffmpeg: URL
     private let ffprobe: URL
@@ -71,6 +73,7 @@ import OrbisCore
     private let policy: StreamingPolicy
     private var videoProfiles: [UUID: EncoderProfile]
     private var programProfile: EncoderProfile
+    private var playlistBeforeScene: (index: Int, position: Double)?
     private var appliedVideoID: UUID?
     private var takeoverGeneration = UUID()
     private var automaticQuality: Bool
@@ -90,7 +93,7 @@ import OrbisCore
         automaticQuality = profile.quality == .auto
         self.requestedBitrate = profile.videoBitrate
         self.resumePosition = playlist.first?.resumeSeconds ?? 0
-        fileLog = SessionLog(directory: directory.appendingPathComponent("Logs"))
+        fileLog = SessionLog(directory: directory.appendingPathComponent("Logs"), sessionID: historyID)
         previewURL = directory.appendingPathComponent("preview-\(UUID().uuidString).jpg")
     }
     func start() {
@@ -149,7 +152,12 @@ import OrbisCore
         } else { return }
         restart()
     }
-    func switchScene(_ value: Scene) throws { try value.validate(); takeoverTimer?.cancel(); takeoverGeneration = UUID(); queuedSpots.removeAll(); scene = value; takeover = nil; resumePosition = 0; currentPosition = 0; restart(preservePosition: false) }
+    func switchScene(_ value: Scene) throws {
+        try value.validate()
+        if scene == nil, playlist.indices.contains(index) { updateProgramPosition(); playlistBeforeScene = (index, currentPosition) }
+        takeoverTimer?.cancel(); takeoverGeneration = UUID(); queuedSpots.removeAll(); scene = value; takeover = nil
+        resumePosition = 0; currentPosition = 0; restart(preservePosition: false)
+    }
     var processDetails: [StreamingProcess] { engine?.processDetails ?? [] }
     func enqueueSpot(_ path: String) throws {
         guard isRunning, FileManager.default.fileExists(atPath: path),
@@ -234,7 +242,10 @@ import OrbisCore
                     }
                     if profile.frameRate == 0 && policy.uniformFormat { profile.frameRate = program.items.first.flatMap { media[$0.id]?.frameRate } ?? 30 }
                     if profile.quality == .auto {
-                        profile.quality = try await EncoderTuner.shared.resolve(profile: profile, executable: ffmpeg)
+                        var benchmark = profile
+                        if benchmark.width == 0 { benchmark.width = program.width; benchmark.height = program.height }
+                        if benchmark.frameRate == 0 { benchmark.frameRate = program.items.first.flatMap { media[$0.id]?.frameRate } ?? 30 }
+                        profile.quality = try await EncoderTuner.shared.resolve(profile: benchmark, executable: ffmpeg)
                         appendLog("Qualità automatica: \(profile.quality.rawValue)")
                     }
                     let seek = (takeover == nil || takeover?.inScene == true) ? resumePosition : 0
