@@ -43,3 +43,29 @@ struct StudioShortcut: View {
         }.buttonStyle(.plain)
     }
 }
+
+struct ActivationPicker: View {
+    @Binding var selection: Int
+    var body: some View {
+        Picker("Stato", selection: $selection) {
+            Text("Tutti").tag(-1); Text("Attivi").tag(1); Text("Disattivati").tag(0)
+        }.frame(maxWidth: 260)
+    }
+}
+
+struct PageControls: View {
+    let total: Int
+    @Binding var page: Int
+    var pageSize = 10
+    private var pages: Int { max(1, (total + pageSize - 1) / pageSize) }
+    private var current: Int { min(page, pages - 1) }
+    var body: some View {
+        HStack {
+            Text("\(total) risultati").font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button { page = max(0, current - 1) } label: { Image(systemName: "chevron.left") }.disabled(current == 0).help("Pagina precedente")
+            Text("\(current + 1) / \(pages)").monospacedDigit()
+            Button { page = current + 1 } label: { Image(systemName: "chevron.right") }.disabled(current + 1 >= pages).help("Pagina successiva")
+        }.padding(16)
+    }
+}

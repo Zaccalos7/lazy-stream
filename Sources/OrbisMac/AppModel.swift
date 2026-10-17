@@ -115,6 +115,15 @@ import OrbisCore
     }
     func perform(_ action: () throws -> Void) { do { try action() } catch { self.error = error.localizedDescription } }
     func save() throws { try store.save(workspace) }
+    func editWorkspace(_ action: (inout Workspace) throws -> Void) {
+        perform { var next = workspace; try action(&next); try store.save(next); workspace = next }
+    }
+    func setChannelEnabled(_ id: UUID, _ enabled: Bool) {
+        editWorkspace { next in if let index = next.channels.firstIndex(where: { $0.id == id }) { next.channels[index].enabled = enabled } }
+    }
+    func setProfileActive(_ id: UUID, _ active: Bool) {
+        editWorkspace { next in if let index = next.profiles.firstIndex(where: { $0.id == id }) { next.profiles[index].active = active } }
+    }
     func persist() { perform { try save() } }
     func saveChannel(_ channel: Channel, key: String) {
         perform {

@@ -4,9 +4,11 @@ import OrbisCore
 @MainActor struct ChannelsView: View {
     @EnvironmentObject var model: AppModel
     @State private var draft: Channel?
+    @State private var activeOnly = -1
+    @State private var platform: Platform?
     var body: some View {
         List {
-            ForEach(model.workspace.channels.filter { model.search.isEmpty || $0.name.localizedCaseInsensitiveContains(model.search) }) { channel in
+            ForEach(model.workspace.channels.filter { (model.search.isEmpty || $0.name.localizedCaseInsensitiveContains(model.search)) && (activeOnly == -1 || $0.enabled == (activeOnly == 1)) && (platform == nil || $0.platform == platform) }) { channel in
                 HStack(spacing: 16) {
                     Image(systemName: "antenna.radiowaves.left.and.right")
                         .font(.system(size: 20, weight: .medium)).foregroundStyle(Color.accentColor)
@@ -15,11 +17,21 @@ import OrbisCore
                     VStack(alignment: .leading, spacing: 5) { Text(channel.name).font(.headline); Text("\(channel.platform.title) · \(channel.enabled ? "Abilitato" : "Disabilitato")").foregroundStyle(.secondary) }
                     Spacer(); Button("Avvia") { model.startRequest = StartRequest(mode: channel.sceneID == nil ? .playlist : .scene, channelID: channel.id) }.disabled(!channel.enabled)
                     Button("Modifica") { draft = channel }
+                    Button(channel.enabled ? "Disattiva" : "Attiva") { model.setChannelEnabled(channel.id, !channel.enabled) }
                     Button("Elimina", role: .destructive) { model.removeChannel(channel.id) }
                 }.padding(.vertical, 8)
             }
         }
         .overlay { if model.workspace.channels.isEmpty { ContentUnavailableView("Nessun canale", systemImage: "antenna.radiowaves.left.and.right", description: Text("Aggiungi il server e la chiave ricevuti dalla piattaforma.")) } }
+        .safeAreaInset(edge: .top) {
+            HStack {
+                ActivationPicker(selection: $activeOnly)
+                Picker("Piattaforma", selection: $platform) {
+                    Text("Tutte le piattaforme").tag(nil as Platform?)
+                    ForEach(Platform.allCases, id: \.self) { Text($0.title).tag(Optional($0)) }
+                }
+            }.padding().background(.bar)
+        }
         .toolbar { Button { draft = Channel() } label: { Label("Aggiungi canale", systemImage: "plus") } }
         .sheet(item: $draft) { ChannelEditor(channel: $0).environmentObject(model) }
     }
@@ -83,9 +95,10 @@ import OrbisCore
 @MainActor struct ProfilesView: View {
     @EnvironmentObject var model: AppModel
     @State private var draft: EncoderProfile?
+    @State private var activeOnly = -1
     var body: some View {
         List {
-            ForEach(model.workspace.profiles.filter { model.search.isEmpty || $0.title.localizedCaseInsensitiveContains(model.search) }) { profile in
+            ForEach(model.workspace.profiles.filter { (model.search.isEmpty || $0.title.localizedCaseInsensitiveContains(model.search)) && (activeOnly == -1 || $0.active == (activeOnly == 1)) }) { profile in
                 HStack(spacing: 16) {
                     Image(systemName: "slider.horizontal.3").font(.system(size: 20, weight: .medium))
                         .foregroundStyle(.secondary).frame(width: 44, height: 44)
@@ -95,11 +108,13 @@ import OrbisCore
                         Text("\(profile.codec) · \(profile.width)×\(profile.height) · \(profile.frameRate.formatted()) fps · \(Double(profile.videoBitrate) / 1_000_000, specifier: "%.1f") Mbit/s").foregroundStyle(.secondary)
                     }
                     Spacer(); Button("Modifica") { draft = profile }
+                    Button(profile.active ? "Disattiva" : "Attiva") { model.setProfileActive(profile.id, !profile.active) }
                     Button("Duplica") { var copy = profile; copy.id = UUID(); copy.title += " copia"; draft = copy }
                     Button("Elimina", role: .destructive) { model.removeProfile(profile.id) }
                 }.padding(.vertical, 8)
             }
-        }.toolbar {
+        }.safeAreaInset(edge: .top) { HStack { ActivationPicker(selection: $activeOnly); Spacer() }.padding().background(.bar) }
+        .toolbar {
             Button { draft = EncoderProfile() } label: { Label("Nuovo profilo", systemImage: "plus") }
             Menu("Preset piattaforma") {
                 ForEach(Platform.allCases, id: \.self) { platform in
@@ -196,6 +211,7 @@ import OrbisCore
 @MainActor struct PlaylistView: View {
     @EnvironmentObject var model: AppModel
     @State private var selected: UUID?
+    @State private var preview: MediaSelection?
     var body: some View {
         VStack {
             HStack {
@@ -218,7 +234,9 @@ import OrbisCore
                             HStack {
                                 Toggle("", isOn: Binding(get: { model.workspace.playlists[key]?.first { $0.id == item.id }?.enabled ?? true }, set: { value in update(key, id: item.id) { $0.enabled = value } })).labelsHidden()
                                 VStack(alignment: .leading) { Text(item.name); Text(item.path).font(.caption).foregroundStyle(.secondary) }
+                                if item.duration > 0 { Text(clock(item.duration)).font(.caption).monospacedDigit() }
                                 Spacer()
+                                Button { preview = MediaSelection(path: item.path) } label: { Image(systemName: "play.rectangle") }.help("Anteprima")
                                 Picker("Profilo video", selection: Binding(get: { model.workspace.playlists[key]?.first { $0.id == item.id }?.profileID }, set: { value in update(key, id: item.id) { $0.profileID = value } })) {
                                     Text("Del canale").tag(nil as UUID?)
                                     ForEach(model.workspace.profiles.filter { $0.active }) { Text($0.title).tag(Optional($0.id)) }
@@ -238,6 +256,7 @@ import OrbisCore
                 }.padding()
             } else { ContentUnavailableView("Playlist", systemImage: "list.bullet.rectangle", description: Text("Seleziona un canale per ordinare e abilitare i video.")) }
         }.onAppear { if selected == nil { selected = model.workspace.channels.first?.id } }
+        .sheet(item: $preview) { MediaPreviewPanel(path: $0.path).environmentObject(model) }
     }
     private func update(_ key: String, id: UUID, action: (inout PlaylistItem) -> Void) {
         if let index = model.workspace.playlists[key]?.firstIndex(where: { $0.id == id }) { action(&model.workspace.playlists[key]![index]); model.persist() }
