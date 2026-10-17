@@ -197,9 +197,22 @@ public enum FFmpegCommand {
         return EncodingPlan(arguments: args, width: width, height: height, frameRate: fps)
     }
     public static func sender(destination: String, policy: StreamingPolicy? = nil) -> [String] {
-        var args = ["-hide_banner", "-nostdin", "-loglevel", "warning", "-progress", "pipe:1", "-nostats", "-stats_period", "0.5", "-probesize", "65536", "-analyzeduration", "500000", "-f", "flv"]
+        var args = ["-hide_banner", "-nostdin", "-loglevel", "info", "-progress", "pipe:1", "-nostats", "-stats_period", "0.5", "-probesize", "4194304", "-analyzeduration", "2000000", "-f", "flv"]
         if let policy, policy.senderPacing { args += ["-readrate", "1", "-readrate_initial_burst", number(policy.preroll)] }
-        args += ["-i", "pipe:0", "-map", "0", "-c", "copy", "-f", "flv", "-flvflags", "no_duration_filesize", "-flush_packets", "1", "-rw_timeout", String(Int((policy?.connectTimeout ?? 30) * 1_000_000)), destination]
+        args += ["-i", "pipe:0", "-map", "0", "-c", "copy", "-f", "flv", "-flvflags", "no_duration_filesize", "-flush_packets", "1", "-rw_timeout", String(Int((policy?.connectTimeout ?? 30) * 1_000_000))]
+        var output = destination
+        if Platform.detect(destination) == .facebook, let scheme = destination.range(of: "://"),
+           let pathStart = destination[scheme.upperBound...].firstIndex(of: "/") {
+            let path = destination[destination.index(after: pathStart)...]
+            if let separator = path.firstIndex(of: "/") {
+                let app = String(path[..<separator]); let playpath = String(path[path.index(after: separator)...])
+                if !app.isEmpty && !playpath.isEmpty {
+                    args += ["-rtmp_app", app, "-rtmp_playpath", playpath]
+                    output = String(destination[..<pathStart]) + "/" + app
+                }
+            }
+        }
+        args += [output]
         return args
     }
     public static func number(_ value: Double) -> String { String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), value) }

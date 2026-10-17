@@ -199,36 +199,78 @@ struct StartRequest: Identifiable {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     let historyID: UUID
+    @State private var preview: MediaSelection?
     private var history: LiveHistory? { model.workspace.history.first { $0.id == historyID } }
+    private var session: LiveSession? { model.sessions.first { $0.historyID == historyID && $0.isRunning } }
+    private var currentVideoID: UUID? {
+        guard let session, session.playlist.indices.contains(session.index) else { return history?.lastVideoID }
+        return session.playlist[session.index].id
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack { Text("Dettagli diretta").font(.title2.bold()); Spacer(); Button("Chiudi") { dismiss() } }
             if let history {
-                Text("\(history.channel.name) · \(history.profile.title)").font(.headline)
-                Text(history.start.formatted()).foregroundStyle(.secondary)
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("\(history.channel.name) · \(history.profile.title)").font(.headline)
+                        Text(history.start.formatted()).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if let session {
+                        Button("Live / Anteprima") { model.showPreview(session); dismiss() }
+                        Button("Termina", role: .destructive) { session.stop() }
+                    }
+                }
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         if let scene = history.scene {
                             ForEach(scene.items) { item in
-                                Label("\(item.label) · \(item.kind.title) · \(item.width)×\(item.height)", systemImage: item.kind == .microphone ? "mic" : "video")
+                                HStack {
+                                    Label("\(item.label) · \(item.kind.title) · \(item.width)×\(item.height)", systemImage: item.kind == .microphone ? "mic" : "video")
+                                    Spacer()
+                                    if item.kind == .file || item.kind == .overlay {
+                                        Button("Anteprima") { preview = MediaSelection(path: item.target) }
+                                    }
+                                }
                             }
                         } else {
-                            ForEach(history.playlist) { item in
-                                HStack {
-                                    Text(item.name); Spacer(); Text(clock(item.resumeSeconds)).monospacedDigit()
-                                    Button("Elimina video", role: .destructive) { model.deleteHistoryVideo(historyID: history.id, videoID: item.id) }
-                                        .disabled(model.sessions.contains { $0.historyID == history.id && $0.isRunning })
-                                }
+                            ForEach(Array(history.playlist.enumerated()), id: \.element.id) { index, item in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: currentVideoID == item.id ? "play.fill" : "film")
+                                        Text("\(index + 1). \(item.name)").font(.headline)
+                                        Spacer(); Text(clock(item.resumeSeconds)).monospacedDigit()
+                                        if item.duration > 0 { Text("/ \(clock(item.duration))").foregroundStyle(.secondary) }
+                                    }
+                                    Text(item.path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                                    HStack {
+                                        Button("Anteprima") { preview = MediaSelection(path: item.path) }
+                                        Button("Avvia da questo video") { model.replayFrom(history, videoID: item.id, resume: false) }.disabled(session != nil)
+                                        Button("Dalla posizione") { model.replayFrom(history, videoID: item.id, resume: true) }.disabled(session != nil)
+                                        if let session { Button("Metti in onda") { if let next = session.playlist.firstIndex(where: { $0.id == item.id }) { session.skip(to: next) } } }
+                                        Spacer()
+                                        Menu("Profilo video") {
+                                            Button("Della diretta") { model.linkVideoProfile(historyID: historyID, videoID: item.id, profileID: nil) }
+                                            ForEach(model.workspace.profiles.filter { $0.active }) { profile in
+                                                Button(profile.title) { model.linkVideoProfile(historyID: historyID, videoID: item.id, profileID: profile.id) }
+                                            }
+                                        }
+                                        Button(role: .destructive) { model.deleteHistoryVideo(historyID: history.id, videoID: item.id) } label: { Image(systemName: "trash") }.disabled(session != nil).help("Elimina video")
+                                    }
+                                }.padding(14).background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
                             }
                         }
                         if let error = history.error { Text(error).foregroundStyle(.red).textSelection(.enabled) }
                         if let session = model.sessions.first(where: { $0.historyID == historyID }) {
-                            Text(session.logs.joined(separator: "\n")).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                            DisclosureGroup("Registro FFmpeg") {
+                                Text(session.logs.joined(separator: "\n")).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                            }
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-        }.padding(28).frame(width: 780, height: 580)
+        }.padding(28).frame(width: 920, height: 650)
+        .sheet(item: $preview) { MediaPreviewPanel(path: $0.path).environmentObject(model) }
     }
 }
 

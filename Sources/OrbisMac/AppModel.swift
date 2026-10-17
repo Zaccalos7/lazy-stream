@@ -97,9 +97,8 @@ import OrbisCore
                   let video = workspace.history[history].playlist.firstIndex(where: { $0.id == videoID }) else { return }
             var next = workspace; next.history[history].playlist[video].profileID = profileID
             if let session = sessions.first(where: { $0.historyID == historyID && $0.isRunning }),
-               let index = session.playlist.firstIndex(where: { $0.id == videoID }) {
-                if session.index == index, let profile = workspace.profiles.first(where: { $0.id == profileID }) { try session.apply(profile) }
-                session.playlist[index].profileID = profileID
+               session.playlist.contains(where: { $0.id == videoID }) {
+                try session.linkProfile(workspace.profiles.first(where: { $0.id == profileID }), videoID: videoID)
             }
             try store.save(next); workspace = next
         }
@@ -230,6 +229,20 @@ import OrbisCore
             }
             workspace.playlists[channel.uuidString] = items; try save()
             for item in items { prepareMedia(item.path) }
+            Task {
+                guard let ffprobe = try? Executables.resolve("ffprobe", configured: workspace.ffprobePath) else { return }
+                var durations: [String: Double] = [:]
+                for item in items where item.duration == 0 {
+                    if let info = try? await Probe.media(item.path, executable: ffprobe) { durations[item.path] = info.duration }
+                }
+                if !durations.isEmpty {
+                    editWorkspace { next in
+                        guard var saved = next.playlists[channel.uuidString] else { return }
+                        for index in saved.indices { if let duration = durations[saved[index].path] { saved[index].duration = duration } }
+                        next.playlists[channel.uuidString] = saved
+                    }
+                }
+            }
         }
     }
     func prepareMedia(_ path: String) {

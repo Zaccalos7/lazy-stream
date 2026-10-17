@@ -69,7 +69,8 @@ import OrbisCore
     private var airWatch: Task<Void, Never>?
     private var bitrateController: BitrateController
     private let policy: StreamingPolicy
-    private let videoProfiles: [UUID: EncoderProfile]
+    private var videoProfiles: [UUID: EncoderProfile]
+    private var programProfile: EncoderProfile
     private var appliedVideoID: UUID?
     private var takeoverGeneration = UUID()
     private var automaticQuality: Bool
@@ -82,6 +83,7 @@ import OrbisCore
     init(channel: Channel, profile: EncoderProfile, scene: Scene?, playlist: [PlaylistItem], historyID: UUID,
          ffmpeg: URL, ffprobe: URL, destination: String, directory: URL, loop: Bool, videoProfiles: [UUID: EncoderProfile] = [:], streamKey: String = "", finished: @escaping (LiveSession) -> Void) {
         self.channel = channel; self.profile = profile; self.scene = scene; self.playlist = playlist; self.historyID = historyID
+        programProfile = profile
         self.ffmpeg = ffmpeg; self.ffprobe = ffprobe; self.destination = destination; self.loop = loop; self.finished = finished
         redactionKeys = [destination, streamKey]
         policy = StreamingPolicy(platform: channel.platform); bitrateController = BitrateController(policy: policy); self.videoProfiles = videoProfiles
@@ -129,7 +131,14 @@ import OrbisCore
     func stop() { updateProgramPosition(); userStopped = true; shouldStop = true; takeoverTimer?.cancel(); engine?.stop() }
     func apply(_ newProfile: EncoderProfile) throws {
         try newProfile.validateForStreaming()
+        programProfile = newProfile
         profile = newProfile; automaticQuality = newProfile.quality == .auto; lowLeadSince = nil; warnedSlow = false; bitrateController = BitrateController(policy: policy); requestedBitrate = newProfile.videoBitrate; restart()
+    }
+    func linkProfile(_ selected: EncoderProfile?, videoID: UUID) throws {
+        if let selected { try selected.validateForStreaming(); videoProfiles[selected.id] = selected }
+        guard let index = playlist.firstIndex(where: { $0.id == videoID }) else { return }
+        playlist[index].profileID = selected?.id
+        if self.index == index { appliedVideoID = nil; restart() }
     }
     func setVolume(id: UUID, value: Double) {
         guard value.isFinite else { return }
@@ -198,11 +207,10 @@ import OrbisCore
                     requestedRestart = false
                     if scene == nil, takeover == nil, playlist.indices.contains(index), appliedVideoID != playlist[index].id {
                         appliedVideoID = playlist[index].id
-                        if let id = playlist[index].profileID, var selected = videoProfiles[id] {
+                        var selected = playlist[index].profileID.flatMap { videoProfiles[$0] } ?? programProfile
                             if policy.uniformFormat && profile.width > 0 { selected.width = profile.width; selected.height = profile.height; selected.frameRate = profile.frameRate }
                             try selected.validateForStreaming(); automaticQuality = selected.quality == .auto; profile = selected; requestedBitrate = selected.videoBitrate
                             bitrateController = BitrateController(policy: policy)
-                        }
                     }
                     var program = try makeScene()
                     try await AppleCapture.authorize(program.items)
@@ -210,6 +218,9 @@ import OrbisCore
                     for item in program.items where item.kind == .file || item.kind == .overlay {
                         if shouldStop { throw CancellationError() }
                         media[item.id] = try await Probe.media(item.target, executable: ffprobe)
+                    }
+                    if scene == nil, takeover == nil, playlist.indices.contains(index), let source = program.items.first, let info = media[source.id] {
+                        playlist[index].duration = info.duration
                     }
                     program = try webpInputs.prepare(program)
                     if shouldStop { break }; if requestedRestart { continue }
