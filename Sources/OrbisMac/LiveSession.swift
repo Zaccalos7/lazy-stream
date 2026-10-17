@@ -24,12 +24,20 @@ import OrbisCore
     @Published var currentPosition = 0.0
     @Published var outputWidth = 1920
     @Published var outputHeight = 1080
+    @Published var programVolume = 100.0
     var isRunning: Bool { status == .starting || status == .live || status == .reconnecting }
     var sourceName: String { takeover?.label ?? scene?.name ?? (playlist.indices.contains(index) ? playlist[index].name : "Diretta") }
-    var sources: [SceneItem] { scene?.items.filter { $0.audioEnabled && $0.kind != .overlay } ?? [] }
+    var sources: [SceneItem] {
+        if let scene { return scene.items.filter { $0.audioEnabled && $0.kind != .overlay } }
+        guard playlist.indices.contains(index) else { return [] }
+        var source = SceneItem(); source.id = playlist[index].id; source.label = playlist[index].name
+        source.target = playlist[index].path; source.volume = programVolume
+        return [source]
+    }
     private let ffmpeg: URL
     private let ffprobe: URL
     private let destination: String
+    private let redactionKeys: [String]
     private let previewURL: URL
     private let loop: Bool
     private var engine: RelayEngine?
@@ -57,9 +65,10 @@ import OrbisCore
     private let fileLog: SessionLog
     private let finished: (LiveSession) -> Void
     init(channel: Channel, profile: EncoderProfile, scene: Scene?, playlist: [PlaylistItem], historyID: UUID,
-         ffmpeg: URL, ffprobe: URL, destination: String, directory: URL, loop: Bool, videoProfiles: [UUID: EncoderProfile] = [:], finished: @escaping (LiveSession) -> Void) {
+         ffmpeg: URL, ffprobe: URL, destination: String, directory: URL, loop: Bool, videoProfiles: [UUID: EncoderProfile] = [:], streamKey: String = "", finished: @escaping (LiveSession) -> Void) {
         self.channel = channel; self.profile = profile; self.scene = scene; self.playlist = playlist; self.historyID = historyID
         self.ffmpeg = ffmpeg; self.ffprobe = ffprobe; self.destination = destination; self.loop = loop; self.finished = finished
+        redactionKeys = [destination, streamKey]
         policy = StreamingPolicy(platform: channel.platform); bitrateController = BitrateController(policy: policy); self.videoProfiles = videoProfiles
         automaticQuality = profile.quality == .auto
         self.requestedBitrate = profile.videoBitrate
@@ -104,13 +113,17 @@ import OrbisCore
     }
     func stop() { updateProgramPosition(); shouldStop = true; takeoverTimer?.cancel(); engine?.stop() }
     func apply(_ newProfile: EncoderProfile) throws {
-        try newProfile.validate()
-        guard newProfile.format == "flv" else { throw OrbisError.invalid("Le dirette RTMP usano il contenitore FLV.") }
+        try newProfile.validateForStreaming()
         profile = newProfile; automaticQuality = newProfile.quality == .auto; lowLeadSince = nil; warnedSlow = false; bitrateController = BitrateController(policy: policy); requestedBitrate = newProfile.videoBitrate; restart()
     }
     func setVolume(id: UUID, value: Double) {
-        guard let item = scene?.items.firstIndex(where: { $0.id == id }) else { return }
-        scene?.items[item].volume = min(200, max(0, value)); restart()
+        guard value.isFinite else { return }
+        if let item = scene?.items.firstIndex(where: { $0.id == id }) {
+            scene?.items[item].volume = min(200, max(0, value))
+        } else if scene == nil, playlist.indices.contains(index), playlist[index].id == id {
+            programVolume = min(200, max(0, value))
+        } else { return }
+        restart()
     }
     func switchScene(_ value: Scene) throws { try value.validate(); takeoverTimer?.cancel(); takeoverGeneration = UUID(); queuedSpots.removeAll(); scene = value; takeover = nil; resumePosition = 0; currentPosition = 0; restart(preservePosition: false) }
     var processDetails: [StreamingProcess] { engine?.processDetails ?? [] }
@@ -171,7 +184,7 @@ import OrbisCore
                         appliedVideoID = playlist[index].id
                         if let id = playlist[index].profileID, var selected = videoProfiles[id] {
                             if policy.uniformFormat && profile.width > 0 { selected.width = profile.width; selected.height = profile.height; selected.frameRate = profile.frameRate }
-                            try selected.validate(); automaticQuality = selected.quality == .auto; profile = selected; requestedBitrate = selected.videoBitrate
+                            try selected.validateForStreaming(); automaticQuality = selected.quality == .auto; profile = selected; requestedBitrate = selected.videoBitrate
                             bitrateController = BitrateController(policy: policy)
                         }
                     }
@@ -233,7 +246,7 @@ import OrbisCore
                 if shouldStop { break }
                 if Date().timeIntervalSince(connectionStarted) > 60 && progress.seconds > 30 { retries = 0 }
                 if retries >= channel.platform.retries {
-                    lastError = error.localizedDescription; status = .failed; appendLog(error.localizedDescription); break
+                    lastError = ErrorReport.redact(error.localizedDescription, keys: redactionKeys); status = .failed; appendLog(error.localizedDescription); break
                 }
                 retries += 1; status = .reconnecting; appendLog("Riconnessione \(retries): \(error.localizedDescription)")
                 resumePosition = currentPosition; progress = StreamProgress()
@@ -253,7 +266,7 @@ import OrbisCore
             guard playlist.indices.contains(index), playlist[index].enabled else { throw OrbisError.invalid("La playlist non contiene video abilitati.") }
             result = Scene(); result.name = playlist[index].name
             result.width = profile.width == 0 ? 1920 : profile.width; result.height = profile.height == 0 ? 1080 : profile.height
-            var item = SceneItem(); item.target = playlist[index].path; item.label = playlist[index].name
+            var item = SceneItem(); item.target = playlist[index].path; item.label = playlist[index].name; item.volume = programVolume
             item.width = result.width; item.height = result.height; result.items = [item]
         }
         if let button = takeover {
@@ -308,7 +321,7 @@ import OrbisCore
     }
     private func appendLog(_ value: String) {
         guard !value.isEmpty else { return }
-        let safe = value.replacingOccurrences(of: destination, with: "[server protetto]")
+        let safe = ErrorReport.redact(value, keys: redactionKeys)
         fileLog.append("[\(channel.name)] \(safe)")
         logs.append("\(Date().formatted(date: .omitted, time: .standard)) \(safe)")
         if logs.count > 300 { logs.removeFirst(logs.count - 300) }

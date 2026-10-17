@@ -858,3 +858,19 @@
 "{0} video" = "{0} vīdea";
 "{0} è già usato da «{1}»" = "{0} iam ā «{1}» adhibētur";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: ūtere PNG, JPEG, GIF, WebP, APNG, WebM, MOV aut MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Globulī scaenārum";
+"Dettagli" = "Detailia videre";
+"Indice" = "In hoc manuali";
+"Live / Anteprima" = "Praevīsiō in directo";
+"Ricomincia" = "Iterum incipere";
+"Ricomincia dall’inizio" = "Iterum incipere";
+"Riconnessione" = "Reconexio";
+"Riprendi" = "Spectāculum resūme";
+"Riprendi dalla posizione" = "Spectāculum resūme";
+"Riprendi programma" = "Spectāculum resūme";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Imprimere";
+"Termina" = "Dēsinere in directo";

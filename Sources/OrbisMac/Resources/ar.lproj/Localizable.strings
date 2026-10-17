@@ -858,3 +858,19 @@
 "{0} video" = "{0} فيديو";
 "{0} è già usato da «{1}»" = "{0} مستخدم بالفعل للزر «{1}»";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: استخدم PNG أو JPEG أو GIF أو WebP أو APNG أو WebM أو MOV أو MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "أزرار المشاهد";
+"Dettagli" = "عرض التفاصيل";
+"Indice" = "في هذا الدليل";
+"Live / Anteprima" = "معاينة البث المباشر";
+"Ricomincia" = "أعد تشغيل البث المباشر";
+"Ricomincia dall’inizio" = "أعد تشغيل البث المباشر";
+"Riconnessione" = "جارٍ إعادة الاتصال";
+"Riprendi" = "استئناف البث";
+"Riprendi dalla posizione" = "استئناف البث";
+"Riprendi programma" = "استئناف البث";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "طباعة";
+"Termina" = "أوقف البث المباشر";

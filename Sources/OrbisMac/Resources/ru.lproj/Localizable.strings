@@ -858,3 +858,19 @@
 "{0} video" = "Видео: {0}";
 "{0} è già usato da «{1}»" = "{0} уже занята кнопкой «{1}»";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: используйте PNG, JPEG, GIF, WebP, APNG, WebM, MOV или MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Кнопки сцен";
+"Dettagli" = "Подробнее";
+"Indice" = "В этом руководстве";
+"Live / Anteprima" = "Предсмотр эфира";
+"Ricomincia" = "Перезапустить эфир";
+"Ricomincia dall’inizio" = "Перезапустить эфир";
+"Riconnessione" = "Переподключение";
+"Riprendi" = "Вернуться к трансляции";
+"Riprendi dalla posizione" = "Вернуться к трансляции";
+"Riprendi programma" = "Вернуться к трансляции";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Печать";
+"Termina" = "Остановить эфир";

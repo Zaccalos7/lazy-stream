@@ -16,8 +16,10 @@ import OrbisCore
             RootView().environmentObject(model)
                 .preferredColorScheme(colorScheme)
                 .environment(\.locale, language.isEmpty ? Locale.current : Locale(identifier: language))
+                .environment(\.layoutDirection, (language == "ar" || (language.isEmpty && Locale.current.language.languageCode?.identifier == "ar")) ? .rightToLeft : .leftToRight)
                 .frame(minWidth: 1100, minHeight: 720)
                 .onAppear { delegate.model = model; NSApp.setActivationPolicy(.regular); NSApp.activate(ignoringOtherApps: true) }
+                .onChange(of: language) { UserDefaults.standard.set(language.isEmpty ? [] : [language], forKey: "AppleLanguages") }
         }
         .defaultSize(width: 1320, height: 860)
         .windowStyle(.titleBar)
@@ -31,12 +33,19 @@ import OrbisCore
                 Button("Esporta configurazione…") { model.exportWorkspace() }
             }
             CommandMenu("Diretta") {
+                Button("Avvia Live") { model.startRequest = StartRequest(mode: .scene) }.keyboardShortcut("n", modifiers: [.command])
+                Button("Avvia playlist") { model.startRequest = StartRequest(mode: .playlist) }.keyboardShortcut("n", modifiers: [.command, .shift])
+                Divider()
                 Button("Termina tutte le dirette") { model.stopAll() }
                 Button("Riprendi programma") { model.watched?.resume() }.keyboardShortcut("r", modifiers: [.command, .shift])
                 Button("Video successivo") { model.watched?.skip() }.keyboardShortcut(.rightArrow, modifiers: .command)
             }
         }
-        Settings { PreferencesView().environmentObject(model).preferredColorScheme(colorScheme).frame(width: 680, height: 560) }
+        Settings {
+            PreferencesView().environmentObject(model).preferredColorScheme(colorScheme)
+                .environment(\.locale, language.isEmpty ? Locale.current : Locale(identifier: language))
+                .frame(width: 680, height: 560)
+        }
     }
 }
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -55,55 +64,87 @@ import OrbisCore
     }
 }
 enum Page: String, CaseIterable, Identifiable {
-    case dashboard = "Panoramica", live = "Regia", playlist = "Playlist", scenes = "Scene e layout", deck = "Pulsanti scena", overlays = "Overlay", channels = "Canali", profiles = "Video e audio", history = "Storico", tasks = "Attività", recovery = "Recupero", manual = "Guida"
+    case dashboard = "Panoramica", live = "Live", management = "Gestione Live", preview = "Live / Anteprima"
+    case playlist = "Playlist", scenes = "Scene e layout", deck = "Pulsanti scena", overlays = "Overlay"
+    case settings = "Impostazioni", preferences = "Preferenze", channels = "Canali", profiles = "Video e audio"
+    case history = "Storico", tasks = "Attività", recovery = "Recupero", manual = "Manuale"
     var id: String { rawValue }
     var symbol: String {
         switch self {
-        case .dashboard: return "square.grid.2x2"; case .live: return "dot.radiowaves.left.and.right"; case .playlist: return "list.bullet.rectangle"; case .scenes: return "rectangle.3.group"; case .deck: return "square.grid.3x3"; case .overlays: return "square.3.layers.3d"; case .channels: return "antenna.radiowaves.left.and.right"; case .profiles: return "slider.horizontal.3"; case .history: return "clock.arrow.circlepath"; case .tasks: return "waveform.path.ecg"; case .recovery: return "lock.open"; case .manual: return "book"
+        case .dashboard: return "square.grid.2x2"
+        case .live: return "dot.radiowaves.left.and.right"
+        case .management: return "list.bullet.rectangle"
+        case .preview: return "play.rectangle"
+        case .playlist: return "film.stack"
+        case .scenes: return "rectangle.3.group"
+        case .deck: return "square.grid.3x3"
+        case .overlays: return "square.3.layers.3d"
+        case .settings: return "gearshape"
+        case .preferences: return "switch.2"
+        case .channels: return "antenna.radiowaves.left.and.right"
+        case .profiles: return "slider.horizontal.3"
+        case .history: return "clock.arrow.circlepath"
+        case .tasks: return "waveform.path.ecg"
+        case .recovery: return "lock.open"
+        case .manual: return "book"
         }
     }
 }
 @MainActor struct RootView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var page: Page? = .dashboard
-    @State private var wizard = false
+    @AppStorage("language") private var language = ""
+    @AppStorage("appearance") private var appearance = "system"
     var body: some View {
         NavigationSplitView {
-            List(selection: $page) {
+            List(selection: Binding(get: { Optional(model.page) }, set: { if let page = $0 { model.open(page) } })) {
                 Section("Studio") {
-                    sidebarRow(.dashboard); sidebarRow(.live); sidebarRow(.playlist)
+                    sidebarRow(.dashboard); sidebarRow(.live); sidebarRow(.preview); sidebarRow(.scenes)
                 }
-                Section("Libreria") {
-                    sidebarRow(.scenes); sidebarRow(.deck); sidebarRow(.overlays)
+                Section("Sistema") {
+                    sidebarRow(.tasks); sidebarRow(.manual); sidebarRow(.settings)
                 }
-                Section("Configurazione") {
-                    sidebarRow(.channels); sidebarRow(.profiles)
+                Section("Accessi rapidi") {
+                    sidebarRow(.management); sidebarRow(.history); sidebarRow(.playlist)
+                    sidebarRow(.deck); sidebarRow(.overlays); sidebarRow(.recovery)
                 }
-                Section("Monitoraggio") {
-                    sidebarRow(.history); sidebarRow(.tasks); sidebarRow(.recovery)
-                }
-                Section { sidebarRow(.manual) }
             }
             .listStyle(.sidebar)
             .navigationTitle("OrbisStream")
             .navigationSplitViewColumnWidth(min: 210, ideal: 228, max: 270)
             .safeAreaInset(edge: .bottom) {
-                HStack(spacing: 10) {
-                    Circle().fill(model.sessions.contains(where: { $0.isRunning }) ? Color.red : Color.secondary.opacity(0.4)).frame(width: 7, height: 7)
-                    Text("\(model.sessions.filter { $0.isRunning }.count) dirette attive").font(.caption)
-                    Spacer()
-                    Image(systemName: "apple.logo").foregroundStyle(.tertiary).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Tema", selection: $appearance) {
+                        Image(systemName: "circle.lefthalf.filled").tag("system")
+                        Image(systemName: "sun.max").tag("light")
+                        Image(systemName: "moon").tag("dark")
+                    }.pickerStyle(.segmented).labelsHidden()
+                    Picker("Lingua", selection: $language) {
+                        Text("Sistema").tag("")
+                        ForEach(NativeLocalization.languages, id: \.self) { code in
+                            Text(Locale.current.localizedString(forLanguageCode: code) ?? code).tag(code)
+                        }
+                    }.labelsHidden()
+                    HStack(spacing: 10) {
+                        Circle().fill(model.sessions.contains(where: { $0.isRunning }) ? Color.red : Color.secondary.opacity(0.4)).frame(width: 7, height: 7)
+                        Text("\(model.sessions.filter { $0.isRunning }.count) dirette attive").font(.caption)
+                        Spacer()
+                        Button { NSApp.orderFrontStandardAboutPanel(nil) } label: { Image(systemName: "info.circle") }.buttonStyle(.plain).help("Informazioni su OrbisStream")
+                    }
                 }.padding(18).background(.bar)
             }
         } detail: {
             Group {
-                switch page ?? .dashboard {
-                case .dashboard: DashboardView(open: { page = $0 }, start: { wizard = true })
-                case .live: LiveView()
+                switch model.page {
+                case .dashboard: DashboardView(open: model.open, start: { model.startRequest = StartRequest(mode: .scene) })
+                case .live: LiveHubView()
+                case .management: LiveManagementView()
+                case .preview: LiveView()
                 case .playlist: PlaylistView()
                 case .scenes: ScenesView()
                 case .deck: DeckView()
                 case .overlays: OverlaysView()
+                case .settings: SettingsHubView()
+                case .preferences: PreferencesView()
                 case .channels: ChannelsView()
                 case .profiles: ProfilesView()
                 case .history: HistoryView()
@@ -114,15 +155,24 @@ enum Page: String, CaseIterable, Identifiable {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(StudioStyle.canvas)
-            .navigationTitle((page ?? .dashboard).rawValue)
+            .navigationTitle(LocalizedStringKey(model.page.rawValue))
             .toolbar {
-                ToolbarItem(placement: .primaryAction) { Button { wizard = true } label: { Label("Avvia diretta", systemImage: "dot.radiowaves.left.and.right") }.buttonStyle(.borderedProminent).controlSize(.regular).help("Avvia una scena o una playlist") }
+                ToolbarItem(placement: .navigation) {
+                    Button { model.back() } label: { Label("Indietro", systemImage: "chevron.left") }.disabled(model.navigation.isEmpty)
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button("Avvia Live") { model.startRequest = StartRequest(mode: .scene) }
+                        Button("Avvia playlist") { model.startRequest = StartRequest(mode: .playlist) }
+                    } label: { Label("Avvia diretta", systemImage: "plus.circle.fill") }
+                }
             }
             .searchable(text: $model.search, prompt: "Cerca")
         }
         .tint(.accentColor)
         .groupBoxStyle(StudioGroupBoxStyle())
-        .sheet(isPresented: $wizard) { StartWizard().environmentObject(model) }
+        .sheet(item: $model.startRequest) { StartWizard(request: $0).environmentObject(model) }
+        .sheet(item: $model.report) { ErrorReportView(history: $0).environmentObject(model) }
         .alert("OrbisStream", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
@@ -132,7 +182,6 @@ enum Page: String, CaseIterable, Identifiable {
             Image(systemName: entry.symbol).font(.system(size: 14, weight: .medium))
         }.padding(.vertical, 3).tag(entry)
     }
-
 }
 func bytes(_ value: UInt64) -> String { ByteCountFormatter.string(fromByteCount: Int64(clamping: value), countStyle: .memory) }
 func rate(_ value: Double?) -> String { value.map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .decimal) + "/s" } ?? "—" }
@@ -175,9 +224,14 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                         .buttonStyle(.borderedProminent).controlSize(.large)
                 }.padding(.vertical, 12)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 14)], spacing: 14) {
-                    StudioShortcut(title: "Canali", subtitle: "Le tue destinazioni", symbol: "antenna.radiowaves.left.and.right") { open(.channels) }
-                    StudioShortcut(title: "Scene", subtitle: "Componi il tuo spazio", symbol: "rectangle.3.group") { open(.scenes) }
-                    StudioShortcut(title: "Playlist", subtitle: "Prepara il programma", symbol: "list.bullet.rectangle") { open(.playlist) }
+                    StudioShortcut(title: "Gestione Live", subtitle: "Controlla tutte le trasmissioni", symbol: Page.management.symbol) { open(.management) }
+                    StudioShortcut(title: "Live / Anteprima", subtitle: "Segnale, mixer e regia", symbol: Page.preview.symbol) { open(.preview) }
+                    StudioShortcut(title: "Scene e layout", subtitle: "Componi il tuo spazio", symbol: Page.scenes.symbol) { open(.scenes) }
+                    StudioShortcut(title: "Storico", subtitle: "Consulta le dirette precedenti", symbol: Page.history.symbol) { open(.history) }
+                    StudioShortcut(title: "Video e audio", subtitle: "Configura la codifica", symbol: Page.profiles.symbol) { open(.profiles) }
+                    StudioShortcut(title: "Canali", subtitle: "Le tue destinazioni", symbol: Page.channels.symbol) { open(.channels) }
+                    StudioShortcut(title: "Attività", subtitle: "Risorse e processi", symbol: Page.tasks.symbol) { open(.tasks) }
+                    StudioShortcut(title: "Manuale", subtitle: "Consulta la guida", symbol: Page.manual.symbol) { open(.manual) }
                 }
                 Text("Il Mac, in tempo reale").font(.headline).padding(.top, 8)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 205), spacing: 14)], spacing: 14) {
@@ -188,7 +242,11 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                 }
                 GroupBox("Dirette") {
                     if model.sessions.isEmpty { ContentUnavailableView("Pronto per trasmettere", systemImage: "video", description: Text("Configura un canale e scegli una playlist o una scena.")) }
-                    else { ForEach(model.sessions.filter { model.search.isEmpty || $0.channel.name.localizedCaseInsensitiveContains(model.search) }) { SessionRow(session: $0) } }
+                    else {
+                        ForEach(model.sessions.filter { model.search.isEmpty || $0.channel.name.localizedCaseInsensitiveContains(model.search) }) { session in
+                            HStack { SessionRow(session: session); Button("Apri regia") { model.showPreview(session) } }
+                        }
+                    }
                 }
                 DisclosureGroup("Dettagli del Mac", isExpanded: $showResources) {
                     Grid(alignment: .leading, horizontalSpacing: 40, verticalSpacing: 14) {
@@ -300,74 +358,5 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
     }
     func executable(_ title: String, path: Binding<String>) -> some View {
         HStack { TextField(title, text: path, prompt: Text("Automatico")); Button("Scegli…") { if let url = FilePicker.files().first { path.wrappedValue = url.path } } }
-    }
-}
-@MainActor struct StartWizard: View {
-    @EnvironmentObject var model: AppModel
-    @Environment(\.dismiss) var dismiss
-    @State private var channelID: UUID?
-    @State private var profileID: UUID?
-    @State private var sceneID: UUID?
-    @State private var step = 0
-    @State private var countdown = 0
-    @State private var counting = false
-    @State private var countdownTask: Task<Void, Never>?
-    @State private var newScene: OrbisCore.Scene?
-    @State private var newSceneID: UUID?
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Nuova diretta").font(.largeTitle.bold())
-            Text("\(step + 1) di 3 · \(["Destinazione", "Sorgenti", "Riepilogo"][step])").foregroundStyle(.secondary)
-            Form {
-                if step == 0 {
-                    Picker("Canale", selection: $channelID) {
-                        Text("Seleziona").tag(nil as UUID?)
-                        ForEach(model.workspace.channels.filter { $0.enabled }) { Text($0.name).tag(Optional($0.id)) }
-                    }
-                    Picker("Profilo", selection: $profileID) {
-                        Text("Predefinito del canale").tag(nil as UUID?)
-                        ForEach(model.workspace.profiles.filter { $0.active }) { Text($0.title).tag(Optional($0.id)) }
-                    }
-                    if model.workspace.channels.isEmpty { Text("Aggiungi un canale dalla barra laterale prima di avviare la diretta.") }
-                } else if step == 1 {
-                    Picker("Sorgente", selection: $sceneID) {
-                        Text("Playlist / scena del canale").tag(nil as UUID?)
-                        ForEach(model.workspace.scenes.filter { !$0.isLayout }) { Text($0.name).tag(Optional($0.id)) }
-                    }
-                    Button("Componi nuova scena…") { let draft = OrbisCore.Scene(); newSceneID = draft.id; newScene = draft }
-                    Stepper("Conto alla rovescia: \(countdown) s", value: $countdown, in: 0...60)
-                    Text("Gli slot di un layout devono essere riempiti e salvati come scena prima di trasmettere.").font(.caption)
-                } else {
-                    Text(model.workspace.channels.first(where: { $0.id == channelID })?.name ?? "")
-                    Text("Il server riceverà H.264 e audio stereo. La regia mostrerà l’anteprima del segnale codificato.")
-                    Text("L’avanzamento dell’invio non conferma la pubblicazione sulla piattaforma: controlla anche la pagina del canale.").font(.caption).foregroundStyle(.secondary)
-                    if counting { Text("Avvio tra \(countdown)…").font(.title) }
-                }
-            }.formStyle(.grouped)
-            HStack {
-                Button("Annulla") { countdownTask?.cancel(); dismiss() }.keyboardShortcut(.cancelAction)
-                Spacer()
-                if step > 0 { Button("Indietro") { step -= 1 }.disabled(counting) }
-                Button(step == 2 ? "Trasmetti" : "Continua") {
-                    if step < 2 { step += 1 }
-                    else {
-                        counting = true
-                        countdownTask = Task {
-                            while countdown > 0 {
-                                do { try await Task.sleep(for: .seconds(1)) } catch { return }
-                                countdown -= 1
-                            }
-                            guard !Task.isCancelled, let channel = model.workspace.channels.first(where: { $0.id == channelID }) else { return }
-                            model.start(channel: channel, profile: model.workspace.profiles.first { $0.id == profileID }, scene: model.workspace.scenes.first { $0.id == sceneID })
-                            dismiss()
-                        }
-                    }
-                }.buttonStyle(.borderedProminent).disabled(channelID == nil || counting)
-            }
-        }.padding(28).frame(width: 660, height: 520)
-        .sheet(item: $newScene, onDismiss: {
-            if let id = newSceneID, model.workspace.scenes.contains(where: { $0.id == id }) { sceneID = id }
-        }) { SceneEditor(scene: $0).environmentObject(model) }
-        .onDisappear { countdownTask?.cancel() }
     }
 }

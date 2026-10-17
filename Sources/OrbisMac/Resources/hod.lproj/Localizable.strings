@@ -858,3 +858,19 @@
 "{0} video" = "Hodor {0} Hodor.";
 "{0} è già usato da «{1}»" = "Hodor {0} «{1}»";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: HOO-DOR!";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Hodor hodor";
+"Dettagli" = "Hodor";
+"Indice" = "Hodor hodor";
+"Live / Anteprima" = "Hodor";
+"Ricomincia" = "Hodor";
+"Ricomincia dall’inizio" = "Hodor";
+"Riconnessione" = "Reconnecting";
+"Riprendi" = "Hodor hodor";
+"Riprendi dalla posizione" = "Hodor hodor";
+"Riprendi programma" = "Hodor hodor";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Hodor";
+"Termina" = "Hodor";

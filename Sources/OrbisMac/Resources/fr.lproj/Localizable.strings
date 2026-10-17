@@ -858,3 +858,19 @@
 "{0} video" = "{0} vidéos";
 "{0} è già usato da «{1}»" = "{0} est déjà utilisée par « {1} »";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0} : utilisez PNG, JPEG, GIF, WebP, APNG, WebM, MOV ou MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Boutons de scène";
+"Dettagli" = "Voir les détails";
+"Indice" = "Dans ce manuel";
+"Live / Anteprima" = "Aperçu du direct";
+"Ricomincia" = "Redémarrer le direct";
+"Ricomincia dall’inizio" = "Redémarrer le direct";
+"Riconnessione" = "Reconnexion";
+"Riprendi" = "Reprendre le direct";
+"Riprendi dalla posizione" = "Reprendre le direct";
+"Riprendi programma" = "Reprendre le direct";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Imprimer";
+"Termina" = "Arrêter le direct";

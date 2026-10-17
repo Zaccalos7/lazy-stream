@@ -858,3 +858,19 @@
 "{0} video" = "{0} βίντεο";
 "{0} è già usato da «{1}»" = "Το {0} χρησιμοποιείται ήδη από το «{1}»";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: χρησιμοποιήστε PNG, JPEG, GIF, WebP, APNG, WebM, MOV ή MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Κουμπιά σκηνής";
+"Dettagli" = "Δείτε λεπτομέρειες";
+"Indice" = "Σε αυτόν τον οδηγό";
+"Live / Anteprima" = "Ζωντανή προεπισκόπηση";
+"Ricomincia" = "Επανεκκίνηση μετάδοσης";
+"Ricomincia dall’inizio" = "Επανεκκίνηση μετάδοσης";
+"Riconnessione" = "Επανασύνδεση";
+"Riprendi" = "Συνέχιση μετάδοσης";
+"Riprendi dalla posizione" = "Συνέχιση μετάδοσης";
+"Riprendi programma" = "Συνέχιση μετάδοσης";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Εκτύπωση";
+"Termina" = "Διακοπή μετάδοσης";

@@ -8,7 +8,15 @@ public enum SourceKind: String, Codable, CaseIterable, Sendable {
 }
 public enum Platform: String, Codable, CaseIterable, Sendable {
     case custom, twitch, youtube, kick, facebook, tiktok
-    public var title: String { self == .custom ? "Personalizzata" : rawValue.capitalized }
+    public var title: String {
+        switch self {
+        case .custom: return "Personalizzata"
+        case .youtube: return "YouTube"
+        case .tiktok: return "TikTok"
+        case .facebook: return "Facebook Gaming"
+        default: return rawValue.capitalized
+        }
+    }
     public var sampleRate: Int { self == .twitch || self == .custom ? 44100 : 48000 }
     public var constantRate: Bool { self == .youtube || self == .facebook }
     public var retries: Int { self == .custom ? 0 : self == .youtube || self == .facebook ? 5 : 3 }
@@ -178,6 +186,7 @@ public struct LiveHistory: Identifiable, Codable, Equatable, Sendable {
     public var start = Date()
     public var end: Date?
     public var error: String?
+    public var lastVideoID: UUID?
     public init(channel: Channel, profile: EncoderProfile, scene: Scene?, playlist: [PlaylistItem]) {
         self.channel = channel; self.profile = profile; self.scene = scene; self.playlist = playlist
     }
@@ -195,7 +204,7 @@ public struct PlaybackCheckpoint: Identifiable, Codable, Sendable {
 }
 public struct Workspace: Codable, Sendable {
     public var channels: [Channel] = []
-    public var profiles: [EncoderProfile] = [EncoderProfile()]
+    public var profiles: [EncoderProfile] = PlatformPresets.defaults()
     public var scenes: [Scene] = []
     public var deck: [DeckButton] = []
     public var playlists: [String: [PlaylistItem]] = [:]
@@ -223,7 +232,7 @@ public struct Workspace: Codable, Sendable {
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         channels = try values.decodeIfPresent([Channel].self, forKey: .channels) ?? []
-        profiles = try values.decodeIfPresent([EncoderProfile].self, forKey: .profiles) ?? [EncoderProfile()]
+        profiles = try values.decodeIfPresent([EncoderProfile].self, forKey: .profiles) ?? PlatformPresets.defaults()
         scenes = try values.decodeIfPresent([Scene].self, forKey: .scenes) ?? []
         deck = try values.decodeIfPresent([DeckButton].self, forKey: .deck) ?? []
         playlists = try values.decodeIfPresent([String: [PlaylistItem]].self, forKey: .playlists) ?? [:]

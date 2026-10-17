@@ -3,6 +3,21 @@ import OrbisCore
 @testable import OrbisMac
 
 @MainActor final class LiveSessionTests: XCTestCase {
+    func testPlaylistMixerKeepsOneSourceAndClampsVolume() {
+        let item = PlaylistItem(path: "/tmp/program.mp4")
+        let session = LiveSession(channel: Channel(), profile: EncoderProfile(), scene: nil, playlist: [item], historyID: UUID(),
+            ffmpeg: URL(fileURLWithPath: "/unused/ffmpeg"), ffprobe: URL(fileURLWithPath: "/unused/ffprobe"),
+            destination: "/unused/output.flv", directory: FileManager.default.temporaryDirectory, loop: false) { _ in }
+        XCTAssertEqual(session.sources.map(\.id), [item.id])
+        session.setVolume(id: item.id, value: 250)
+        XCTAssertEqual(session.sources.first?.volume, 200)
+        session.setVolume(id: item.id, value: -1)
+        XCTAssertEqual(session.sources.first?.volume, 0)
+        session.setVolume(id: UUID(), value: 100)
+        XCTAssertEqual(session.programVolume, 0)
+        session.setVolume(id: item.id, value: .nan)
+        XCTAssertEqual(session.programVolume, 0)
+    }
     func testQueuedSpotsReturnToProgramWithoutOpeningAnotherPublisher() async throws {
         let ffmpeg = try Executables.resolve("ffmpeg"), ffprobe = try Executables.resolve("ffprobe")
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

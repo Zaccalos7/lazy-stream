@@ -858,3 +858,19 @@
 "{0} video" = "{0} video";
 "{0} è già usato da «{1}»" = "{0} zaten «{1}» tarafından kullanılıyor";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: PNG, JPEG, GIF, WebP, APNG, WebM, MOV veya MP4 kullanın";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Sahne düğmeleri";
+"Dettagli" = "Ayrıntıları gör";
+"Indice" = "Bu kılavuzda";
+"Live / Anteprima" = "Canlı önizleme";
+"Ricomincia" = "Canlı Yayını Yeniden Başlat";
+"Ricomincia dall’inizio" = "Canlı Yayını Yeniden Başlat";
+"Riconnessione" = "Yeniden bağlanıyor";
+"Riprendi" = "Canlı yayına dön";
+"Riprendi dalla posizione" = "Canlı yayına dön";
+"Riprendi programma" = "Canlı yayına dön";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Yazdır";
+"Termina" = "Canlı Yayını Durdur";

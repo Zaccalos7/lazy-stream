@@ -6,7 +6,7 @@ Data: 12 ottobre 2026. Destinazione: macOS 14+, esclusivamente Apple Silicon/arm
 
 Il censimento parte dai sorgenti originali disponibili: 228 file applicativi/test/risorse, 62 route HTTP e 126 identificatori HTML. `original-inventory.json` conserva file, SHA-256, simboli, proprietà, route e controlli; `parity.json` rende questa tabella consultabile da strumenti. Le route sono sostituite da chiamate dirette ai servizi Swift.
 
-201 voci funzionali censite, oltre alla corrispondenza delle route e dei controlli.
+211 voci funzionali censite, oltre alla corrispondenza delle route e dei controlli. L’[aggiornamento del 18 ottobre](PERCORSI-MAC.md) allinea i percorsi di navigazione e le azioni alla versione Windows disponibile.
 
 ## Elenco punto per punto
 
@@ -441,3 +441,18 @@ Gli identificatori seguenti sono riferimenti al censimento HTML, non nomi impost
 
 `@label`
 
+
+### Percorsi e parità Windows — 18 ottobre 2026
+
+| ID | Funzione | Codice Swift |
+|---|---|---|
+| M202 | Hub Live/Impostazioni e navigazione Indietro | `NavigationViews.swift`, `OrbisApp.swift`, `AppModel.swift` |
+| M203 | Wizard Live/playlist: profilo → canale → sorgente | `StartWizard.swift` |
+| M204 | Gestione Live persistente, filtri e paginazione | `NavigationViews.swift` |
+| M205 | Dettagli, anteprima, profilo, deck, spot, stop ed eliminazione dalla riga | `NavigationViews.swift`, `AppModel.swift` |
+| M206 | Ripresa dal video/timestamp e riavvio con seek azzerati | `PlatformPresets.swift`, `Models.swift`, `AppModel.swift` |
+| M207 | Dieci preset di uscita per piattaforma e VideoToolbox | `PlatformPresets.swift`, `ConfigurationViews.swift` |
+| M208 | Selettore piattaforma e server iniziali | `PlatformPresets.swift`, `ConfigurationViews.swift` |
+| M209 | Mixer audio della playlist | `LiveSession.swift`, `LiveViews.swift` |
+| M210 | Report testo/QR, copia/export e mascheramento segreti | `ErrorReport.swift`, `ErrorReportView.swift`, `LiveSession.swift` |
+| M211 | Indice, stampa/PDF, etichette condivise e layout RTL | `ManualPrint.swift`, `NativeLocalization.swift`, `OrbisApp.swift` |

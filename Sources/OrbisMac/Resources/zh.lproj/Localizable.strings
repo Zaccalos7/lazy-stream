@@ -858,3 +858,19 @@
 "{0} video" = "{0} 个视频";
 "{0} è già usato da «{1}»" = "{0} 已被“{1}”使用";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}：请使用 PNG、JPEG、GIF、WebP、APNG、WebM、MOV 或 MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "场景按钮";
+"Dettagli" = "查看详情";
+"Indice" = "本手册内容";
+"Live / Anteprima" = "直播预览";
+"Ricomincia" = "重新开始直播";
+"Ricomincia dall’inizio" = "重新开始直播";
+"Riconnessione" = "重新连接中";
+"Riprendi" = "恢复直播";
+"Riprendi dalla posizione" = "恢复直播";
+"Riprendi programma" = "恢复直播";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "打印";
+"Termina" = "停止直播";

@@ -858,3 +858,19 @@
 "{0} video" = "{0} video's";
 "{0} è già usato da «{1}»" = "{0} wordt al gebruikt door “{1}”";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: gebruik PNG, JPEG, GIF, WebP, APNG, WebM, MOV of MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Scèneknoppen";
+"Dettagli" = "Details bekijken";
+"Indice" = "In deze handleiding";
+"Live / Anteprima" = "Livevoorbeeld";
+"Ricomincia" = "Livestream herstarten";
+"Ricomincia dall’inizio" = "Livestream herstarten";
+"Riconnessione" = "Opnieuw verbinden";
+"Riprendi" = "Livestream hervatten";
+"Riprendi dalla posizione" = "Livestream hervatten";
+"Riprendi programma" = "Livestream hervatten";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Afdrukken";
+"Termina" = "Livestream stoppen";

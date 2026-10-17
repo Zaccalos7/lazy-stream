@@ -13,7 +13,7 @@ import OrbisCore
                         .frame(width: 44, height: 44)
                         .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 5) { Text(channel.name).font(.headline); Text("\(channel.platform.title) · \(channel.enabled ? "Abilitato" : "Disabilitato")").foregroundStyle(.secondary) }
-                    Spacer(); Button("Avvia") { model.start(channel: channel) }.disabled(!channel.enabled)
+                    Spacer(); Button("Avvia") { model.startRequest = StartRequest(mode: channel.sceneID == nil ? .playlist : .scene, channelID: channel.id) }.disabled(!channel.enabled)
                     Button("Modifica") { draft = channel }
                     Button("Elimina", role: .destructive) { model.removeChannel(channel.id) }
                 }.padding(.vertical, 8)
@@ -36,7 +36,13 @@ import OrbisCore
             Form {
                 Section("Destinazione") {
                     TextField("Nome canale", text: $channel.name)
+                    Picker("Piattaforma", selection: Binding(get: { channel.platform }, set: { channel.streamURL = $0.ingest })) {
+                        ForEach(Platform.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
                     TextField("Server RTMP/RTMPS", text: $channel.streamURL)
+                    if channel.platform == .kick || channel.platform == .facebook {
+                        Text("Usa il server assegnato dal pannello della piattaforma.").font(.caption).foregroundStyle(.secondary)
+                    }
                     if channel.platform == .tiktok { Text("La chiave TikTok viene richiesta a ogni avvio e non viene salvata.").font(.caption) }
                     else { SecureField("Chiave di streaming", text: $key) }
                     TextField("Nome pubblico / ID trasmissione", text: $channel.streamName)
@@ -98,21 +104,31 @@ import OrbisCore
             Menu("Preset piattaforma") {
                 ForEach(Platform.allCases, id: \.self) { platform in
                     Button(platform.title) {
-                        var value = EncoderProfile(); value.title = "Apple H.264 · " + platform.title; value.defaultPlatform = platform
-                        if platform == .tiktok { value.width = 1080; value.height = 1920 }
-                        draft = value
+                        draft = PlatformPresets.profile(platform)
                     }
+                }
+            }
+            Menu("Preset leggero") {
+                ForEach(Platform.destinations, id: \.self) { platform in
+                    Button(platform.title) { draft = PlatformPresets.profile(platform, light: true) }
+                }
+            }
+            Button("Aggiungi preset mancanti") {
+                model.perform {
+                    var next = model.workspace
+                    for profile in PlatformPresets.defaults() where !next.profiles.contains(where: { $0.defaultPlatform == profile.defaultPlatform && $0.isDefault == profile.isDefault }) {
+                        next.profiles.append(profile)
+                    }
+                    try model.store.save(next); model.workspace = next
                 }
             }
         }
         .sheet(item: $draft) { profile in
             ProfileEditor(profile: profile) { value in
-                model.perform {
-                    try value.validate()
-                    var next = model.workspace
-                    if let index = next.profiles.firstIndex(where: { $0.id == value.id }) { next.profiles[index] = value } else { next.profiles.append(value) }
-                    try model.store.save(next); model.workspace = next
-                }
+                try value.validate()
+                var next = model.workspace
+                if let index = next.profiles.firstIndex(where: { $0.id == value.id }) { next.profiles[index] = value } else { next.profiles.append(value) }
+                try model.store.save(next); model.workspace = next
             }
         }
     }
@@ -165,14 +181,14 @@ import OrbisCore
 @MainActor struct ProfileEditor: View {
     @Environment(\.dismiss) var dismiss
     @State var profile: EncoderProfile
-    var commit: (EncoderProfile) -> Void
+    var commit: (EncoderProfile) throws -> Void
     @State private var localError: String?
     var body: some View {
         VStack {
             Text("Profilo video e audio").font(.title2.bold()).padding(.top)
             Form { ProfileFields(profile: $profile); if let localError { Text(localError).foregroundStyle(.red) } }.formStyle(.grouped)
             HStack { Button("Annulla") { dismiss() }; Spacer(); Button("Salva") {
-                do { try profile.validate(); commit(profile); dismiss() } catch { localError = error.localizedDescription }
+                do { try profile.validate(); try commit(profile); dismiss() } catch { localError = error.localizedDescription }
             }.buttonStyle(.borderedProminent) }.padding()
         }.frame(width: 700, height: 780)
     }
@@ -218,7 +234,7 @@ import OrbisCore
                 HStack {
                     Toggle("Ripeti playlist", isOn: $model.workspace.loopPlaylist).onChange(of: model.workspace.loopPlaylist) { model.persist() }
                     Spacer()
-                    Button("Trasmetti playlist") { if var channel = model.workspace.channels.first(where: { $0.id == selected }) { channel.sceneID = nil; model.start(channel: channel, playlist: items) } }.disabled(items.isEmpty)
+                    Button("Trasmetti playlist") { model.startRequest = StartRequest(mode: .playlist, channelID: selected) }.disabled(!items.contains { $0.enabled })
                 }.padding()
             } else { ContentUnavailableView("Playlist", systemImage: "list.bullet.rectangle", description: Text("Seleziona un canale per ordinare e abilitare i video.")) }
         }.onAppear { if selected == nil { selected = model.workspace.channels.first?.id } }
@@ -236,9 +252,7 @@ import OrbisCore
     @State private var statusFilter = ""
     @State private var newestFirst = true
     private func state(_ entry: LiveHistory) -> String {
-        if model.sessions.contains(where: { $0.historyID == entry.id && $0.isRunning }) { return "live" }
-        if model.workspace.interruptedRuns.contains(where: { $0.historyID == entry.id }) { return "interrupted" }
-        return entry.error == nil ? "ended" : "error"
+        model.state(entry)
     }
     private var entries: [LiveHistory] {
         model.workspace.history.filter { entry in
@@ -297,11 +311,11 @@ import OrbisCore
                             }
                             if let error = history.error { Text(error).foregroundStyle(.red).font(.caption) }
                         }
-                        Spacer(); Text(history.end == nil ? "In corso / sessione interrotta" : "Terminata")
-                        Button("Riavvia") { model.start(channel: history.channel, profile: history.profile, scene: history.scene, playlist: history.playlist) }
-                        Button("Elimina", role: .destructive) {
-                            model.workspace.history.removeAll { $0.id == history.id }; model.persist()
-                        }.disabled(model.sessions.contains { $0.historyID == history.id && $0.isRunning })
+                        Spacer(); Text(LocalizedStringKey(model.stateTitle(history)))
+                        if history.error != nil { Button("Segnala errore") { model.report = history } }
+                        Button("Riprendi") { model.replay(history, resume: true) }.disabled(state(history) == "live")
+                        Button("Ricomincia") { model.replay(history, resume: false) }.disabled(state(history) == "live")
+                        Button("Elimina", role: .destructive) { model.removeHistory(history.id) }.disabled(state(history) == "live")
                     }.padding(.vertical, 8)
                 }
             }

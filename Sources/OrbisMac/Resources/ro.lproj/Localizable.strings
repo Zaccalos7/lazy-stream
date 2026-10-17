@@ -858,3 +858,19 @@
 "{0} video" = "{0} videoclipuri";
 "{0} è già usato da «{1}»" = "{0} este deja folosită de „{1}”";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: folosește PNG, JPEG, GIF, WebP, APNG, WebM, MOV sau MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Butoane de scenă";
+"Dettagli" = "Vezi detalii";
+"Indice" = "În acest manual";
+"Live / Anteprima" = "Previzualizare live";
+"Ricomincia" = "Repornește live";
+"Ricomincia dall’inizio" = "Repornește live";
+"Riconnessione" = "Reconectare";
+"Riprendi" = "Reia live-ul";
+"Riprendi dalla posizione" = "Reia live-ul";
+"Riprendi programma" = "Reia live-ul";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Printează";
+"Termina" = "Oprește live";

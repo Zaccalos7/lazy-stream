@@ -858,3 +858,19 @@
 "{0} video" = "{0} video";
 "{0} è già usato da «{1}»" = "Ginagamit na ng “{1}” ang {0}";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: gumamit ng PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Mga scene button";
+"Dettagli" = "Tingnan ang detalye";
+"Indice" = "Sa manwal na ito";
+"Live / Anteprima" = "Preview ng live";
+"Ricomincia" = "I-restart ang live";
+"Ricomincia dall’inizio" = "I-restart ang live";
+"Riconnessione" = "Muling kumokonekta";
+"Riprendi" = "Ituloy ang live";
+"Riprendi dalla posizione" = "Ituloy ang live";
+"Riprendi programma" = "Ituloy ang live";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "I-print";
+"Termina" = "Itigil ang live";

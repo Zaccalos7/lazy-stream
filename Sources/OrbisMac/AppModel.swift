@@ -13,6 +13,10 @@ import OrbisCore
     @Published var error: String?
     @Published var selectedSession: UUID?
     @Published var search = ""
+    @Published var page: Page = .dashboard
+    @Published var startRequest: StartRequest?
+    @Published var report: LiveHistory?
+    @Published private(set) var navigation: [Page] = []
     @Published var cleanupProgress = CleanupProgress()
     private var checkpointTick = 0
     private var startingChannels: Set<UUID> = []
@@ -52,6 +56,46 @@ import OrbisCore
         }
     }
     var watched: LiveSession? { sessions.first { $0.id == selectedSession } ?? sessions.first(where: { $0.isRunning }) ?? sessions.last }
+    func open(_ destination: Page) {
+        guard destination != page else { return }
+        navigation.append(page); page = destination; search = ""
+    }
+    func back() {
+        guard let previous = navigation.popLast() else { return }
+        page = previous; search = ""
+    }
+    func showPreview(_ session: LiveSession) { selectedSession = session.id; open(.preview) }
+    func replay(_ history: LiveHistory, resume: Bool) {
+        guard !sessions.contains(where: { $0.channel.id == history.channel.id && $0.isRunning }) else {
+            error = "Questo canale è già in trasmissione."; return
+        }
+        let checkpoint = workspace.interruptedRuns.first { $0.historyID == history.id }
+        if let checkpoint { unlock(checkpoint, restart: false) }
+        guard !workspace.interruptedRuns.contains(where: { $0.historyID == history.id }) else { return }
+        var channel = workspace.channels.first(where: { $0.id == history.channel.id }) ?? history.channel
+        channel.sceneID = nil
+        start(channel: channel, profile: history.profile, scene: history.scene,
+              playlist: LiveReplay.playlist(history, resume: resume, checkpoint: checkpoint))
+    }
+    func removeHistory(_ id: UUID) {
+        perform {
+            guard !sessions.contains(where: { $0.historyID == id && $0.isRunning }) else {
+                throw OrbisError.invalid("Termina la diretta prima di eliminarla.")
+            }
+            var next = workspace
+            next.history.removeAll { $0.id == id }; next.interruptedRuns.removeAll { $0.historyID == id }
+            try store.save(next); workspace = next
+        }
+    }
+    func assignProfile(_ profile: EncoderProfile, historyID: UUID) {
+        perform {
+            try profile.validateForStreaming()
+            if let session = sessions.first(where: { $0.historyID == historyID && $0.isRunning }) { try session.apply(profile) }
+            if let index = workspace.history.firstIndex(where: { $0.id == historyID }) {
+                workspace.history[index].profile = profile; try save()
+            }
+        }
+    }
     func perform(_ action: () throws -> Void) { do { try action() } catch { self.error = error.localizedDescription } }
     func save() throws { try store.save(workspace) }
     func persist() { perform { try save() } }
@@ -90,9 +134,9 @@ import OrbisCore
                 guard channel.enabled else { throw OrbisError.invalid("Il canale è disabilitato.") }
                 guard !sessions.contains(where: { $0.channel.id == channel.id && $0.isRunning }) else { throw OrbisError.invalid("Questo canale è già in trasmissione.") }
                 let profile = profile ?? workspace.profiles.first(where: { $0.id == channel.profileID }) ?? workspace.profiles.first(where: { $0.active && $0.isDefault && $0.defaultPlatform == channel.platform }) ?? workspace.profiles.first(where: { $0.active && $0.isDefault }) ?? workspace.profiles.first(where: { $0.active }) ?? EncoderProfile()
-                try profile.validate()
-                guard profile.format == "flv" else { throw OrbisError.invalid("Per RTMP scegli un profilo FLV/H.264.") }
-                let scene = overrideScene ?? workspace.scenes.first(where: { $0.id == channel.sceneID })
+                try profile.validateForStreaming()
+                guard profile.active else { throw OrbisError.invalid("Il profilo selezionato è disattivato.") }
+                let scene = overrideScene ?? (overridePlaylist == nil ? workspace.scenes.first(where: { $0.id == channel.sceneID }) : nil)
                 var playlist = overridePlaylist ?? workspace.playlists[channel.id.uuidString] ?? []
                 if scene == nil && playlist.isEmpty { playlist = try MediaFiles.playlist(folder: channel.videoFolder) }
                 playlist = playlist.filter { $0.enabled }
@@ -110,7 +154,7 @@ import OrbisCore
                 workspace.interruptedRuns.append(PlaybackCheckpoint(historyID: history.id, channelID: channel.id, index: 0, position: playlist.first?.resumeSeconds ?? 0))
                 try save()
                 let session = LiveSession(channel: channel, profile: profile, scene: scene, playlist: playlist, historyID: history.id,
-                    ffmpeg: ffmpeg, ffprobe: ffprobe, destination: destination, directory: store.directory, loop: workspace.loopPlaylist, videoProfiles: Dictionary(uniqueKeysWithValues: workspace.profiles.map { ($0.id, $0) })) { [weak self] session in
+                    ffmpeg: ffmpeg, ffprobe: ffprobe, destination: destination, directory: store.directory, loop: workspace.loopPlaylist, videoProfiles: Dictionary(uniqueKeysWithValues: workspace.profiles.map { ($0.id, $0) }), streamKey: liveKey) { [weak self] session in
                         guard let self else { return }
                         if let index = self.workspace.history.firstIndex(where: { $0.id == session.historyID }) {
                             self.workspace.history[index].end = Date(); self.workspace.history[index].error = session.lastError
@@ -118,6 +162,7 @@ import OrbisCore
                             self.workspace.history[index].playlist = session.playlist
                             if self.workspace.history[index].playlist.indices.contains(session.index) {
                                 self.workspace.history[index].playlist[session.index].resumeSeconds = session.currentPosition
+                                self.workspace.history[index].lastVideoID = session.playlist[session.index].id
                             }
                         }
                         self.workspace.interruptedRuns.removeAll { $0.historyID == session.historyID }
@@ -126,7 +171,7 @@ import OrbisCore
                         }
                         self.persist()
                     }
-                sessions.append(session); selectedSession = session.id; session.start()
+                sessions.append(session); selectedSession = session.id; open(.preview); session.start()
             } catch { self.error = error.localizedDescription }
         }
     }
@@ -200,6 +245,14 @@ import OrbisCore
         for session in sessions where session.isRunning {
             let checkpoint = PlaybackCheckpoint(historyID: session.historyID, channelID: session.channel.id, index: session.index, position: session.currentPosition)
             workspace.interruptedRuns.removeAll { $0.historyID == session.historyID }; workspace.interruptedRuns.append(checkpoint)
+            if let index = workspace.history.firstIndex(where: { $0.id == session.historyID }) {
+                workspace.history[index].profile = session.profile; workspace.history[index].scene = session.scene
+                workspace.history[index].playlist = session.playlist
+                if session.playlist.indices.contains(session.index) {
+                    workspace.history[index].lastVideoID = session.playlist[session.index].id
+                    workspace.history[index].playlist[session.index].resumeSeconds = session.currentPosition
+                }
+            }
         }
         persist()
     }

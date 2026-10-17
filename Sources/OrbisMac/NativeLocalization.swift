@@ -32,7 +32,7 @@ enum NativeLocalization {
                     ForEach(Array((section.steps ?? []).enumerated()), id: \.offset) { index, step in Text("\(index + 1). \(step)") }
                     if let callout = section.callout { Text(callout).font(.caption).foregroundStyle(.secondary) }
                 }.padding().frame(maxWidth: .infinity, alignment: .leading)
-            }
+            }.id(section.id)
         }
     }
 }

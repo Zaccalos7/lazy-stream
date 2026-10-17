@@ -858,3 +858,19 @@
 "{0} video" = "{0} वीडियो";
 "{0} è già usato da «{1}»" = "{0} पहले से “{1}” में इस्तेमाल हो रही है";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: PNG, JPEG, GIF, WebP, APNG, WebM, MOV या MP4 का उपयोग करें";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "दृश्य बटन";
+"Dettagli" = "विस्तृत जानकारी देखें";
+"Indice" = "इस गाइड में";
+"Live / Anteprima" = "लाइव पूर्वावलोकन";
+"Ricomincia" = "लाइव पुनः प्रारंभ करें";
+"Ricomincia dall’inizio" = "लाइव पुनः प्रारंभ करें";
+"Riconnessione" = "फिर से कनेक्ट हो रहा है";
+"Riprendi" = "लाइव फिर शुरू करें";
+"Riprendi dalla posizione" = "लाइव फिर शुरू करें";
+"Riprendi programma" = "लाइव फिर शुरू करें";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "छापें";
+"Termina" = "लाइव रोकें";

@@ -858,3 +858,19 @@
 "{0} video" = "동영상 {0}개";
 "{0} è già usato da «{1}»" = "{0}은(는) 이미 '{1}'에서 사용 중입니다";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: PNG, JPEG, GIF, WebP, APNG, WebM, MOV 또는 MP4를 사용하세요";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "장면 버튼";
+"Dettagli" = "상세 정보 보기";
+"Indice" = "이 설명서에서";
+"Live / Anteprima" = "라이브 미리보기";
+"Ricomincia" = "라이브 재시작";
+"Ricomincia dall’inizio" = "라이브 재시작";
+"Riconnessione" = "재연결 중";
+"Riprendi" = "라이브 재개";
+"Riprendi dalla posizione" = "라이브 재개";
+"Riprendi programma" = "라이브 재개";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "인쇄";
+"Termina" = "라이브 중지";

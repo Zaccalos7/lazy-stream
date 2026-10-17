@@ -858,3 +858,19 @@
 "{0} video" = "wIDo {0}";
 "{0} è già usato da «{1}»" = "{0} lo'taH «{1}»";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: PNG, JPEG, GIF, WebP, APNG, WebM, MOV, MP4 yIlo'";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "much leQmey";
+"Dettagli" = "wIvbogh 'Ij";
+"Indice" = "ghojmeH mIwDaq";
+"Live / Anteprima" = "lIw prIwu";
+"Ricomincia" = "lIw nuq yInI'";
+"Ricomincia dall’inizio" = "lIw nuq yInI'";
+"Riconnessione" = "rarqa'";
+"Riprendi" = "Qorwagh yItaghqa'";
+"Riprendi dalla posizione" = "Qorwagh yItaghqa'";
+"Riprendi programma" = "Qorwagh yItaghqa'";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "print";
+"Termina" = "lIw choH";

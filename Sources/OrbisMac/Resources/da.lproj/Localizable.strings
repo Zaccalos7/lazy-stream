@@ -858,3 +858,19 @@
 "{0} video" = "{0} videoer";
 "{0} è già usato da «{1}»" = "{0} bruges allerede af “{1}”";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}: brug PNG, JPEG, GIF, WebP, APNG, WebM, MOV eller MP4";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "Sceneknapper";
+"Dettagli" = "Se detaljer";
+"Indice" = "I denne manual";
+"Live / Anteprima" = "Live-forhåndsvisning";
+"Ricomincia" = "Genstart live";
+"Ricomincia dall’inizio" = "Genstart live";
+"Riconnessione" = "Genopretter forbindelse";
+"Riprendi" = "Genoptag live";
+"Riprendi dalla posizione" = "Genoptag live";
+"Riprendi programma" = "Genoptag live";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "Print";
+"Termina" = "Stop live";

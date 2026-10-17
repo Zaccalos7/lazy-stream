@@ -858,3 +858,19 @@
 "{0} video" = "{0}本の動画";
 "{0} è già usato da «{1}»" = "{0}はすでに「{1}」で使われています";
 "{0}: usa PNG, JPEG, GIF, WebP, APNG, WebM, MOV o MP4" = "{0}：PNG、JPEG、GIF、WebP、APNG、WebM、MOV、MP4 を使用してください";
+
+/* Native workflow labels, from the shared language catalog. */
+"Apri segnalazione" = "Open an issue on GitHub";
+"Configura pulsanti scena" = "シーンボタン";
+"Dettagli" = "詳細を見る";
+"Indice" = "このマニュアルの内容";
+"Live / Anteprima" = "ライブプレビュー";
+"Ricomincia" = "ライブ配信を再開";
+"Ricomincia dall’inizio" = "ライブ配信を再開";
+"Riconnessione" = "再接続中";
+"Riprendi" = "ライブを再開";
+"Riprendi dalla posizione" = "ライブを再開";
+"Riprendi programma" = "ライブを再開";
+"Segnala errore" = "Report error";
+"Stampa / Salva PDF" = "印刷";
+"Termina" = "ライブ配信を停止";

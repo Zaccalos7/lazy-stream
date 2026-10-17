@@ -4,7 +4,7 @@
 
 Applicazione Swift e SwiftUI per macOS 14+, esclusivamente arm64. FFmpeg compone e codifica le sorgenti; VideoToolbox utilizza l’accelerazione Apple. Sidebar, toolbar, SF Symbols, Portachiavi, pannelli file, AVFoundation e WebKit sono nativi.
 
-Il layout usa una toolbar unificata e una sidebar divisa tra studio, libreria, configurazione e monitoraggio. La panoramica offre accessi rapidi e schede adattive; superfici, testo e accento seguono i colori di sistema. Nella regia il pannello video/audio è richiudibile dalla toolbar e conserva la preferenza. I dettagli del Mac sono espandibili, con tutte le statistiche ancora accessibili.
+I percorsi seguono Windows: Panoramica, Live con Gestione Live e Storico, Live / Anteprima, Scene e layout, Attività, Manuale e Impostazioni con Video e audio e Canali. [Mappa dei percorsi e verifiche Mac](docs/PERCORSI-MAC.md). Il layout usa una toolbar unificata, una sidebar di sistema e schede adattive. La panoramica offre accessi rapidi e schede adattive; superfici, testo e accento seguono i colori di sistema. Nella regia il pannello video/audio è richiudibile dalla toolbar e conserva la preferenza. I dettagli del Mac sono espandibili, con tutte le statistiche ancora accessibili.
 
 ## Compilazione e installer
 
@@ -45,17 +45,20 @@ Il profilo deve essere già configurato nel Portachiavi per `notarytool`. Lo scr
 ## Funzionalità
 
 - Canali multipli, chiavi nel Portachiavi, configurazione di cartelle, scene e profili.
-- Procedura di avvio con conto alla rovescia, start/stop e selezione della diretta osservata.
+- Avvia Live e Avvia playlist: profilo → canale → scena/cartella, countdown annullabile, start/stop e selezione della diretta osservata.
+- Gestione Live persistente con filtri, pagine da dieci righe, dettagli, profili, pulsanti scena, spot, ripresa dal punto salvato e riavvio dall’inizio.
+- Dieci preset standard/leggeri per piattaforma con codifica Apple; selettore della piattaforma nei canali.
 - Playlist ordinabili, abilitazione, profilo per video, ripresa da posizione, loop, salto al video successivo.
 - Scene e layout riutilizzabili, canvas con trascinamento, ridimensionamento, allineamento, comandi da tastiera, drop dei file, anteprima video e acquisizione delle sorgenti.
 - File, schermi, fotocamere e microfoni attraverso **AVFoundation**, usando gli indici rilevati dallo stesso FFmpeg.
 - Overlay statici e animati, libreria locale, pulsanti scena, intermezzi, posizione, durata, scorciatoie macOS e ripresa del programma.
-- Mixer audio per sorgente, mute e volume 0–200%, audio stereo/silenzio quando necessario.
+- Mixer audio per sorgente e per playlist, mute e volume 0–200%, audio stereo/silenzio quando necessario.
 - Profili video/audio con bitrate, GOP in secondi, risoluzione, fps, formato pixel, contenitore, qualità, preset, tune, bassa latenza, adattamento del bitrate e opzioni FFmpeg.
 - **VideoToolbox H.264/HEVC** e alternativa software x264/x265. RTMP è limitato a FLV/H.264 con audio AAC/MP3; HEVC, Opus e altri contenitori sono conservati nei profili ma non vengono accettati per una diretta RTMP.
 - Relay FLV Swift con timestamp continui, un processo FFmpeg publisher persistente e produttori sostituibili per playlist, scene, intermezzi e modifiche del mixer.
 - Anteprima della composizione, avanzamento di FFmpeg, pagina pubblica della piattaforma in WebKit, registri con server mascherato, riconnessione e watchdog.
-- Storico con snapshot, riavvio, esportazione, cancellazione, pulizia progressiva per canale e recupero delle sessioni interrotte.
+- Storico con snapshot, ripresa/riavvio, esportazione, cancellazione, pulizia progressiva per canale e recupero delle sessioni interrotte.
+- Segnalazioni con testo e QR Unicode, copia/esportazione e mascheramento delle chiavi; manuale con indice e stampa/PDF.
 - Spot in coda, registri giornalieri, risorse in 21 lingue, verifica aggiornamenti da manifest macOS configurabile e tema di sistema/chiaro/scuro.
 - Panoramica/attività con CPU, RAM, compressione, swap, rete, spazio e I/O disco, uptime, risparmio energetico e stato termico macOS.
 

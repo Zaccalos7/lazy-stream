@@ -2841,5 +2841,117 @@
     ],
     "status": "codice-presente",
     "validation": "Implementazione Swift presente; prova su Mac da eseguire."
+  },
+  {
+    "id": "M202",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Hub Live/Impostazioni, scorciatoie Panoramica e navigazione Indietro",
+    "swift": [
+      "Sources/OrbisMac/NavigationViews.swift",
+      "Sources/OrbisMac/OrbisApp.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M203",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Wizard distinti Live/playlist, profilo prima del canale e sorgente al terzo passo",
+    "swift": [
+      "Sources/OrbisMac/StartWizard.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M204",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Gestione Live persistente, filtri e dieci righe per pagina",
+    "swift": [
+      "Sources/OrbisMac/NavigationViews.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M205",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Azioni di riga: dettagli, anteprima, profilo, deck, spot, stop e cancellazione",
+    "swift": [
+      "Sources/OrbisMac/NavigationViews.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M206",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Ripresa dal video e timestamp salvati; riavvio con seek azzerati",
+    "swift": [
+      "Sources/OrbisCore/PlatformPresets.swift",
+      "Sources/OrbisCore/Models.swift",
+      "Sources/OrbisMac/AppModel.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M207",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Dieci preset per piattaforma con parametri di uscita Windows e VideoToolbox",
+    "swift": [
+      "Sources/OrbisCore/PlatformPresets.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M208",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Selettore piattaforma con server iniziali e ingest personali",
+    "swift": [
+      "Sources/OrbisCore/PlatformPresets.swift",
+      "Sources/OrbisMac/ConfigurationViews.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M209",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Mixer audio della playlist con mute e volume 0–200%",
+    "swift": [
+      "Sources/OrbisMac/LiveSession.swift",
+      "Sources/OrbisMac/LiveViews.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M210",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Segnalazioni testo/QR Unicode, copia, export e redazione di URL/chiavi/token",
+    "swift": [
+      "Sources/OrbisCore/ErrorReport.swift",
+      "Sources/OrbisMac/ErrorReportView.swift",
+      "Sources/OrbisMac/LiveSession.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
+  },
+  {
+    "id": "M211",
+    "area": "Percorsi e parità Windows — 18 ottobre 2026",
+    "function": "Indice del manuale, stampa/PDF, etichette condivise e layout arabo RTL",
+    "swift": [
+      "Sources/OrbisMac/ManualPrint.swift",
+      "Sources/OrbisMac/NativeLocalization.swift",
+      "Sources/OrbisMac/OrbisApp.swift"
+    ],
+    "status": "codice-presente",
+    "validation": "Parsing Swift e risorse verificati su Linux; compilazione, XCTest e prova nativa su Mac da eseguire."
   }
 ]
