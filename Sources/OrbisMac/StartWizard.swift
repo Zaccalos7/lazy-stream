@@ -16,6 +16,7 @@ import OrbisCore
     @State private var countdownTask: Task<Void, Never>?
     @State private var newScene: OrbisCore.Scene?
     @State private var newSceneID: UUID?
+    @State private var composedScene: OrbisCore.Scene?
     @State private var localError: String?
     init(request: StartRequest) {
         self.request = request
@@ -23,7 +24,10 @@ import OrbisCore
     }
     private var channel: Channel? { model.workspace.channels.first { $0.id == channelID && $0.enabled } }
     private var profile: EncoderProfile? { model.workspace.profiles.first { $0.id == profileID && $0.active } }
-    private var scene: OrbisCore.Scene? { model.workspace.scenes.first { $0.id == sceneID && !$0.isLayout } }
+    private var scene: OrbisCore.Scene? {
+        if let composedScene, composedScene.id == sceneID { return composedScene }
+        return model.workspace.scenes.first { $0.id == sceneID && !$0.isLayout }
+    }
     private var canContinue: Bool {
         if counting { return false }
         if step == 0 { return profile != nil }
@@ -81,10 +85,22 @@ import OrbisCore
                             Picker("Scena", selection: $sceneID) {
                                 Text("Seleziona…").tag(nil as UUID?)
                                 ForEach(model.workspace.scenes.filter { !$0.isLayout }) { Text($0.name).tag(Optional($0.id)) }
+                                if let composedScene, !model.workspace.scenes.contains(where: { $0.id == composedScene.id }) {
+                                    Text(composedScene.name).tag(Optional(composedScene.id))
+                                }
                             }
                             Button("Componi nuova scena…") {
                                 var draft = OrbisCore.Scene(); draft.name = channel?.name ?? "Nuova scena"
                                 newSceneID = draft.id; newScene = draft
+                            }
+                            if let scene { Button("Modifica scena…") { newScene = scene } }
+                            Menu("Usa layout") {
+                                ForEach(model.workspace.scenes.filter { $0.isLayout }) { layout in
+                                    Button(layout.name) {
+                                        var draft = OrbisCore.Scene(); draft.name = channel?.name ?? layout.name
+                                        draft = SceneGeometry.applying(layout, to: draft); newScene = draft
+                                    }
+                                }
                             }
                             if let scene { Text("\(scene.width)×\(scene.height) · \(scene.items.count) sorgenti").foregroundStyle(.secondary) }
                         }
@@ -112,11 +128,13 @@ import OrbisCore
             }
         }.padding(28).frame(width: 720, height: 600)
         .interactiveDismissDisabled(counting)
-        .sheet(item: $newScene, onDismiss: {
-            if let id = newSceneID, model.workspace.scenes.contains(where: { $0.id == id }) { sceneID = id }
-        }) { SceneEditor(scene: $0).environmentObject(model) }
+        .sheet(item: $newScene) { draft in
+            SceneEditor(scene: draft, persist: false, commitTitle: "Usa questa scena") { value in
+                composedScene = value; sceneID = value.id
+            }.environmentObject(model)
+        }
         .onDisappear { countdownTask?.cancel() }
-        .onChange(of: channelID) { folder = ""; playlist = nil; sceneID = nil }
+        .onChange(of: channelID) { folder = ""; playlist = nil; sceneID = nil; composedScene = nil }
     }
     private func prepareSources() {
         guard let channel else { return }

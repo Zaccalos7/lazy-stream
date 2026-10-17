@@ -34,6 +34,19 @@ import OrbisCore
         source.target = playlist[index].path; source.volume = programVolume
         return [source]
     }
+    var editableScene: Scene? {
+        if let scene { return scene }
+        guard playlist.indices.contains(index) else { return nil }
+        var result = Scene(); result.name = channel.name; result.width = outputWidth; result.height = outputHeight
+        var item = SceneItem(); item.id = playlist[index].id; item.target = playlist[index].path; item.label = playlist[index].name
+        item.width = result.width; item.height = result.height; item.volume = programVolume
+        result.items = [item]; return result
+    }
+    func returnToPlaylist() {
+        guard !playlist.isEmpty else { return }
+        scene = nil; takeover = nil; takeoverTimer?.cancel(); queuedSpots.removeAll()
+        resumePosition = 0; currentPosition = 0; restart(preservePosition: false)
+    }
     private let ffmpeg: URL
     private let ffprobe: URL
     private let destination: String

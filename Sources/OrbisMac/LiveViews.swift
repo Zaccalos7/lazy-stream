@@ -46,6 +46,7 @@ import OrbisCore
     @State private var draft: EncoderProfile
     @State private var showPlatform = false
     @State private var sceneID: UUID?
+    @State private var editingScene: OrbisCore.Scene?
     @AppStorage("liveInspectorVisible") private var inspectorVisible = true
     init(session: LiveSession) { self.session = session; _draft = State(initialValue: session.profile) }
     var body: some View {
@@ -122,6 +123,14 @@ import OrbisCore
                         }
                     }
                     GroupBox("Scene salvate") {
+                        if let scene = session.editableScene {
+                            HStack {
+                                Button("Modifica composizione…") { editingScene = scene }.disabled(!session.isRunning)
+                                if session.scene != nil && !session.playlist.isEmpty {
+                                    Button("Torna alla playlist") { session.returnToPlaylist() }.disabled(!session.isRunning)
+                                }
+                            }.padding(.horizontal, 8)
+                        }
                         HStack {
                             Picker("Scena", selection: $sceneID) {
                                 Text("Seleziona…").tag(nil as UUID?)
@@ -174,6 +183,11 @@ import OrbisCore
                 Button { inspectorVisible.toggle() } label: { Label("Controlli video e audio", systemImage: "sidebar.right") }
                     .help(inspectorVisible ? "Nascondi controlli video e audio" : "Mostra controlli video e audio")
             }
+        }
+        .sheet(item: $editingScene) { scene in
+            SceneEditor(scene: scene, persist: false, commitTitle: "Metti in onda") { value in
+                try await AppleCapture.authorize(value.items); try session.switchScene(value)
+            }.environmentObject(model)
         }
     }
     private func publicPage(_ channel: Channel) -> URL? {
