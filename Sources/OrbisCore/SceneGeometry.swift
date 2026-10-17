@@ -1,6 +1,24 @@
 import Foundation
 
 public enum SceneGeometry {
+    public static func placing(_ source: SceneItem, in scene: Scene, x: Int, y: Int) -> (scene: Scene, selection: UUID) {
+        var result = scene
+        var item = source
+        if item.kind != .overlay && item.kind != .microphone,
+           let index = result.items.indices.reversed().first(where: {
+               let tile = result.items[$0]
+               return tile.kind != .overlay && tile.kind != .microphone && x >= tile.x && y >= tile.y && x < tile.x + tile.width && y < tile.y + tile.height
+           }) {
+            let slot = result.items[index]
+            item.id = slot.id; item.x = slot.x; item.y = slot.y; item.width = slot.width; item.height = slot.height
+            result.items[index] = item
+        } else {
+            item.x = x; item.y = y
+            item = constrain(item, width: result.width, height: result.height)
+            result.items.append(item)
+        }
+        return (result, item.id)
+    }
     public static func constrain(_ item: SceneItem, width: Int, height: Int) -> SceneItem {
         var result = item
         result.width = max(2, min(item.width, width)); result.width -= result.width % 2

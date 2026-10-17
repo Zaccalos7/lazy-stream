@@ -52,6 +52,13 @@ public enum PlatformPresets {
 }
 
 public enum LiveReplay {
+    public static func starting(at videoID: UUID, in history: LiveHistory, resume: Bool) -> [PlaylistItem] {
+        guard let index = history.playlist.firstIndex(where: { $0.id == videoID }) else { return [] }
+        var items = Array(history.playlist[index...])
+        if !resume { for index in items.indices { items[index].resumeSeconds = 0 } }
+        if !items.isEmpty { items[0].enabled = true }
+        return items
+    }
     /// Resume from the recorded video and time; restart resets every saved seek position.
     public static func playlist(_ history: LiveHistory, resume: Bool, checkpoint: PlaybackCheckpoint? = nil) -> [PlaylistItem] {
         var items = history.playlist

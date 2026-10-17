@@ -180,8 +180,7 @@ import OrbisCore
                 ForEach($scene.items) { $item in
                     if item.kind != .microphone {
                         ZStack {
-                            if item.kind == .overlay, let image = NSImage(contentsOfFile: item.target) { Image(nsImage: image).resizable().scaledToFit() }
-                            else if item.kind == .file && !item.target.isEmpty { CanvasMediaPreview(path: item.target) }
+                            if (item.kind == .overlay || item.kind == .file) && !item.target.isEmpty { CanvasMediaPreview(path: item.target) }
                             else { Rectangle().fill(item.kind == .overlay ? .purple.opacity(0.35) : .blue.opacity(0.25)) }
                             VStack { Text(item.label).font(.headline); Text("\(item.width)×\(item.height)").font(.caption) }.foregroundStyle(.white)
                         }
@@ -231,16 +230,23 @@ import OrbisCore
             .onDeleteCommand { if let selected { scene.items.removeAll { $0.id == selected }; self.selected = nil } }
             .dropDestination(for: URL.self) { urls, location in
                 model.perform {
-                    for url in urls {
+                    for (offset, url) in urls.enumerated() {
                         let picture = MediaFiles.isPicture(url.path)
                         guard picture || MediaFiles.videos.contains(url.pathExtension.lowercased()) else { throw OrbisError.invalid("Trascina un video o un’immagine supportata.") }
                         var item = SceneItem(); item.kind = picture ? .overlay : .file; item.label = url.lastPathComponent; item.audioEnabled = !picture
                         if picture { item.target = try model.store.importMedia(url, collection: "Overlays") } else { item.target = url.path }
                         if picture { model.workspace.overlays.append(item.target); model.persist() }
                         item.width = min(640, scene.width); item.height = min(360, scene.height)
-                        item.x = Int(location.x / max(0.001, scale)); item.y = Int(location.y / max(0.001, scale))
-                        item = SceneGeometry.constrain(item, width: scene.width, height: scene.height)
-                        scene.items.append(item); selected = item.id; model.prepareMedia(item.target)
+                        let x = Int(location.x / max(0.001, scale)) + offset * 20
+                        let y = Int(location.y / max(0.001, scale)) + offset * 20
+                        if offset == 0 {
+                            let placement = SceneGeometry.placing(item, in: scene, x: x, y: y)
+                            scene = placement.scene; selected = placement.selection
+                        } else {
+                            item.x = x; item.y = y; item = SceneGeometry.constrain(item, width: scene.width, height: scene.height)
+                            scene.items.append(item); selected = item.id
+                        }
+                        model.prepareMedia(item.target)
                     }
                 }
                 return !urls.isEmpty
@@ -333,38 +339,44 @@ import OrbisCore
 }
 @MainActor struct OverlaysView: View {
     @EnvironmentObject var model: AppModel
+    @State private var preview: MediaSelection?
     var body: some View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 230))], spacing: 20) {
                 ForEach(model.workspace.overlays.filter { model.search.isEmpty || URL(fileURLWithPath: $0).lastPathComponent.localizedCaseInsensitiveContains(model.search) }, id: \.self) { path in
                     GroupBox {
                         VStack {
-                            if let image = NSImage(contentsOfFile: path) { Image(nsImage: image).resizable().scaledToFit().frame(height: 150) }
-                            else { Image(systemName: "film").font(.system(size: 48)).frame(height: 150) }
+                            CanvasMediaPreview(path: path).frame(height: 150)
                             Text(URL(fileURLWithPath: path).lastPathComponent).lineLimit(2)
+                            Button("Anteprima") { preview = MediaSelection(path: path) }
                             Button("Rimuovi dalla libreria", role: .destructive) { model.removeOverlay(path) }
                         }.padding(8)
                     }
                 }
             }.padding(24)
         }.toolbar { Button("Importa overlay…") { model.importOverlay() } }
+        .sheet(item: $preview) { MediaPreviewPanel(path: $0.path).environmentObject(model) }
     }
 }
 @MainActor struct DeckView: View {
     @EnvironmentObject var model: AppModel
     @State private var draft: DeckButton?
+    @State private var preview: MediaSelection?
     var body: some View {
         List {
-            ForEach(model.workspace.deck) { button in
+            ForEach(model.workspace.deck.filter { model.search.isEmpty || $0.label.localizedCaseInsensitiveContains(model.search) }) { button in
                 HStack {
                     Label(button.label, systemImage: button.inScene ? "square.3.layers.3d" : "play.rectangle")
                     Text(button.hotkey).foregroundStyle(.secondary); Spacer()
+                    Button("Anteprima") { preview = MediaSelection(path: button.mediaPath) }
+                    Button("Duplica") { var copy = button; copy.id = UUID(); copy.hotkey = ""; copy.label += " copia"; draft = copy }
                     Button("Modifica") { draft = button }
                     Button("Elimina", role: .destructive) { model.removeDeckButton(button.id) }
                 }
             }.onMove { model.workspace.deck.move(fromOffsets: $0, toOffset: $1); model.persist() }
         }.toolbar { Button("Nuovo pulsante") { draft = DeckButton() } }
         .sheet(item: $draft) { DeckEditor(button: $0).environmentObject(model) }
+        .sheet(item: $preview) { MediaPreviewPanel(path: $0.path).environmentObject(model) }
     }
 }
 @MainActor struct DeckEditor: View {
@@ -380,6 +392,7 @@ import OrbisCore
                 HStack { TextField("Media", text: $button.mediaPath); Button("Importa…") {
                     do { if let url = FilePicker.files().first { button.mediaPath = try model.store.importMedia(url, collection: "Deck") } } catch { localError = error.localizedDescription }
                 } }
+                if !button.mediaPath.isEmpty { CanvasMediaPreview(path: button.mediaPath).frame(height: 130) }
                 TextField("Scorciatoia", text: $button.hotkey, prompt: Text("Option+1, Cmd+Shift+B"))
                 Text("Le scorciatoie funzionano con la regia selezionata e senza un campo di testo attivo. Cmd+Q/W/N/R/F/P e le scorciatoie di regia sono riservate.").font(.caption)
                 Toggle("Sovrapponi alla scena", isOn: $button.inScene)

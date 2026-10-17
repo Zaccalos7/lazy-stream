@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import AVFoundation
+import OrbisCore
 
 private final class PlayerSurface: NSView {
     let playerLayer = AVPlayerLayer()
@@ -16,23 +17,40 @@ private final class PlayerSurface: NSView {
     func makeNSView(context: Context) -> NSView { let view = PlayerSurface(frame: .zero); view.playerLayer.player = player; return view }
     func updateNSView(_ nsView: NSView, context: Context) { (nsView as? PlayerSurface)?.playerLayer.player = player }
 }
+@MainActor struct AnimatedMediaImage: NSViewRepresentable {
+    let image: NSImage
+    func makeNSView(context: Context) -> NSImageView {
+        let view = NSImageView(); view.imageScaling = .scaleProportionallyUpOrDown; view.animates = true; return view
+    }
+    func updateNSView(_ view: NSImageView, context: Context) { if view.image !== image { view.image = image } }
+}
 @MainActor struct CanvasMediaPreview: View {
+    @EnvironmentObject private var model: AppModel
     let path: String
+    @State private var image: NSImage?
     @State private var player: AVQueuePlayer?
     @State private var looper: AVPlayerLooper?
+    @State private var failed = false
     var body: some View {
         Group {
-            if let image = NSImage(contentsOfFile: path) { Image(nsImage: image).resizable().scaledToFit() }
+            if let image { AnimatedMediaImage(image: image) }
             else if let player { PlayerLayerView(player: player) }
+            else if failed { Image(systemName: "film").foregroundStyle(.secondary) }
             else { Color.black }
         }.allowsHitTesting(false)
-        .onAppear { load() }.onChange(of: path) { load() }.onDisappear { player?.pause(); looper = nil; player = nil }
+        .task(id: path) { await load() }
+        .onDisappear { player?.pause(); looper = nil; player = nil }
     }
-    private func load() {
-        player?.pause(); looper = nil; player = nil
-        guard !path.isEmpty, NSImage(contentsOfFile: path) == nil else { return }
-        let queue = AVQueuePlayer(); queue.isMuted = true
-        looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: URL(fileURLWithPath: path)))
-        player = queue; queue.play()
+    private func load() async {
+        player?.pause(); looper = nil; player = nil; image = nil; failed = false
+        guard !path.isEmpty else { return }
+        if MediaFiles.isPicture(path), let bitmap = NSImage(contentsOfFile: path) { image = bitmap; return }
+        do {
+            let url = try await MediaPreviewService.shared.playable(URL(fileURLWithPath: path), ffmpeg: Executables.resolve("ffmpeg", configured: model.workspace.ffmpegPath), ffprobe: Executables.resolve("ffprobe", configured: model.workspace.ffprobePath))
+            try Task.checkCancellation()
+            let queue = AVQueuePlayer(); queue.isMuted = true
+            looper = AVPlayerLooper(player: queue, templateItem: AVPlayerItem(url: url))
+            player = queue; queue.play()
+        } catch { if !Task.isCancelled { failed = true } }
     }
 }
