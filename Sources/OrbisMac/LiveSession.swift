@@ -45,6 +45,7 @@ import OrbisCore
     private var takeoverTimer: Task<Void, Never>?
     private var activity: NSObjectProtocol?
     private var shouldStop = false
+    private var userStopped = false
     private var requestedRestart = false
     private var activeSegmentSeek = 0.0
     private var activeSegmentIsProgram = false
@@ -63,6 +64,7 @@ import OrbisCore
     private var warnedSlow = false
     private var requestedBitrate: Int
     private let fileLog: SessionLog
+    private let webpInputs = WebPInputs()
     private let finished: (LiveSession) -> Void
     init(channel: Channel, profile: EncoderProfile, scene: Scene?, playlist: [PlaylistItem], historyID: UUID,
          ffmpeg: URL, ffprobe: URL, destination: String, directory: URL, loop: Bool, videoProfiles: [UUID: EncoderProfile] = [:], streamKey: String = "", finished: @escaping (LiveSession) -> Void) {
@@ -111,7 +113,7 @@ import OrbisCore
             }
         }
     }
-    func stop() { updateProgramPosition(); shouldStop = true; takeoverTimer?.cancel(); engine?.stop() }
+    func stop() { updateProgramPosition(); userStopped = true; shouldStop = true; takeoverTimer?.cancel(); engine?.stop() }
     func apply(_ newProfile: EncoderProfile) throws {
         try newProfile.validateForStreaming()
         profile = newProfile; automaticQuality = newProfile.quality == .auto; lowLeadSince = nil; warnedSlow = false; bitrateController = BitrateController(policy: policy); requestedBitrate = newProfile.videoBitrate; restart()
@@ -170,6 +172,7 @@ import OrbisCore
         requestedRestart = true; engine?.interruptProducer()
     }
     private func run() async {
+        defer { webpInputs.cleanup() }
         var retries = 0
         while !shouldStop {
             let relay = RelayEngine(executable: ffmpeg, destination: destination, platform: channel.platform,
@@ -195,6 +198,7 @@ import OrbisCore
                         if shouldStop { throw CancellationError() }
                         media[item.id] = try await Probe.media(item.target, executable: ffprobe)
                     }
+                    program = try webpInputs.prepare(program)
                     if shouldStop { break }; if requestedRestart { continue }
                     // Freeze output format after first source, including profiles that preserve source dimensions/fps.
                     if profile.width == 0 {
@@ -239,11 +243,14 @@ import OrbisCore
                         else { shouldStop = true; break }
                     }
                 }
-                await relay.finish()
+                try await relay.finish(checkExit: !userStopped)
                 if shouldStop { break }
             } catch {
-                await relay.finish()
-                if shouldStop { break }
+                try? await relay.finish(checkExit: false)
+                if shouldStop {
+                    if !userStopped { lastError = ErrorReport.redact(error.localizedDescription, keys: redactionKeys); status = .failed; appendLog(error.localizedDescription) }
+                    break
+                }
                 if Date().timeIntervalSince(connectionStarted) > 60 && progress.seconds > 30 { retries = 0 }
                 if retries >= channel.platform.retries {
                     lastError = ErrorReport.redact(error.localizedDescription, keys: redactionKeys); status = .failed; appendLog(error.localizedDescription); break

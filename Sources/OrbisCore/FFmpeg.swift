@@ -90,10 +90,11 @@ public enum Probe {
         let rate = (video["avg_frame_rate"] as? String ?? "30/1").split(separator: "/").compactMap { Double($0) }
         let fps = rate.count == 2 && rate[1] > 0 ? rate[0] / rate[1] : 30
         let format = root["format"] as? [String: Any] ?? [:]
+        let pixel = video["pix_fmt"] as? String ?? "yuv420p"
         return MediaInfo(width: video["width"] as? Int ?? 1920, height: video["height"] as? Int ?? 1080, frameRate: fps > 0 ? fps : 30,
                          duration: Double(format["duration"] as? String ?? video["duration"] as? String ?? "0") ?? 0, hasAudio: streams.contains { $0["codec_type"] as? String == "audio" }, isHDR: ["smpte2084", "arib-std-b67"].contains(video["color_transfer"] as? String ?? ""), pixelFormat: video["pix_fmt"] as? String ?? "yuv420p", codecName: video["codec_name"] as? String ?? "",
                          formatName: format["format_name"] as? String ?? "", frames: Int(video["nb_frames"] as? String ?? "0") ?? 0,
-                         hasAlpha: (video["pix_fmt"] as? String ?? "").contains("a") || ((video["tags"] as? [String: Any])?["alpha_mode"] as? String == "1"))
+                         hasAlpha: pixel.hasPrefix("yuva") || pixel.hasPrefix("gbrap") || ["rgba", "bgra", "argb", "abgr", "ya8", "ya16be", "ya16le"].contains(pixel) || ((video["tags"] as? [String: Any])?["alpha_mode"] as? String == "1"))
     }
 }
 public struct EncodingPlan: Sendable {
@@ -104,7 +105,7 @@ public struct EncodingPlan: Sendable {
 }
 public enum FFmpegCommand {
     public static func build(scene: Scene, profile: EncoderProfile, platform: Platform, media: [UUID: MediaInfo],
-                             preview: String?, destination: String = "pipe:1", resume: Double = 0, hardwareDecoding: Set<UUID> = []) throws -> EncodingPlan {
+                             preview: String?, destination: String = "pipe:1", resume: Double = 0, hardwareDecoding: Set<UUID> = [], snapshot: Bool = false) throws -> EncodingPlan {
         try profile.validate(); try scene.validate()
         if profile.format == "flv" && !["h264_videotoolbox", "libx264"].contains(profile.codec) { throw OrbisError.invalid("La diretta FLV richiede H.264. HEVC è disponibile per altri formati.") }
         if profile.format == "flv" && !["aac", "libmp3lame"].contains(profile.audioCodec) { throw OrbisError.invalid("Per FLV scegli AAC o MP3.") }
@@ -151,19 +152,23 @@ public enum FFmpegCommand {
                 base = next
             }
             let hasAudio = item.kind == .microphone || (item.kind == .file && media[item.id]?.hasAudio == true)
-            if item.audioEnabled && hasAudio {
+            if !snapshot && item.audioEnabled && hasAudio {
                 let label = "audio\(index)"
                 filters.append("[\(index):a]asetpts=PTS-STARTPTS,aresample=\(platform.sampleRate):async=1,aformat=channel_layouts=stereo,volume=\(number(item.volume / 100)),apad[\(label)]")
                 audio.append("[\(label)]")
             }
         }
-        if audio.isEmpty {
+        if !snapshot && audio.isEmpty {
             args += ["-f", "lavfi", "-i", "anullsrc=r=\(platform.sampleRate):cl=stereo" + (duration.map { ":d=" + number($0) } ?? "")]
             filters.append("[\(scene.items.count + 1):a]anull[mix]")
-        } else { filters.append("\(audio.joined())amix=inputs=\(audio.count):duration=longest:normalize=0[mix]") }
+        } else if !snapshot { filters.append("\(audio.joined())amix=inputs=\(audio.count):duration=longest:normalize=0[mix]") }
         let final = "[\(base)]scale=\(width):\(height):force_original_aspect_ratio=decrease,pad=\(width):\(height):(ow-iw)/2:(oh-ih)/2,setsar=1,fps=\(number(fps))"
         filters.append(final + (preview == nil ? "[out]" : ",split=2[out][previewraw]"))
         if preview != nil { filters.append("[previewraw]fps=4,scale=960:-2[preview]") }
+        if snapshot {
+            args += ["-filter_complex", filters.joined(separator: ";"), "-map", "[out]", "-frames:v", "1", "-an", "-c:v", "mjpeg", "-threads", "1", "-q:v", "3", "-f", "image2pipe", "pipe:1"]
+            return EncodingPlan(arguments: args, width: width, height: height, frameRate: fps)
+        }
         args += ["-filter_complex", filters.joined(separator: ";"), "-map", "[out]", "-map", "[mix]", "-c:v", profile.codec, "-pix_fmt", profile.pixelFormat,
                  "-b:v", String(profile.videoBitrate), "-maxrate", String(profile.videoBitrate), "-bufsize", String(profile.videoBitrate),
                  "-g", String(Int((fps * Double(profile.keyframeSeconds)).rounded())), "-force_key_frames", "expr:gte(t,n_forced*\(profile.keyframeSeconds))", "-fps_mode", "cfr"]

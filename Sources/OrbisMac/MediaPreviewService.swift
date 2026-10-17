@@ -6,6 +6,26 @@ import OrbisCore
 actor MediaPreviewService {
     static let shared = MediaPreviewService()
     private var pending: [String: Task<URL, Error>] = [:]
+    func composition(_ scene: OrbisCore.Scene, ffmpeg: URL, ffprobe: URL) async throws -> Data {
+        let copies = WebPInputs(); defer { copies.cleanup() }
+        var visual = scene; visual.items.removeAll { $0.kind == .microphone }
+        visual = try copies.prepare(visual)
+        var media: [UUID: MediaInfo] = [:]
+        for item in visual.items where item.kind == .file || item.kind == .overlay {
+            try Task.checkCancellation()
+            media[item.id] = try await Probe.media(item.target, executable: ffprobe)
+        }
+        var profile = EncoderProfile(); profile.codec = "libx264"
+        profile.width = min(960, visual.width); profile.width -= profile.width % 2
+        profile.height = max(2, Int(Double(profile.width) * Double(visual.height) / Double(visual.width)))
+        profile.height -= profile.height % 2; profile.frameRate = 15
+        let plan = try FFmpegCommand.build(scene: visual, profile: profile, platform: .custom, media: media, preview: nil, snapshot: true)
+        let result = try await ProcessRunner.run(ffmpeg, arguments: plan.arguments, timeout: 15)
+        guard result.status == 0, !result.output.isEmpty else {
+            throw OrbisError.process("Anteprima composizione non disponibile: \(String(decoding: result.error.suffix(2000), as: UTF8.self))")
+        }
+        return result.output
+    }
     private func cacheURL(_ source: String, suffix: String) throws -> URL {
         let folder = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("OrbisStream/Previews")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

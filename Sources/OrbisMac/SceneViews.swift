@@ -29,15 +29,32 @@ import OrbisCore
     @Environment(\.dismiss) var dismiss
     @State var scene: OrbisCore.Scene
     private let original: OrbisCore.Scene
-    init(scene: OrbisCore.Scene) { _scene = State(initialValue: scene); original = scene }
+    private let persist: Bool
+    private let commitTitle: String
+    private let commit: ((OrbisCore.Scene) async throws -> Void)?
+    init(scene: OrbisCore.Scene, persist: Bool = true, commitTitle: String = "Salva", commit: ((OrbisCore.Scene) async throws -> Void)? = nil) {
+        _scene = State(initialValue: scene); original = scene
+        self.persist = persist; self.commitTitle = commitTitle; self.commit = commit
+    }
     @State private var selected: UUID?
     @State private var localError: String?
+    @State private var previewing = false
+    @State private var saving = false
     var body: some View {
         VStack(spacing: 0) {
             HStack { Text(scene.isLayout ? "Editor layout" : "Editor scena").font(.title2.bold()); Spacer(); TextField("Nome", text: $scene.name).frame(width: 280) }.padding()
             HSplitView {
                 VStack(alignment: .leading) {
-                    CanvasView(scene: $scene, selected: $selected).frame(minHeight: 280).padding()
+                    HStack {
+                        Picker("Canvas", selection: $previewing) { Text("Editor").tag(false); Text("Anteprima composizione").tag(true) }
+                            .pickerStyle(.segmented).frame(maxWidth: 360).disabled(scene.isLayout)
+                        Spacer()
+                        Button("Rileva dispositivi") { model.refreshDevices() }
+                    }.padding(.horizontal)
+                    Group {
+                        if previewing { CompositionPreview(scene: scene) }
+                        else { CanvasView(scene: $scene, selected: $selected) }
+                    }.frame(minHeight: 280).padding()
                     HStack {
                         Menu("Applica layout") {
                             ForEach(model.workspace.scenes.filter { $0.isLayout }) { layout in
@@ -63,7 +80,18 @@ import OrbisCore
                         .onMove { scene.items.move(fromOffsets: $0, toOffset: $1) }
                     }
                     HStack {
-                        Menu("Aggiungi sorgente") { ForEach(SourceKind.allCases, id: \.self) { kind in Button(kind.title) { add(kind) } } }
+                        Menu("Aggiungi sorgente") {
+                            ForEach(SourceKind.allCases, id: \.self) { kind in Button(kind.title) { add(kind) } }
+                            Divider()
+                            ForEach(model.devices.filter { device in !scene.items.contains { $0.kind == device.kind && $0.target == device.id } }, id: \.self) { device in
+                                Button(device.name) { addDevice(device) }
+                            }
+                            Divider()
+                            ForEach(model.workspace.overlays, id: \.self) { path in
+                                Button(URL(fileURLWithPath: path).lastPathComponent) { addOverlay(path) }
+                            }
+                            Button("Importa overlay…") { model.importOverlay() }
+                        }
                         if let selected, let index = scene.items.firstIndex(where: { $0.id == selected }) {
                             Button { if index > 0 { scene.items.swapAt(index, index - 1) } } label: { Image(systemName: "arrow.down.square") }.help("Sposta sotto")
                             Button { if index + 1 < scene.items.count { scene.items.swapAt(index, index + 1) } } label: { Image(systemName: "arrow.up.square") }.help("Sposta sopra")
@@ -79,25 +107,46 @@ import OrbisCore
             }
             if let localError { Text(localError).foregroundStyle(.red).padding(8) }
             HStack {
-                Toggle("Salva come layout", isOn: $scene.isLayout)
+                if persist { Toggle("Salva come layout", isOn: $scene.isLayout) }
+                if saving { ProgressView().controlSize(.small) }
                 Spacer(); Button("Annulla") { dismiss() }
-                Button("Salva") {
-                    do {
-                        try scene.validate(requireSources: !scene.isLayout)
-                        if scene.isLayout {
-                            scene.items = scene.items.map { source in
-                                var slot = source
-                                if slot.kind != .overlay { slot.kind = .file; slot.target = "" }
-                                slot.audioEnabled = false; return slot
-                            }
-                        }
-                        var next = model.workspace
-                        if let index = next.scenes.firstIndex(where: { $0.id == scene.id }) { next.scenes[index] = scene } else { next.scenes.append(scene) }
-                        try model.store.save(next); model.workspace = next; dismiss()
-                    } catch { localError = error.localizedDescription }
-                }.buttonStyle(.borderedProminent)
+                Button(LocalizedStringKey(commitTitle)) { save() }.buttonStyle(.borderedProminent).disabled(saving)
             }.padding()
-        }.frame(width: 1040, height: 780).interactiveDismissDisabled(scene != original)
+        }.frame(width: 1120, height: 780).interactiveDismissDisabled(scene != original || saving)
+        .onAppear { if model.devices.isEmpty { model.refreshDevices() } }
+    }
+    private func save() {
+        saving = true; localError = nil
+        Task {
+            defer { saving = false }
+            do {
+                try scene.validate(requireSources: !scene.isLayout)
+                var result = scene
+                if result.isLayout {
+                    result.items = result.items.map { source in
+                        var slot = source
+                        if slot.kind != .overlay { slot.kind = .file; slot.target = "" }
+                        slot.audioEnabled = false; return slot
+                    }
+                }
+                if let commit { try await commit(result) }
+                if persist {
+                    var next = model.workspace
+                    if let index = next.scenes.firstIndex(where: { $0.id == result.id }) { next.scenes[index] = result } else { next.scenes.append(result) }
+                    try model.store.save(next); model.workspace = next
+                }
+                dismiss()
+            } catch { localError = error.localizedDescription }
+        }
+    }
+    private func addDevice(_ device: CaptureDevice) {
+        guard !scene.items.contains(where: { $0.kind == device.kind && $0.target == device.id }) else { return }
+        add(device.kind)
+        if let index = scene.items.firstIndex(where: { $0.id == selected }) { scene.items[index].target = device.id; scene.items[index].label = device.name }
+    }
+    private func addOverlay(_ path: String) {
+        add(.overlay)
+        if let index = scene.items.firstIndex(where: { $0.id == selected }) { scene.items[index].target = path; scene.items[index].label = URL(fileURLWithPath: path).lastPathComponent }
     }
     private func sourceResolution() {
         guard let source = scene.items.first(where: { $0.id == selected && $0.kind == .file }) ?? scene.items.first(where: { $0.kind == .file && !$0.target.isEmpty }) else { return }

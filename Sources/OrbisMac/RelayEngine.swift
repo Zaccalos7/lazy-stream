@@ -43,6 +43,7 @@ final class RelayEngine: @unchecked Sendable {
         process.executableURL = executable; process.arguments = FFmpegCommand.sender(destination: destination, policy: policy)
         process.standardInput = stdin; process.standardOutput = stdout; process.standardError = stderr
         try process.run()
+        log(redact("Publisher PID \(process.processIdentifier): \((process.arguments ?? []).joined(separator: " "))"))
         lock.lock(); sender = process; input = stdin.fileHandleForWriting; lock.unlock()
         drainLines(stdout.fileHandleForReading) { [progress] lines in
             var state = StreamProgress()
@@ -101,11 +102,9 @@ final class RelayEngine: @unchecked Sendable {
                     if cancelled { lock.unlock(); throw CancellationError() }
                     do { try process.run() } catch { lock.unlock(); throw error }
                     producer = process; lock.unlock()
+                    log(redact("Encoder PID \(process.processIdentifier): \(arguments.joined(separator: " "))"))
                     let errorDone = DispatchGroup(); errorDone.enter()
-                    DispatchQueue.global().async { [self] in
-                        let data = stderr.fileHandleForReading.readDataToEndOfFile()
-                        log(redact(String(decoding: data.suffix(16000), as: UTF8.self))); errorDone.leave()
-                    }
+                    drainErrors(stderr.fileHandleForReading, completion: errorDone)
                     buffer.waitForWriter()
                     let token = buffer.beginSegment()
                     lock.lock(); positionSegment = token; segmentFirstTimestamp = nil; segmentPosition = 0; lock.unlock()
@@ -122,6 +121,7 @@ final class RelayEngine: @unchecked Sendable {
                     }
                     try buffer.finishAndWait(segment: token)
                     process.waitUntilExit(); errorDone.wait()
+                    log("Encoder PID \(process.processIdentifier) terminato: exit \(process.terminationStatus)")
                     lock.lock(); if producer === process { producer = nil }; lock.unlock()
                     continuation.resume(returning: process.terminationStatus)
                 } catch {
@@ -140,20 +140,29 @@ final class RelayEngine: @unchecked Sendable {
         lock.lock(); let process = producer; producer = nil; lock.unlock()
         if let process { terminate(process) }
     }
-    func finish() async {
+    func finish(checkExit: Bool = true) async throws {
         buffer.stop()
         let (publisher, handle) = detachPublisher()
         try? handle?.close()
-        guard let publisher else { return }
-        await withCheckedContinuation { continuation in
+        guard let publisher else {
+            if checkExit, let failure = failureMessage() { throw OrbisError.process(failure) }
+            return
+        }
+        let status: Int32 = await withCheckedContinuation { continuation in
             DispatchQueue.global().async {
                 let timeout = DispatchWorkItem { if publisher.isRunning { publisher.terminate() } }
                 DispatchQueue.global().asyncAfter(deadline: .now() + 2, execute: timeout)
                 DispatchQueue.global().asyncAfter(deadline: .now() + 4) { if publisher.isRunning { _ = kill(publisher.processIdentifier, SIGKILL) } }
-                publisher.waitUntilExit(); timeout.cancel(); continuation.resume()
+                publisher.waitUntilExit(); timeout.cancel(); continuation.resume(returning: publisher.terminationStatus)
             }
         }
+        log("Publisher PID \(publisher.processIdentifier) terminato: exit \(status)")
+        if checkExit {
+            if let failure = failureMessage() { throw OrbisError.process(failure) }
+            if status != 0 { throw OrbisError.process("Il publisher ha terminato con errore (\(status)). Consulta il registro della diretta.") }
+        }
     }
+    private func failureMessage() -> String? { lock.lock(); defer { lock.unlock() }; return deliveryFailure }
     private func detachPublisher() -> (Process?, FileHandle?) {
         lock.lock(); let publisher = sender; let handle = input
         cancelled = true; sender = nil; input = nil; lock.unlock()
@@ -187,8 +196,9 @@ final class RelayEngine: @unchecked Sendable {
         }
         return safe.replacingOccurrences(of: #"rtmps?://[^\s'\"]+"#, with: "[server protetto]", options: .regularExpression)
     }
-    private func drainErrors(_ handle: FileHandle) {
+    private func drainErrors(_ handle: FileHandle, completion: DispatchGroup? = nil) {
         DispatchQueue.global().async { [self] in
+            defer { completion?.leave() }
             var buffer = Data()
             while true {
                 let bytes = handle.availableData
@@ -198,8 +208,9 @@ final class RelayEngine: @unchecked Sendable {
                     log(redact(String(decoding: buffer.prefix(upTo: newline), as: UTF8.self)))
                     buffer.removeSubrange(...newline)
                 }
-                if buffer.count > 16000 { buffer.removeAll() }
+                if buffer.count > 16000 { log(redact(String(decoding: buffer.suffix(16000), as: UTF8.self))); buffer.removeAll() }
             }
+            if !buffer.isEmpty { log(redact(String(decoding: buffer, as: UTF8.self))) }
         }
     }
     private func drainLines(_ handle: FileHandle, body: @escaping @Sendable ([String]) -> Void) {
