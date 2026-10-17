@@ -258,7 +258,11 @@ public struct MediaInfo: Sendable {
     public var isHDR: Bool
     public var pixelFormat: String
     public var codecName: String
-    public init(width: Int = 1920, height: Int = 1080, frameRate: Double = 30, duration: Double = 0, hasAudio: Bool = false, isHDR: Bool = false, pixelFormat: String = "yuv420p", codecName: String = "") {
+    public var formatName: String
+    public var frames: Int
+    public var hasAlpha: Bool
+    public init(width: Int = 1920, height: Int = 1080, frameRate: Double = 30, duration: Double = 0, hasAudio: Bool = false, isHDR: Bool = false, pixelFormat: String = "yuv420p", codecName: String = "", formatName: String = "", frames: Int = 0, hasAlpha: Bool = false) {
         self.width = width; self.height = height; self.frameRate = frameRate; self.duration = duration; self.hasAudio = hasAudio; self.isHDR = isHDR; self.pixelFormat = pixelFormat; self.codecName = codecName
+        self.formatName = formatName; self.frames = frames; self.hasAlpha = hasAlpha
     }
 }

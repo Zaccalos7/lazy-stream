@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import Darwin
 
@@ -33,3 +34,4 @@ public final class ProcessSampler {
         return output
     }
 }
+#endif

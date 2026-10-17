@@ -1,11 +1,15 @@
 import Foundation
+#if canImport(Darwin)
 import Darwin
+#else
+import Glibc
+#endif
 
 public enum MediaFiles {
     public static let videos: Set<String> = ["mp4", "mov", "mkv", "avi", "webm", "m4v", "ts", "flv"]
     public static let stills: Set<String> = ["png", "jpg", "jpeg", "webp", "bmp"]
-    public static func isStill(_ path: String) -> Bool { stills.contains(URL(fileURLWithPath: path).pathExtension.lowercased()) }
-    public static func isPicture(_ path: String) -> Bool { isStill(path) || ["gif", "apng"].contains(URL(fileURLWithPath: path).pathExtension.lowercased()) }
+    public static func isStill(_ path: String) -> Bool { stills.contains(URL(fileURLWithPath: path).pathExtension.lowercased()) && !WebPAnimation.isAnimated(path) }
+    public static func isPicture(_ path: String) -> Bool { stills.contains(URL(fileURLWithPath: path).pathExtension.lowercased()) || ["gif", "apng"].contains(URL(fileURLWithPath: path).pathExtension.lowercased()) }
     public static func playlist(folder: String) throws -> [PlaylistItem] {
         try FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: folder), includingPropertiesForKeys: [.isRegularFileKey])
             .filter { videos.contains($0.pathExtension.lowercased()) && (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
@@ -87,7 +91,9 @@ public enum Probe {
         let fps = rate.count == 2 && rate[1] > 0 ? rate[0] / rate[1] : 30
         let format = root["format"] as? [String: Any] ?? [:]
         return MediaInfo(width: video["width"] as? Int ?? 1920, height: video["height"] as? Int ?? 1080, frameRate: fps > 0 ? fps : 30,
-                         duration: Double(format["duration"] as? String ?? "0") ?? 0, hasAudio: streams.contains { $0["codec_type"] as? String == "audio" }, isHDR: ["smpte2084", "arib-std-b67"].contains(video["color_transfer"] as? String ?? ""), pixelFormat: video["pix_fmt"] as? String ?? "yuv420p", codecName: video["codec_name"] as? String ?? "")
+                         duration: Double(format["duration"] as? String ?? video["duration"] as? String ?? "0") ?? 0, hasAudio: streams.contains { $0["codec_type"] as? String == "audio" }, isHDR: ["smpte2084", "arib-std-b67"].contains(video["color_transfer"] as? String ?? ""), pixelFormat: video["pix_fmt"] as? String ?? "yuv420p", codecName: video["codec_name"] as? String ?? "",
+                         formatName: format["format_name"] as? String ?? "", frames: Int(video["nb_frames"] as? String ?? "0") ?? 0,
+                         hasAlpha: (video["pix_fmt"] as? String ?? "").contains("a") || ((video["tags"] as? [String: Any])?["alpha_mode"] as? String == "1"))
     }
 }
 public struct EncodingPlan: Sendable {
@@ -122,14 +128,13 @@ public enum FFmpegCommand {
             let index = offset + 1
             switch item.kind {
             case .file, .overlay:
-                if item.kind == .overlay, URL(fileURLWithPath: item.target).pathExtension.lowercased() == "webm" {
-                    let codec = media[item.id]?.codecName ?? "vp9"
-                    if codec == "vp8" { args += ["-c:v", "libvpx"] }
-                    else if codec == "vp9" { args += ["-c:v", "libvpx-vp9"] }
-                }
+                let overlay = OverlayMedia.inspect(media[item.id], path: item.target)
+                if item.kind == .overlay, let decoder = overlay.decoder { args += ["-c:v", decoder] }
                 if hardwareDecoding.contains(item.id) { args += ["-hwaccel", "videotoolbox"] }
-                if MediaFiles.isStill(item.target) { args += ["-loop", "1", "-framerate", number(fps)] }
-                else if item.kind == .overlay || MediaFiles.isPicture(item.target) { args += ["-stream_loop", "-1"] }
+                if (item.kind == .overlay || MediaFiles.isPicture(item.target)) && overlay.loop {
+                    if overlay.nativeWebPLoop { args += ["-ignore_loop", "0"] }
+                    else { args += ["-stream_loop", "-1"] }
+                }
                 if item.kind == .file { if resume > 0 { args += ["-ss", number(resume)] } }
                 args += ["-i", item.target]
             case .screen, .camera:
@@ -140,7 +145,7 @@ public enum FFmpegCommand {
             if item.kind != .microphone {
                 let tile = "tile\(index)"; let next = "canvas\(index)"
                 let alpha = item.kind == .overlay
-                filters.append("[\(index):v]setpts=PTS-STARTPTS,scale=\(item.width):\(item.height):force_original_aspect_ratio=decrease,pad=\(item.width):\(item.height):(ow-iw)/2:(oh-ih)/2:color=\(alpha ? "black@0" : "black"),setsar=1,format=\(alpha ? "rgba" : "yuv420p")[\(tile)]")
+                filters.append("[\(index):v]setpts=PTS-STARTPTS,format=\(alpha ? "rgba" : "yuv420p"),scale=\(item.width):\(item.height):force_original_aspect_ratio=decrease,pad=\(item.width):\(item.height):(ow-iw)/2:(oh-ih)/2:color=\(alpha ? "black@0" : "black"),setsar=1[\(tile)]")
                 let finite = false // Hold the last frame until the longest source ends.
                 filters.append("[\(base)][\(tile)]overlay=x=\(item.x):y=\(item.y):shortest=\(finite ? 1 : 0):eof_action=\(finite ? "endall" : "repeat")[\(next)]")
                 base = next

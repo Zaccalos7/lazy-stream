@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import Darwin
 import IOKit
@@ -142,3 +143,4 @@ private struct NativeCounters {
         return result
     }
 }
+#endif
