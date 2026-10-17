@@ -14,6 +14,7 @@ import OrbisCore
     @Published var selectedSession: UUID?
     @Published var search = ""
     @Published var recordingHotkey = false
+    @Published var deckPanelOpen = false
     @Published var page: Page = .dashboard
     @Published var startRequest: StartRequest?
     @Published var report: LiveHistory?
@@ -55,7 +56,9 @@ import OrbisCore
         refreshCapabilities()
         if UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true { Task { await checkUpdates() } }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, !self.recordingHotkey, !(NSApp.keyWindow?.firstResponder is NSTextView), let session = self.watched, session.isRunning else { return event }
+            guard let self, !self.recordingHotkey, NSApp.modalWindow == nil,
+                  NSApp.keyWindow?.sheetParent == nil || self.deckPanelOpen,
+                  !(NSApp.keyWindow?.firstResponder is NSTextView), let session = self.watched, session.isRunning else { return event }
             let key = DeckHotkey(MacHotkeys.value(event))
             guard let button = self.workspace.deck.first(where: { !$0.hotkey.isEmpty && DeckHotkey($0.hotkey) == key && key != nil }) else { return event }
             self.playDeck(button, session: session); return nil

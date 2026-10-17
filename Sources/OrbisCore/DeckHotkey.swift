@@ -14,7 +14,7 @@ public struct DeckHotkey: Equatable, Sendable {
         let character = key.count == 1 && key.unicodeScalars.allSatisfy { CharacterSet.alphanumerics.contains($0) }
         guard function || character || ["ARROWUP", "ARROWDOWN", "ARROWLEFT", "ARROWRIGHT", "PAGEUP", "PAGEDOWN", "HOME", "END"].contains(key) else { return nil }
         let modifiers = Set(values)
-        if modifiers.contains("CMD") && ["Q", "W", "N", "R", "F", "P", ",", "H", "M", "TAB"].contains(key) { return nil }
+        if modifiers.contains("CMD") && ["Q", "W", "N", "R", "F", "P", ",", "H", "M", "TAB", "ARROWRIGHT"].contains(key) { return nil }
         self.key = key; self.modifiers = modifiers
     }
     public var canonical: String {

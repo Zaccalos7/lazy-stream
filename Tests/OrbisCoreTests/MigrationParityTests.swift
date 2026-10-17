@@ -124,6 +124,7 @@ final class MigrationParityTests: XCTestCase {
         XCTAssertEqual(DeckHotkey("Alt+Digit1")?.canonical, "OPTION+1")
         XCTAssertNotNil(DeckHotkey("F24")); XCTAssertNotNil(DeckHotkey("Shift+ArrowUp"))
         XCTAssertNil(DeckHotkey("Cmd+Q")); XCTAssertNil(DeckHotkey("Escape")); XCTAssertNil(DeckHotkey("F25"))
+        XCTAssertNil(DeckHotkey("Cmd+ArrowRight"))
         XCTAssertNil(DeckHotkey("Cmd+Cmd+B")); XCTAssertNil(DeckHotkey("unknown+1"))
     }
     func testCodecInspectionSkipsLegends() {

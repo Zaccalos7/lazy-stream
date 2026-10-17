@@ -195,6 +195,7 @@ struct StartRequest: Identifiable {
             }
             Button("Configura pulsanti scena") { model.open(.deck); dismiss() }
         }.padding(28).frame(width: 680, height: 480)
+        .onAppear { model.deckPanelOpen = true }.onDisappear { model.deckPanelOpen = false }
     }
 }
 
