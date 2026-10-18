@@ -3,7 +3,17 @@ import AppKit
 @MainActor enum ManualPrint {
     static func run(language: String) {
         let sections = NativeLocalization.manual(language: language)
-        let text = "OrbisStream · macOS Apple Silicon\n\n" + sections.map { section in
+        let native = """
+        OrbisStream · macOS Apple Silicon
+
+        Percorsi Mac: Live → Avvia Live o Avvia playlist → Video e audio → Canale → Scena o cartella. Gestione Live contiene dettagli, ripresa, profili, pulsanti scena e spot. Live / Anteprima contiene segnale, composizione e mixer. Impostazioni apre Video e audio, Canali e Preferenze.
+
+        Catture: AVFoundation. Autorizza camera, microfono e registrazione schermo in Privacy e sicurezza di macOS. Per l’audio di sistema aggiungi un dispositivo audio virtuale come microfono. La codifica Apple usa VideoToolbox. I comandi del Mac usano Cmd, Option, Shift e Ctrl.
+
+        Le chiavi sono nel Portachiavi. Configurazione, storico, registri e media importati sono in ~/Library/Application Support/OrbisStream. I video della playlist mantengono i riferimenti ai file originali.
+
+        """
+        let text = native + sections.map { section in
             ([section.title, section.body] + (section.steps ?? []).enumerated().map { "\($0.offset + 1). \($0.element)" } + [section.callout ?? ""]).joined(separator: "\n\n")
         }.joined(separator: "\n\n————————————————\n\n")
         let view = NSTextView(frame: NSRect(x: 0, y: 0, width: 520, height: 720))

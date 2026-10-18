@@ -68,7 +68,7 @@ public enum LiveReplay {
             let index = checkpoint?.index ?? items.firstIndex(where: { $0.id == history.lastVideoID }) ?? 0
             if items.indices.contains(index) {
                 items.removeFirst(index)
-                if let checkpoint { items[0].resumeSeconds = max(0, checkpoint.position) }
+                if let checkpoint, history.scene == nil { items[0].resumeSeconds = max(0, checkpoint.position) }
             }
         } else {
             for index in items.indices { items[index].resumeSeconds = 0 }

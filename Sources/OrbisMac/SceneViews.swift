@@ -120,15 +120,15 @@ import OrbisCore
         Task {
             defer { saving = false }
             do {
-                try scene.validate(requireSources: !scene.isLayout)
                 var result = scene
                 if result.isLayout {
-                    result.items = result.items.map { source in
+                    result.items = result.items.filter { $0.kind != .microphone }.map { source in
                         var slot = source
                         if slot.kind != .overlay { slot.kind = .file; slot.target = "" }
                         slot.audioEnabled = false; return slot
                     }
                 }
+                try result.validate(requireSources: !result.isLayout)
                 if let commit { try await commit(result) }
                 if persist {
                     var next = model.workspace
@@ -184,7 +184,7 @@ import OrbisCore
                             else { Rectangle().fill(item.kind == .overlay ? .purple.opacity(0.35) : .blue.opacity(0.25)) }
                             VStack { Text(item.label).font(.headline); Text("\(item.width)×\(item.height)").font(.caption) }.foregroundStyle(.white)
                         }
-                        .frame(width: CGFloat(item.width) * scale, height: CGFloat(item.height) * scale)
+                        .frame(width: CGFloat(max(2, item.width)) * scale, height: CGFloat(max(2, item.height)) * scale)
                         .overlay(Rectangle().stroke(selected == item.id ? Color.accentColor : .white.opacity(0.4), lineWidth: selected == item.id ? 3 : 1))
                         .overlay(alignment: .bottomTrailing) {
                             if selected == item.id {

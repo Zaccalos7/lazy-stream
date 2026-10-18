@@ -15,7 +15,6 @@ import OrbisCore
     @State private var counting = false
     @State private var countdownTask: Task<Void, Never>?
     @State private var newScene: OrbisCore.Scene?
-    @State private var newSceneID: UUID?
     @State private var composedScene: OrbisCore.Scene?
     @State private var localError: String?
     init(request: StartRequest) {
@@ -91,7 +90,7 @@ import OrbisCore
                             }
                             Button("Componi nuova scena…") {
                                 var draft = OrbisCore.Scene(); draft.name = channel?.name ?? "Nuova scena"
-                                newSceneID = draft.id; newScene = draft
+                                newScene = draft
                             }
                             if let scene { Button("Modifica scena…") { newScene = scene } }
                             Menu("Usa layout") {

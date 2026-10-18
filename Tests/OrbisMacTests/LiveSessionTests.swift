@@ -3,6 +3,19 @@ import OrbisCore
 @testable import OrbisMac
 
 @MainActor final class LiveSessionTests: XCTestCase {
+    func testSceneChangesReturnToOriginalPlaylistPosition() throws {
+        let item = PlaylistItem(path: "/tmp/program.mp4")
+        let session = LiveSession(channel: Channel(), profile: EncoderProfile(), scene: nil, playlist: [item], historyID: UUID(),
+            ffmpeg: URL(fileURLWithPath: "/unused/ffmpeg"), ffprobe: URL(fileURLWithPath: "/unused/ffprobe"),
+            destination: "/unused/output.flv", directory: FileManager.default.temporaryDirectory, loop: false) { _ in }
+        session.currentPosition = 34
+        var scene = Scene(); var source = SceneItem(); source.target = "/tmp/other.mp4"; scene.items = [source]
+        try session.switchScene(scene)
+        XCTAssertEqual(session.currentPosition, 0); XCTAssertNotNil(session.scene)
+        session.returnToPlaylist()
+        XCTAssertNil(session.scene); XCTAssertEqual(session.currentPosition, 34)
+        XCTAssertEqual(session.sources.first?.id, item.id)
+    }
     func testPlaylistMixerKeepsOneSourceAndClampsVolume() {
         let item = PlaylistItem(path: "/tmp/program.mp4")
         let session = LiveSession(channel: Channel(), profile: EncoderProfile(), scene: nil, playlist: [item], historyID: UUID(),

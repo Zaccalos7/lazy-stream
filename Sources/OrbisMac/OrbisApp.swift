@@ -26,7 +26,7 @@ import OrbisCore
         .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("Informazioni su OrbisStream") { NSApp.orderFrontStandardAboutPanel(nil) }
+                Button("Informazioni su OrbisStream") { AboutPanel.show() }
             }
             CommandGroup(replacing: .newItem) {
                 Button("Importa configurazione…") { model.importWorkspace() }
@@ -131,7 +131,7 @@ enum Page: String, CaseIterable, Identifiable {
                         if let release = model.availableUpdate {
                             Link(destination: release.url) { Image(systemName: "bell.badge.fill").foregroundStyle(Color.accentColor) }.help("Aggiornamento disponibile")
                         }
-                        Button { NSApp.orderFrontStandardAboutPanel(nil) } label: { Image(systemName: "info.circle") }.buttonStyle(.plain).help("Informazioni su OrbisStream")
+                        Button { AboutPanel.show() } label: { Image(systemName: "info.circle") }.buttonStyle(.plain).help("Informazioni su OrbisStream")
                     }
                 }.padding(18).background(.bar)
             }
@@ -321,6 +321,9 @@ func clock(_ seconds: Double) -> String { let value = Int(max(0, seconds)); retu
                 executable("FFmpeg", path: $model.workspace.ffmpegPath)
                 executable("FFprobe", path: $model.workspace.ffprobePath)
                 Text("Ricerca automatica nel bundle, in /opt/homebrew/bin. Usa binari macOS della stessa distribuzione.").font(.caption)
+                if !model.capabilities.encoders.isEmpty {
+                    Label(model.capabilities.animatedWebP ? "WebP animati disponibili" : "WebP animati: richiesto FFmpeg 9", systemImage: model.capabilities.animatedWebP ? "checkmark.circle" : "exclamationmark.triangle").font(.caption).foregroundStyle(.secondary)
+                }
                 Toggle("Ripeti la playlist", isOn: $model.workspace.loopPlaylist)
             }
             Section("Regia") { Toggle("Conferma i pulsanti scena", isOn: $confirmSceneButtons) }

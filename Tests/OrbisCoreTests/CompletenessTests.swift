@@ -2,6 +2,19 @@ import XCTest
 @testable import OrbisCore
 
 final class CompletenessTests: XCTestCase {
+    func testStartupRecoversLegacyPlaylistAndSceneWithoutDuplicateCheckpoints() {
+        var first = PlaylistItem(path: "/one.mp4"); first.resumeSeconds = 9
+        var second = PlaylistItem(path: "/two.mp4"); second.resumeSeconds = 35
+        var playlist = LiveHistory(channel: Channel(), profile: EncoderProfile(), scene: nil, playlist: [first, second]); playlist.lastVideoID = second.id
+        var scene = LiveHistory(channel: Channel(), profile: EncoderProfile(), scene: Scene(), playlist: []); scene.scenePosition = 73
+        var ended = playlist; ended.id = UUID(); ended.end = Date()
+        var workspace = Workspace(); workspace.history = [playlist, scene, ended]
+        workspace.recoverInterruptedRuns(); workspace.recoverInterruptedRuns()
+        XCTAssertEqual(workspace.interruptedRuns.count, 2)
+        XCTAssertEqual(workspace.interruptedRuns.first(where: { $0.historyID == playlist.id })?.index, 1)
+        XCTAssertEqual(workspace.interruptedRuns.first(where: { $0.historyID == playlist.id })?.position, 35)
+        XCTAssertEqual(workspace.interruptedRuns.first(where: { $0.historyID == scene.id })?.position, 73)
+    }
     func testOrphanSweepPreservesReferencedMediaAndUnmanagedFiles() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

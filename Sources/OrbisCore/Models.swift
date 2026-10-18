@@ -191,6 +191,7 @@ public struct LiveHistory: Identifiable, Codable, Equatable, Sendable {
     public var end: Date?
     public var error: String?
     public var lastVideoID: UUID?
+    public var scenePosition: Double?
     public init(channel: Channel, profile: EncoderProfile, scene: Scene?, playlist: [PlaylistItem]) {
         self.channel = channel; self.profile = profile; self.scene = scene; self.playlist = playlist
     }
@@ -219,6 +220,13 @@ public struct Workspace: Codable, Sendable {
     public var loopPlaylist = true
     public var interruptedRuns: [PlaybackCheckpoint] = []
     public init() {}
+    public mutating func recoverInterruptedRuns() {
+        for entry in history where entry.end == nil && !interruptedRuns.contains(where: { $0.historyID == entry.id }) {
+            let index = entry.playlist.firstIndex(where: { $0.id == entry.lastVideoID }) ?? 0
+            let position = entry.scene != nil ? (entry.scenePosition ?? 0) : (entry.playlist.indices.contains(index) ? entry.playlist[index].resumeSeconds : 0)
+            interruptedRuns.append(PlaybackCheckpoint(historyID: entry.id, channelID: entry.channel.id, index: index, position: position))
+        }
+    }
     public func validate() throws {
         func unique(_ values: [UUID]) throws {
             guard Set(values).count == values.count else { throw OrbisError.invalid("La configurazione contiene identificatori duplicati.") }

@@ -26,6 +26,7 @@ import OrbisCore
     @Published var outputHeight = 1080
     @Published var programVolume = 100.0
     var isRunning: Bool { status == .starting || status == .live || status == .reconnecting }
+    var playlistPosition: Double { scene != nil ? (playlistBeforeScene?.position ?? playlist.first?.resumeSeconds ?? 0) : currentPosition }
     var sourceName: String { takeover?.label ?? scene?.name ?? (playlist.indices.contains(index) ? playlist[index].name : "Diretta") }
     var sources: [SceneItem] {
         if let scene { return scene.items.filter { $0.audioEnabled && $0.kind != .overlay } }
@@ -84,7 +85,7 @@ import OrbisCore
     private let webpInputs = WebPInputs()
     private let finished: (LiveSession) -> Void
     init(channel: Channel, profile: EncoderProfile, scene: Scene?, playlist: [PlaylistItem], historyID: UUID,
-         ffmpeg: URL, ffprobe: URL, destination: String, directory: URL, loop: Bool, videoProfiles: [UUID: EncoderProfile] = [:], streamKey: String = "", finished: @escaping (LiveSession) -> Void) {
+         ffmpeg: URL, ffprobe: URL, destination: String, directory: URL, loop: Bool, videoProfiles: [UUID: EncoderProfile] = [:], streamKey: String = "", initialPosition: Double? = nil, finished: @escaping (LiveSession) -> Void) {
         self.channel = channel; self.profile = profile; self.scene = scene; self.playlist = playlist; self.historyID = historyID
         programProfile = profile
         self.ffmpeg = ffmpeg; self.ffprobe = ffprobe; self.destination = destination; self.loop = loop; self.finished = finished
@@ -92,9 +93,11 @@ import OrbisCore
         policy = StreamingPolicy(platform: channel.platform); bitrateController = BitrateController(policy: policy); self.videoProfiles = videoProfiles
         automaticQuality = profile.quality == .auto
         self.requestedBitrate = profile.videoBitrate
-        self.resumePosition = playlist.first?.resumeSeconds ?? 0
+        self.resumePosition = initialPosition ?? playlist.first?.resumeSeconds ?? 0
         fileLog = SessionLog(directory: directory.appendingPathComponent("Logs"), sessionID: historyID)
         previewURL = directory.appendingPathComponent("preview-\(UUID().uuidString).jpg")
+        self.currentPosition = self.resumePosition
+        if scene != nil, !playlist.isEmpty { playlistBeforeScene = (0, playlist[0].resumeSeconds) }
     }
     func start() {
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .idleSystemSleepDisabled], reason: "Trasmissione OrbisStream")
