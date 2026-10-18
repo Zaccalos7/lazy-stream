@@ -3,7 +3,7 @@ set -euo pipefail
 # Run inside a disposable Ubuntu 24.04 container of the target architecture.
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y --no-install-recommends build-essential cmake pkg-config python3 \
+apt-get install -y --no-install-recommends build-essential cmake pkg-config python3 file \
   libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gnupg ca-certificates \
   libxcb1-dev gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev \
   qt6-multimedia-dev qt6-webengine-dev qt6-image-formats-plugins \

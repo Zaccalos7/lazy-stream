@@ -6,6 +6,7 @@
 - Player web Twitch/YouTube con parent/origin dell'indirizzo effettivo del browser.
 - Build amd64/arm64 con percorsi multiarch, dipendenze hardware Intel/NVIDIA riservate a x64 e FFmpeg/FFprobe 9.0.2 obbligatori nel pacchetto.
 - Installer che rileva l'architettura Debian e seleziona il pacchetto corretto; verifica ELF di applicazione e strumenti, accesso HTTP sulla seconda interfaccia e sessione autenticata.
+- Dodici test ARM64 completati in QEMU, inclusa la GUI nelle 21 lingue; test encoder disponibili/assenti e timeout grafico configurabile per l'emulazione.
 - Rapporto Twitch del 18 ottobre: connessione accettata, playlist pubblica 404 e account della chiave diverso dal canale visualizzato.
 
 ## 0.0.12 — 2026-10-16

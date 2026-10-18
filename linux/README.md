@@ -4,7 +4,7 @@ Port Linux del progetto `lazy-stream-windows`, contenuto nella cartella `linux/`
 
 Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mappa file per file](docs/PORTING_MAP.md) associa ciascuno dei **272 file Windows** al codice Linux o al lavoro mancante; l'[inventario](docs/INVENTARIO_WINDOWS.md) conserva hash, simboli e 62 route. Il [versionamento](docs/VERSIONAMENTO.md) collega binario, API e pacchetto Debian.
 
-**Stato:** port eseguibile con test su Linux x86_64. La parità completa con Windows non è ancora certificata: la cattura/hardware e i servizi pubblici richiedono prove dedicate; alcuni comportamenti Windows restano parziali o mancanti. I test nativi verificano le schermate nelle 21 lingue originali, ma non certificano ogni funzione Windows. Il documento di migrazione indica le differenze precise.
+**Stato:** port eseguibile con test su Linux x86_64 e ARM64 tramite emulazione QEMU. La parità completa con Windows non è ancora certificata: la cattura/hardware e i servizi pubblici richiedono prove dedicate; alcuni comportamenti Windows restano parziali o mancanti. I test nativi verificano le schermate nelle 21 lingue originali, ma non certificano ogni funzione Windows. Il documento di migrazione indica le differenze precise.
 
 ## Compilare e avviare
 
@@ -13,7 +13,7 @@ Il confronto funzionale è in [docs/MIGRAZIONE.md](docs/MIGRAZIONE.md). La [mapp
 Su Debian/Ubuntu:
 
 ```sh
-sudo apt install build-essential cmake pkg-config libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gnupg libxcb1-dev gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-image-formats-plugins qt6-translations-l10n fonts-noto-core fonts-noto-cjk
+sudo apt install build-essential cmake pkg-config file libboost-dev libjson-c-dev libsqlite3-dev ffmpeg curl gnupg libxcb1-dev gstreamer1.0-libav gstreamer1.0-plugins-good qt6-base-dev qt6-multimedia-dev qt6-webengine-dev qt6-image-formats-plugins qt6-translations-l10n fonts-noto-core fonts-noto-cjk
 cd linux
 python3 scripts/prepare-ffmpeg.py  # la build lo esegue se manca il relativo SDK
 bash scripts/build-linux.sh
@@ -94,6 +94,8 @@ bash install-deb.sh
 Lo script rileva `dpkg --print-architecture`, verifica i metadati e installa con APT il pacchetto nativo più recente presente nella cartella. Se manca il pacchetto adatto, segnala l'errore. Puoi verificare la selezione senza installare con `bash install-deb.sh . --print-path`. Anche l'installazione diretta di un `.deb` viene controllata da Debian, che ne verifica l'architettura.
 
 `ORBIS_BUILD_DIR` permette build separate, per esempio `ORBIS_BUILD_DIR="$PWD/build-arm64" bash scripts/create-deb.sh` su una macchina ARM64. Per una build isolata Ubuntu 24.04 è disponibile `scripts/build-container.sh`; per eseguirla su un PC di un'altra architettura occorre configurare prima l'emulazione QEMU/binfmt del sistema Docker.
+
+Per i test grafici sotto QEMU puoi aumentare il limite con `cmake -S . -B build-arm64 -DORBIS_GUI_TEST_TIMEOUT=600`; il valore normale resta 90 secondi. La verifica ARM64 emulata ha completato tutti i 12 test, inclusa la navigazione nelle 21 lingue. L'audit aggiuntivo contro il checkout Windows locale, quando presente, può segnalare modifiche di quel repository indipendenti dalla build Linux.
 
 ## Utilizzo
 
