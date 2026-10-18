@@ -33,6 +33,7 @@ def main():
         if not resources.is_dir():
             resources = pathlib.Path(__file__).resolve().parent.parent/'web'
         environment = dict(os.environ)
+        environment['LAZY_STREAM_HOST'] = '127.0.0.1'
         # This test removes a copied executable inode. Preserve the SDK/runtime belonging to the
         # original executable, including when exercising an extracted release package.
         for sdk in [binary.parent.parent/'libexec/orbis-stream/ffmpeg', binary.parent/'ffmpeg-9.0.2/bin']:
@@ -356,7 +357,7 @@ def main():
             scheduled=api('history','POST',{**old,'channelId':channel})['id']
             proc.send_signal(signal.SIGTERM)
             proc.wait(timeout=8)
-            proc=subprocess.Popen([sys.argv[1],'--no-browser','--data-dir',str(root/'data'),'--port',str(port)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+            proc=subprocess.Popen([sys.argv[1],'--no-browser','--data-dir',str(root/'data'),'--port',str(port)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=environment)
             for _ in range(3):
                 line=proc.stdout.readline()
                 if '?token=' in line:

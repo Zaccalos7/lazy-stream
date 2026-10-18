@@ -1,5 +1,13 @@
 # Cronologia del port Linux
 
+## 0.0.13 — 2026-10-18
+
+- Configurazione `.env`, file utente/sistema e `--env-file`; IP LAN via `LAZY_STREAM_HOST`/`--host`, URL di avvio e controllo Host coerenti, token e cookie conservati.
+- Player web Twitch/YouTube con parent/origin dell'indirizzo effettivo del browser.
+- Build amd64/arm64 con percorsi multiarch, dipendenze hardware Intel/NVIDIA riservate a x64 e FFmpeg/FFprobe 9.0.2 obbligatori nel pacchetto.
+- Installer che rileva l'architettura Debian e seleziona il pacchetto corretto; verifica ELF di applicazione e strumenti, accesso HTTP sulla seconda interfaccia e sessione autenticata.
+- Rapporto Twitch del 18 ottobre: connessione accettata, playlist pubblica 404 e account della chiave diverso dal canale visualizzato.
+
 ## 0.0.12 — 2026-10-16
 
 - TikTok rimosso da motore C++, piattaforme, preset, marchi, wizard, player, headless, traduzioni e manuale. Otto preset per le quattro piattaforme rimanenti.

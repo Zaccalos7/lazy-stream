@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-18",
+  "host": "Ubuntu 24.04 x86_64",
+  "swift": "6.2.3, Swift 5 language mode",
+  "ffmpeg": "9.0.2",
+  "command": "ORBIS_FFMPEG_DIR=/path/to/ffmpeg9/bin swift test --scratch-path /tmp/orbis-mac-core-build",
+  "core_tests": {
+    "executed": 47,
+    "failed": 0,
+    "skipped": 0,
+    "result": "passed",
+    "includes_real_ffmpeg_output": true
+  },
+  "core_source_and_tests_sha256": "f1fad5a45176a11f52f65f3330de6090dd9138a6717f319c53494ac82577244f",
+  "native_parser": {
+    "target": "arm64-apple-macosx14.0",
+    "result": "passed",
+    "files": 22,
+    "typechecking": false
+  },
+  "resource_checks": {
+    "language_catalogs": 21,
+    "json": "passed",
+    "plist": "passed",
+    "python_syntax": "passed",
+    "bash_syntax": "passed"
+  },
+  "windows_inventory": {
+    "endpoints": 62,
+    "razor_handlers": 35,
+    "result": "all mapped; 3 explicit native differences"
+  },
+  "macOS_runtime": {
+    "swiftui_appkit": "not run",
+    "avfoundation": "not run",
+    "videotoolbox": "not run",
+    "webkit": "not run",
+    "mach_iokit": "not run",
+    "installer": "not built on Linux"
+  },
+  "reproduce": "SWIFT_BIN=/path/to/swift ORBIS_FFMPEG_DIR=/path/to/ffmpeg9/bin bash scripts/test-macos-core.sh"
+}

@@ -1,7 +1,9 @@
 #include "async_logger.hpp"
 #include "core.hpp"
+#include "environment.hpp"
 #include "native_window.hpp"
 #include "version.hpp"
+#include <boost/asio/ip/address.hpp>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -53,6 +55,23 @@ int main(int argc, char** argv) {
     // I worker ereditano la maschera: un solo thread sigwait gestisce l'arresto delle sessioni.
     pthread_sigmask(SIG_BLOCK, &termination, nullptr);
     try {
+        // Explicit file, project file, user file, system file; exported variables always win.
+        for (int i = 1; i < argc; ++i) {
+            const std::string argument = argv[i];
+            if (argument == "--env-file") {
+                if (++i == argc)
+                    throw std::runtime_error("--env-file richiede un percorso");
+                orbis::loadEnvironment(argv[i], true);
+            }
+        }
+        orbis::loadEnvironment(".env");
+        const auto config = std::getenv("XDG_CONFIG_HOME");
+        const auto userHome = std::getenv("HOME");
+        if (config || userHome)
+            orbis::loadEnvironment(
+                (config ? orbis::fs::path(config) : orbis::fs::path(userHome) / ".config") /
+                "orbis-stream/.env");
+        orbis::loadEnvironment("/etc/orbis-stream/orbis-stream.env");
         auto env = std::getenv("LAZY_STREAM_DATA_DIR");
         auto xdg = std::getenv("XDG_DATA_HOME");
         auto home = std::getenv("HOME");
@@ -61,6 +80,9 @@ int main(int argc, char** argv) {
                                            : orbis::fs::path(home ? home : ".") / ".local/share") /
                                       "orbis-stream");
         unsigned short port = 1200;
+        std::string host = "127.0.0.1";
+        if (const auto value = std::getenv("LAZY_STREAM_HOST"); value && *value)
+            host = value;
         bool headless = false;
         orbis::fs::path web = ORBIS_WEB_ROOT;
         auto installed = orbis::fs::canonical("/proc/self/exe").parent_path().parent_path() /
@@ -78,6 +100,12 @@ int main(int argc, char** argv) {
                 headless = true;
             else if (a == "--data-dir" && i + 1 < argc)
                 root = argv[++i];
+            else if (a == "--env-file" && i + 1 < argc)
+                ++i;
+            else if (a == "--host" && i + 1 < argc)
+                host = argv[++i];
+            else if (a.starts_with("--host="))
+                host = a.substr(7);
             else if (a.starts_with("--data-dir="))
                 root = a.substr(11);
             else if (a == "--port" && i + 1 < argc)
@@ -88,11 +116,16 @@ int main(int argc, char** argv) {
                 web = argv[++i];
             else if (a == "--help") {
                 std::cout << "orbis-stream [--version] [--data-dir DIR] [--headless] [--port 1200] "
-                             "[--web-root DIR]\n";
+                             "[--host IP] [--env-file FILE] [--web-root DIR]\n";
                 return 0;
             } else
                 throw std::runtime_error("Opzione sconosciuta: " + a);
         }
+        const auto address = boost::asio::ip::make_address(host);
+        if (address.is_unspecified() || address.is_multicast())
+            throw std::runtime_error(
+                "LAZY_STREAM_HOST richiede un IP locale concreto, per esempio 192.168.1.50");
+        host = address.to_string();
         orbis::fs::create_directories(root);
         int lock = open((root / "instance.lock").c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
         if (lock < 0)
@@ -116,7 +149,8 @@ int main(int argc, char** argv) {
         if (!headless)
             return orbis::runNativeApp(argc, argv, studio, web / "resources");
         auto token = randomToken();
-        auto url = "http://127.0.0.1:" + std::to_string(port) + "/?token=" + token;
+        auto url = "http://" + (address.is_v6() ? "[" + host + "]" : host) + ":" +
+                   std::to_string(port) + "/?token=" + token;
         std::cout << "OrbisStream Linux " ORBIS_VERSION "\n"
                   << url << "\nDati: " << root << std::endl;
         std::thread shutdownThread([&studio] {
@@ -132,7 +166,7 @@ int main(int argc, char** argv) {
             std::_Exit(0);
         });
         shutdownThread.detach();
-        orbis::serve(studio, port, web, token);
+        orbis::serve(studio, port, web, token, host);
     } catch (const std::exception& e) {
         std::cerr << "Errore: " << e.what() << std::endl;
         return 1;

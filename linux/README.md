@@ -40,15 +40,60 @@ Per test o automazioni è disponibile un servizio esplicito senza GUI:
 
 `--no-browser` è un alias compatibile di `--headless`. Solo questa modalità avvia l’API locale e stampa il token. Le vecchie pagine HTML/CSS restano come riferimento del porting e per i test precedenti; non sono l’interfaccia dell’app nativa.
 
+## Cambiare l'IP del server per usarlo in LAN
+
+Sul computer che esegue OrbisStream, copia `.env.example` in `.env` e imposta **l'IP locale di quel computer**, per esempio:
+
+```dotenv
+LAZY_STREAM_HOST=192.168.1.50
+LAZY_STREAM_PORT=1200
+```
+
+Su Linux puoi leggere gli indirizzi con `hostname -I`; scegli quello della rete domestica. L'indirizzo deve appartenere al server, non al telefono o al computer da cui vuoi collegarti.
+
+Avvia il servizio web dalla cartella `linux/`:
+
+```sh
+./build/orbis-stream --headless --env-file .env
+```
+
+Se hai installato il pacchetto `.deb`, modifica `LAZY_STREAM_HOST` e `LAZY_STREAM_PORT` in **`/etc/orbis-stream/orbis-stream.env`**. Il pacchetto include il file e ne conserva le modifiche durante gli aggiornamenti. Per una configurazione personale senza modificare `/etc`, puoi invece conservare il file in `~/.config/orbis-stream/.env` (crea prima la cartella). Verrà letto automaticamente:
+
+```sh
+orbis-stream --headless
+```
+
+Dal telefono o da un altro computer collegato alla stessa LAN, apri **l'indirizzo completo stampato dal server**, per esempio `http://192.168.1.50:1200/?token=...`. Usa il token generato all'avvio. Le chiamate del browser usano automaticamente lo stesso server. Se il firewall del server blocca la connessione, consenti la porta TCP scelta dalla rete domestica.
+
+In LAN tramite HTTP, per vedere la diretta pubblica Twitch usa **Apri la pagina della live**: il player incorporato di Twitch richiede HTTPS, con eccezione dello sviluppo locale su localhost/127.0.0.1. L'anteprima locale della composizione e i comandi di regia restano disponibili. Vedi i [requisiti ufficiali del player Twitch](https://dev.twitch.tv/docs/embed/).
+
+**Dopo ogni modifica dell'IP o della porta nel file env, chiudi completamente e riavvia l'applicazione.** Il file viene letto solo all'avvio: ricaricare la pagina del browser non basta. Dopo il riavvio, usa il nuovo indirizzo completo stampato dal server, con il nuovo token. Chiudi anche un'eventuale istanza desktop aperta sulla stessa cartella dati prima di avviare `--headless`.
+
+Senza un IP configurato il servizio ascolta su `127.0.0.1`, accessibile solo dal server. `LAZY_STREAM_HOST` configura il servizio web in modalità `--headless`; l'avvio normale continua ad aprire la finestra Qt. Il server accetta un IP concreto IPv4/IPv6, non un nome host o `0.0.0.0`.
+
+Le opzioni della riga di comando hanno precedenza sulle variabili esportate nella shell. I file env sono letti, in ordine di precedenza: `--env-file`, `.env` nella cartella di avvio, `~/.config/orbis-stream/.env` (o `$XDG_CONFIG_HOME/orbis-stream/.env`), `/etc/orbis-stream/orbis-stream.env`. Le variabili già esportate prevalgono sui file. Sono supportati valori semplici e tra virgolette; il contenuto non viene eseguito come script shell.
+
 Per creare l'installer Debian, dalla cartella `linux/`:
 
 ```sh
 bash scripts/create-deb.sh
 ```
 
-Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.12_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
+Il comando compila, esegue i test e produce `linux/build/packages/orbis-stream_<versione>_<arch>.deb`. Su Debian/Ubuntu puoi installarlo con `sudo apt install ./build/packages/orbis-stream_0.0.13_amd64.deb` se quella è la versione e architettura mostrate dal comando. Per generare anche l'archivio `.tar.gz`, usa `bash scripts/build-linux.sh --package`.
 
-Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle applicazioni; FFmpeg/FFprobe 9.0.2 e le relative librerie sono inclusi in percorsi privati. Le librerie esterne degli encoder e Qt sono dipendenze APT; il FFmpeg della distribuzione resta disponibile come fallback esplicito. Un pacchetto compilato su Ubuntu 24.04 richiede versioni compatibili di glibc e delle librerie. Ricompila sulla distribuzione di destinazione se necessario. Il codice non impone x86_64, ma ARM64 non è stato verificato.
+Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle applicazioni; FFmpeg/FFprobe 9.0.2 e le relative librerie sono inclusi in percorsi privati. Le librerie esterne degli encoder e Qt sono dipendenze APT; il FFmpeg della distribuzione resta disponibile come fallback esplicito. Un pacchetto compilato su Ubuntu 24.04 richiede versioni compatibili di glibc e delle librerie. Ricompila sulla distribuzione di destinazione se necessario.
+
+Le build supportano `amd64` (x64) e `arm64` (AArch64), ciascuna con applicazione, FFmpeg e librerie della stessa architettura. Il pacchetto usa automaticamente il proprio FFmpeg privato; puoi forzare un altro eseguibile con `FFMPEG_PATH`. Le opzioni Intel QSV/NVIDIA della compilazione FFmpeg sono abilitate solo su x64; i codec software sono inclusi anche nella build ARM64.
+
+Per distribuire entrambe le architetture, metti i due `.deb` e `scripts/install-deb.sh` nella stessa cartella, poi esegui:
+
+```sh
+bash install-deb.sh
+```
+
+Lo script rileva `dpkg --print-architecture`, verifica i metadati e installa con APT il pacchetto nativo più recente presente nella cartella. Se manca il pacchetto adatto, segnala l'errore. Puoi verificare la selezione senza installare con `bash install-deb.sh . --print-path`. Anche l'installazione diretta di un `.deb` viene controllata da Debian, che ne verifica l'architettura.
+
+`ORBIS_BUILD_DIR` permette build separate, per esempio `ORBIS_BUILD_DIR="$PWD/build-arm64" bash scripts/create-deb.sh` su una macchina ARM64. Per una build isolata Ubuntu 24.04 è disponibile `scripts/build-container.sh`; per eseguirla su un PC di un'altra architettura occorre configurare prima l'emulazione QEMU/binfmt del sistema Docker.
 
 ## Utilizzo
 
@@ -70,6 +115,8 @@ Il `.deb` installa l'app, il suo helper, le risorse e una voce nel menu delle ap
 |---|---|
 | `--data-dir DIR` / `LAZY_STREAM_DATA_DIR` | `$XDG_DATA_HOME/orbis-stream` o `~/.local/share/orbis-stream` |
 | `--port N` / `LAZY_STREAM_PORT` | `1200`, usata solo con `--headless` |
+| `--host IP` / `LAZY_STREAM_HOST` | `127.0.0.1`; imposta l'IP del server per l'accesso LAN |
+| `--env-file FILE` | file env esplicito, letto prima dei file automatici |
 | `--headless` / `--no-browser` | disattiva la GUI e avvia il servizio API |
 | `--web-root DIR` | risorse installate oppure `linux/web` durante lo sviluppo |
 | `FFMPEG_PATH` | FFmpeg 9.0.2 privato; fallback a PATH solo senza SDK/installazione |

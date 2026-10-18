@@ -223,5 +223,6 @@ class Studio {
     void stopAll();
 };
 
-void serve(Studio& studio, unsigned short port, const fs::path& web, const std::string& token);
+void serve(Studio& studio, unsigned short port, const fs::path& web, const std::string& token,
+           const std::string& host = "127.0.0.1");
 } // namespace orbis

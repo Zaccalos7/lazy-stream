@@ -14,7 +14,10 @@ SIGNER = "FCF986EA15E6E293A5644F10B4322F04D67658D8"
 
 
 def main():
-    root = Path(__file__).resolve().parents[1] / "build"
+    root = Path(os.environ.get("ORBIS_BUILD_DIR", Path(__file__).resolve().parents[1] / "build")).resolve()
+    architecture = subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip()
+    if architecture not in ("amd64", "arm64"):
+        raise RuntimeError(f"Unsupported architecture: {architecture}; use amd64 or arm64")
     source = root / "ffmpeg-source"
     prefix = root / f"ffmpeg-{VERSION}"
     source.mkdir(parents=True, exist_ok=True)
@@ -38,10 +41,12 @@ def main():
     if f"VALIDSIG {SIGNER} " not in verified.stdout:
         raise RuntimeError("The release was not signed by the pinned FFmpeg release key")
     print(f"Verified FFmpeg {VERSION} ({SIGNER})", flush=True)
-    packages = ["nasm", "patchelf", "libx264-dev", "libvpx-dev", "libpulse-dev", "libxcb1-dev", "libxcb-shm0-dev",
-                "libxcb-xfixes0-dev", "libva-dev", "libvpl-dev", "libffmpeg-nvenc-dev",
+    packages = ["patchelf", "libssl-dev", "libwebp-dev", "zlib1g-dev", "libx264-dev", "libvpx-dev", "libpulse-dev", "libxcb1-dev", "libxcb-shm0-dev",
+                "libxcb-xfixes0-dev", "libxcb-render0-dev", "libxcb-shape0-dev", "libva-dev",
                 "libx265-dev", "libaom-dev", "libsvtav1-dev", "libsvtav1enc-dev", "libopus-dev", "libmp3lame-dev",
                 "libvorbis-dev", "libtheora-dev"]
+    if architecture == "amd64":
+        packages += ["nasm", "libvpl-dev", "libffmpeg-nvenc-dev"]
     environment = {**os.environ, "LC_ALL": "C"}
     plan = subprocess.check_output(["apt-get", "-s", "install", "--no-install-recommends", *packages],
                                    text=True, env=environment)
@@ -84,9 +89,11 @@ def main():
                  "--enable-libvpx", "--enable-libwebp", "--enable-libx265", "--enable-libaom",
                  "--enable-libsvtav1", "--enable-libopus", "--enable-libmp3lame", "--enable-libvorbis",
                  "--enable-libtheora", "--enable-libpulse", "--enable-libxcb",
-                 "--enable-libxcb-shm", "--enable-libxcb-xfixes", "--enable-vaapi", "--enable-libvpl",
-                 "--enable-ffnvcodec", "--enable-nvenc", "--enable-zlib", f"--extra-cflags=-I{sdk}/usr/include",
+                 "--enable-libxcb-shm", "--enable-libxcb-xfixes", "--enable-vaapi",
+                 "--enable-zlib", f"--extra-cflags=-I{sdk}/usr/include",
                  f"--extra-ldflags=-L{lib}"]
+    if architecture == "amd64":
+        arguments += ["--enable-libvpl", "--enable-ffnvcodec", "--enable-nvenc"]
     with (source / "configure.log").open("w") as log:
         result = subprocess.run(arguments, cwd=tree, env=environment, stdout=log, stderr=log)
     if result.returncode:
@@ -107,6 +114,7 @@ def main():
             subprocess.run([patcher, "--set-rpath", "$ORIGIN", str(library)], check=True)
     shutil.copy2(tree / "COPYING.GPLv3", prefix / "COPYING.GPLv3")
     (prefix / "SOURCE.txt").write_text(f"https://ffmpeg.org/releases/ffmpeg-{VERSION}.tar.xz\n"
+        f"Architecture: {architecture}\n"
         f"Release signing key: {SIGNER}\nSHA256: " +
         hashlib.sha256((source / f"ffmpeg-{VERSION}.tar.xz").read_bytes()).hexdigest() + "\n")
     subprocess.run([str(prefix / "bin/ffmpeg"), "-version"], env=environment, check=True)

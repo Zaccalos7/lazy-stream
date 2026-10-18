@@ -1967,14 +1967,26 @@ function editLiveParameters(session) {
     },
   );
 }
+/** Allinea i vincoli del player all'indirizzo usato dal browser, anche in LAN. */
+function platformEmbedUrl(embed) {
+  const url = new URL(embed);
+  if (url.hostname === 'player.twitch.tv') {
+    const local = location.hostname === 'localhost' || /^127\./.test(location.hostname);
+    if (location.protocol !== 'https:' && !local) return '';
+    url.searchParams.set('parent', location.hostname);
+  }
+  if (url.hostname === 'www.youtube.com') url.searchParams.set('origin', location.origin);
+  return url.href;
+}
 /** Chiede lo stato della pagina pubblica solo quando l'utente apre il player della piattaforma. */
 async function showPlatformPlayer(session) {
   const player = await api('platform/' + session.channelId);
   const content = el('div', {}, el('p', {}, player.reason));
-  if (player.embed)
+  const embed = player.embed && platformEmbedUrl(player.embed);
+  if (embed)
     content.append(
       el('iframe', {
-        src: player.embed,
+        src: embed,
         width: '100%',
         height: '450',
         allow: 'autoplay; fullscreen',
@@ -2245,10 +2257,11 @@ function live(root) {
               button('Player pubblico', async () => {
                 const player = await api('platform/' + s.channelId);
                 const content = el('div', {}, el('p', {}, player.reason));
-                if (player.embed)
+                const embed = player.embed && platformEmbedUrl(player.embed);
+                if (embed)
                   content.append(
                     el('iframe', {
-                      src: player.embed,
+                      src: embed,
                       width: '100%',
                       height: '450',
                       allow: 'autoplay; fullscreen',

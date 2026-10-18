@@ -2,7 +2,7 @@
 
 Data: 12 ottobre 2026. Destinazione: macOS 14+, esclusivamente Apple Silicon/arm64.
 
-**Stato: codice presente, validazione macOS ancora da eseguire.** La presenza di una funzione in questa tabella non certifica che la compilazione, il test o la cattura reale siano riusciti. Su questo host Linux sono stati eseguiti il parsing della sintassi Swift, i controlli dei documenti e la sintassi Bash; i test Swift richiedono il Mac.
+**Stato: codice presente, validazione macOS ancora da eseguire.** La presenza di una funzione in questa tabella non certifica che la compilazione, il test o la cattura reale siano riusciti. Su questo host Linux sono stati compilati ed eseguiti 47 test Swift del nucleo/relay con FFmpeg 9.0.2, oltre al parsing del compilatore per il target arm64 macOS, ai controlli dei documenti e alla sintassi Bash. SwiftUI e le integrazioni Apple richiedono ancora il Mac. [Confronto completo e limiti delle verifiche](PARITA-COMPLETA-MAC.md).
 
 Il censimento parte dai sorgenti originali disponibili: 228 file applicativi/test/risorse, 62 route HTTP e 126 identificatori HTML. `original-inventory.json` conserva file, SHA-256, simboli, proprietà, route e controlli; `parity.json` rende questa tabella consultabile da strumenti. Le route sono sostituite da chiamate dirette ai servizi Swift.
 

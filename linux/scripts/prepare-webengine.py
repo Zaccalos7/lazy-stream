@@ -9,7 +9,9 @@ import tempfile
 
 def main():
     linux = Path(__file__).resolve().parents[1]
-    destination = linux / "build" / "qt-webengine"
+    build = Path(os.environ.get("ORBIS_BUILD_DIR", linux / "build")).resolve()
+    destination = build / "qt-webengine"
+    multiarch = subprocess.check_output(["dpkg-architecture", "-qDEB_HOST_MULTIARCH"], text=True).strip()
     environment = {**os.environ, "LC_ALL": "C"}
     plan = subprocess.check_output(
         ["apt-get", "-s", "install", "--no-install-recommends", "qt6-webengine-dev", "qt6-image-formats-plugins"],
@@ -29,14 +31,14 @@ def main():
         for package in Path(temporary).glob("*.deb"):
             subprocess.run(["dpkg-deb", "-x", str(package), str(destination)], check=True)
     # Qt imports targets relative to one prefix, including base libraries already on the system.
-    libraries = destination / "usr/lib/x86_64-linux-gnu"
+    libraries = destination / "usr/lib" / multiarch
     libraries.mkdir(parents=True, exist_ok=True)
-    for original in Path("/usr/lib/x86_64-linux-gnu").glob("libQt6*"):
+    for original in (Path("/usr/lib") / multiarch).glob("libQt6*"):
         target = libraries / original.name
         if not target.exists() and not target.is_symlink():
             target.symlink_to(original)
     # Qt also searches beside the development executable; installed builds use distro plugins.
-    image_formats = linux / "build/imageformats"
+    image_formats = build / "imageformats"
     if not image_formats.exists() and not image_formats.is_symlink():
         image_formats.symlink_to(libraries / "qt6/plugins/imageformats", target_is_directory=True)
     print(f"Qt WebEngine is ready in {destination}")

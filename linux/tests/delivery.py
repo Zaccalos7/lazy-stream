@@ -27,7 +27,8 @@ def main():
             available.bind(('127.0.0.1',0))
             port = available.getsockname()[1]
         process = subprocess.Popen([str(app), '--headless', '--data-dir', str(root/'data'), '--port', str(port)],
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                   env={**os.environ, 'LAZY_STREAM_HOST': '127.0.0.1'})
         try:
             for _ in range(3):
                 line = process.stdout.readline().strip()

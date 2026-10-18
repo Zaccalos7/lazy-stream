@@ -4,7 +4,7 @@
 
 Applicazione Swift e SwiftUI per macOS 14+, esclusivamente arm64. FFmpeg compone e codifica le sorgenti; VideoToolbox utilizza l’accelerazione Apple. Sidebar, toolbar, SF Symbols, Portachiavi, pannelli file, AVFoundation e WebKit sono nativi.
 
-I percorsi seguono Windows: Panoramica, Live con Gestione Live e Storico, Live / Anteprima, Scene e layout, Attività, Manuale e Impostazioni con Video e audio e Canali. [Mappa dei percorsi e verifiche Mac](docs/PERCORSI-MAC.md). Il layout usa una toolbar unificata, una sidebar di sistema e schede adattive. La panoramica offre accessi rapidi e schede adattive; superfici, testo e accento seguono i colori di sistema. Nella regia il pannello video/audio è richiudibile dalla toolbar e conserva la preferenza. I dettagli del Mac sono espandibili, con tutte le statistiche ancora accessibili.
+I percorsi seguono Windows: Panoramica, Live con Gestione Live e Storico, Live / Anteprima, Scene e layout, Attività, Manuale e Impostazioni con Video e audio e Canali. [Mappa dei percorsi](docs/PERCORSI-MAC.md) e [confronto funzionale completo](docs/PARITA-COMPLETA-MAC.md). Il layout usa una toolbar unificata, una sidebar di sistema e schede adattive. La panoramica offre accessi rapidi e schede adattive; superfici, testo e accento seguono i colori di sistema. Nella regia il pannello video/audio è richiudibile dalla toolbar e conserva la preferenza. I dettagli del Mac sono espandibili, con tutte le statistiche ancora accessibili.
 
 ## Compilazione e installer
 
@@ -25,7 +25,7 @@ Il pacchetto richiede macOS 14 e arm64. Il Mac destinatario non deve installare 
 ORBIS_FFMPEG_DIR=/percorso/bin ./scripts/build-macos.sh
 ```
 
-Usa una distribuzione FFmpeg con AVFoundation, VideoToolbox, AAC, FLV, RTMP e i filtri/encoder richiesti dai tuoi profili. Le dipendenze mancanti o senza arm64 interrompono il confezionamento. Licenza e configurazione FFmpeg sono incluse nelle risorse; `ORBIS_FFMPEG_LICENSE_DIR` permette di aggiungere licenze, avvisi e materiale sorgente della distribuzione scelta. Rispetta le condizioni delle librerie che distribuisci.
+Usa FFmpeg 9 o successivo con il demuxer `webp_anim`, AVFoundation, VideoToolbox, AAC, FLV, RTMP e i filtri/encoder richiesti dai tuoi profili. Le dipendenze mancanti o senza arm64 interrompono il confezionamento. Licenza e configurazione FFmpeg sono incluse nelle risorse; `ORBIS_FFMPEG_LICENSE_DIR` permette di aggiungere licenze, avvisi e materiale sorgente della distribuzione scelta. Rispetta le condizioni delle librerie che distribuisci.
 
 La firma predefinita è locale. Per una distribuzione firmata e notarizzata:
 
@@ -40,7 +40,7 @@ Il profilo deve essere già configurato nel Portachiavi per `notarytool`. Lo scr
 
 ## Censimento della migrazione
 
-[Elenco punto per punto](docs/MIGRAZIONE.md): 228 file originali, 62 route e 126 identificatori di controlli, con corrispondenze al codice Swift. [Inventario originale](docs/original-inventory.json) e [matrice delle funzioni](docs/parity.json) sono consultabili anche da strumenti. Le voci indicano codice presente; la parità operativa richiede ancora le prove su Mac.
+[Elenco punto per punto](docs/MIGRAZIONE.md): 228 file originali, 62 route e 126 identificatori di controlli, con corrispondenze al codice Swift. [Inventario originale](docs/original-inventory.json) e [matrice delle funzioni](docs/parity.json) sono consultabili anche da strumenti. Le voci indicano codice presente; la parità operativa richiede ancora le prove su Mac. Il [secondo censimento](docs/windows-parity-audit.json) verifica tutti i 62 endpoint e i 35 handler Razor rispetto ai simboli Swift; il [rapporto di esecuzione](docs/validation-macos-core.json) separa i test Core dalle prove native.
 
 ## Funzionalità
 
@@ -78,4 +78,4 @@ La rete comprende le interfacce fisiche `en*` del Mac; il disco comprende i driv
 
 ## Verifica
 
-Il build esegue i test del relay, timestamp, URL, profili, mix, persistenza, controllo YouTube e output FFmpeg reale. Dopo il confezionamento verifica firme, architetture e avvio dei helper. I test e il build nativo richiedono macOS; questa revisione è stata preparata su Linux, quindi la compilazione SwiftUI e l’esecuzione dell’installer sul Mac restano da verificare. Camera, microfono, schermo e pubblicazione reale richiedono una prova sul Mac.
+Il build esegue i test del relay, timestamp, URL, profili, mix, persistenza, controllo YouTube e output FFmpeg reale. Dopo il confezionamento verifica firme, architetture e avvio dei helper. Il nucleo e il relay si compilano e si testano anche su Linux: `SWIFT_BIN=/percorso/swift ORBIS_FFMPEG_DIR=/percorso/ffmpeg9/bin bash scripts/test-macos-core.sh`. Sono stati eseguiti 47 test con Swift 6.2.3 e FFmpeg 9.0.2, senza errori, incluse prove reali di composizione, alpha, loop WebP, publisher persistente e decodifica. La compilazione SwiftUI, i test AppKit/AVFoundation/VideoToolbox e l’esecuzione dell’installer richiedono il Mac e restano da verificare. Camera, microfono, schermo e pubblicazione reale richiedono una prova sul Mac.

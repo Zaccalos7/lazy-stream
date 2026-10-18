@@ -9,6 +9,11 @@
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
+#ifdef ORBIS_FFMPEG9
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+#endif
 using namespace orbis;
 
 void expect(bool ok, const char* message) {
@@ -49,14 +54,26 @@ int main() {
             expect(selected("-preset") == "faster", "Windows x264 high quality");
             expect(selected("-tune") == "film", "manual tune with low latency disabled");
             expect(selected("-framerate") == "15", "keep source FPS");
-            profile.set("videoCodecName", "h264_nvenc");
-            profile.set("encoderQuality", "light");
-            arguments = buildProducer(scene, profile, 0, {}).args;
-            expect(selected("-preset") == "p1", "Windows NVENC light quality");
-            profile.set("videoCodecName", "h264_qsv");
-            profile.set("encoderQuality", "balanced");
-            arguments = buildProducer(scene, profile, 0, {}).args;
-            expect(selected("-preset") == "medium", "Windows QSV balanced quality");
+            for (const auto& encoder : {"h264_nvenc", "h264_qsv"}) {
+                profile.set("videoCodecName", encoder);
+                const bool nvenc = std::string(encoder) == "h264_nvenc";
+                profile.set("encoderQuality", nvenc ? "light" : "balanced");
+#ifdef ORBIS_FFMPEG9
+                if (!avcodec_find_encoder_by_name(encoder)) {
+                    bool rejected = false;
+                    try {
+                        buildProducer(scene, profile, 0, {});
+                    } catch (const std::runtime_error& error) {
+                        rejected = std::string(error.what()).find(encoder) != std::string::npos;
+                    }
+                    expect(rejected, "unavailable hardware encoder must be rejected");
+                    continue;
+                }
+#endif
+                arguments = buildProducer(scene, profile, 0, {}).args;
+                expect(selected("-preset") == (nvenc ? "p1" : "medium"),
+                       "Windows hardware encoder quality");
+            }
         }
         bool bad = false;
         try {

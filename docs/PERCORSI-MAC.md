@@ -19,7 +19,7 @@ Aggiornamento: 18 ottobre 2026. Il riferimento è il progetto Windows disponibil
 
 Il pulsante Indietro conserva il percorso tra le sezioni; le ricerche si azzerano quando si cambia pagina. La toolbar e il menu Diretta espongono entrambi gli avvii. L’avvio da Canali o Playlist usa lo stesso wizard.
 
-Gestione Live legge le trasmissioni salvate, anche dopo un riavvio dell’app. Offre filtri Stato/Canale/Piattaforma, dieci righe per pagina e azioni per dettagli, anteprima, pulsanti scena, spot, stop, associazione di profilo, ripresa, riavvio, segnalazione ed eliminazione. La ripresa conserva il video raggiunto e il timestamp; Ricomincia azzera i seek dello snapshot. Il checkpoint viene aggiornato anche con profilo, scena e playlist correnti.
+Gestione Live legge le trasmissioni salvate, anche dopo un riavvio dell’app. Offre filtri Stato/Canale/Piattaforma, dieci righe per pagina e azioni per dettagli, anteprima, pulsanti scena, spot, stop, associazione di profilo, ripresa, riavvio, segnalazione ed eliminazione. La ripresa conserva il video raggiunto e il timestamp; Ricomincia azzera i seek dello snapshot. Il checkpoint viene aggiornato anche con profilo, scena e playlist correnti. Le scene conservano la posizione; tornando da una composizione alla playlist viene ripresa la posizione sospesa. Il wizard usa scene temporanee, senza aggiungerle alla libreria dei layout.
 
 Una nuova configurazione contiene i dieci preset standard/leggeri di Twitch, YouTube, Kick, Facebook e TikTok presenti nel riferimento Windows. Dimensioni, fps e bitrate corrispondono; l’encoder è Apple VideoToolbox. Il preset Twitch standard conserva risoluzione/fps della sorgente. Per configurazioni precedenti, Video e audio → Aggiungi preset mancanti aggiunge solo le combinazioni piattaforma/livello assenti. I profili esistenti vengono conservati.
 
@@ -29,9 +29,9 @@ Il mixer comprende anche l’audio della playlist, con volume 0–200% e mute. L
 
 ## Verifica
 
-Su Linux: parsing della sintassi di tutti i sorgenti/test Swift, controllo di JSON e cataloghi `.strings`, sintassi Bash e `git diff --check`. Questo non equivale a una compilazione SwiftUI.
+Su Linux: 47 test Core/relay compilati ed eseguiti con Swift e FFmpeg 9.0.2, parsing del compilatore Swift per il target arm64 macOS, controllo di JSON e cataloghi `.strings`, sintassi Bash e `git diff --check`. Questo non equivale a una compilazione SwiftUI. Il [confronto completo](PARITA-COMPLETA-MAC.md) e il [rapporto di esecuzione](validation-macos-core.json) documentano copertura e differenze.
 
-Su un Mac Apple Silicon, eseguire `./scripts/build-macos.sh`: prima del pacchetto esegue tutti i test Core e Mac, inclusi `WorkflowParityTests` (preset, ripresa/riavvio, vecchi documenti, profili RTMP, redazione, suddivisione Unicode) e il controllo del mixer playlist in `LiveSessionTests`.
+Su un Mac Apple Silicon, eseguire `./scripts/build-macos.sh`: prima del pacchetto esegue tutti i test Core e Mac, inclusi `CompletenessTests`, `MediaAndEngineTests` e `WorkflowParityTests` (preset, ripresa/riavvio, vecchi documenti, profili RTMP, redazione, suddivisione Unicode) e il controllo del mixer playlist in `LiveSessionTests`.
 
 Le seguenti prove native restano da eseguire:
 

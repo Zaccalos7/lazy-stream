@@ -162,6 +162,7 @@ struct Api {
     const fs::path& web;
     const std::string& token;
     unsigned short port;
+    std::string host;
     ProxyLibrary proxies{studio.store.root / "proxies"};
 
     void events(boost::beast::tcp_stream& stream, const http::request<http::string_body>& request) {
@@ -252,8 +253,11 @@ struct Api {
         auto q = query(target);
         auto method = req.method();
         auto host = std::string(req[http::field::host]);
-        if (host != "127.0.0.1:" + std::to_string(port) &&
-            host != "localhost:" + std::to_string(port))
+        const auto authority =
+            (this->host.find(':') == std::string::npos ? this->host : "[" + this->host + "]") +
+            ":" + std::to_string(port);
+        if (host != authority &&
+            !(this->host == "127.0.0.1" && host == "localhost:" + std::to_string(port)))
             throw std::runtime_error("Host non consentito");
         if (path == "/" && q["token"] == token) {
             res.result(http::status::see_other);
@@ -656,14 +660,15 @@ struct Api {
 };
 } // namespace
 
-// Ascolta solo su loopback e distribuisce le connessioni su un pool, evitando che una richiesta
+// Ascolta sull'IP configurato e distribuisce le connessioni su un pool, evitando che una richiesta
 // blocchi tutte le altre.
-void serve(Studio& studio, unsigned short port, const fs::path& web, const std::string& token) {
+void serve(Studio& studio, unsigned short port, const fs::path& web, const std::string& token,
+           const std::string& host) {
     asio::io_context io;
-    tcp::acceptor acceptor(io, {asio::ip::make_address("127.0.0.1"), port});
+    tcp::acceptor acceptor(io, {asio::ip::make_address(host), port});
     asio::thread_pool pool(8), eventPool(4);
     std::atomic<int> eventConnections{0};
-    Api api{studio, web, token, port};
+    Api api{studio, web, token, port, host};
     for (;;) {
         tcp::socket socket(io);
         acceptor.accept(socket);
